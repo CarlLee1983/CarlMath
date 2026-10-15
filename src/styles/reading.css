@@ -1,13 +1,5 @@
 /* 側欄目錄閱讀頁（原型 Variant B）。斷點取自原型：1180px 以下邊註併回正文、820px 以下目錄收進按鈕。 */
 .reading { font-size: 17px; }
-.sr-only {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-}
 
 .reading-top {
   position: sticky;
@@ -85,22 +77,6 @@
 /* 寬螢幕：邊註放在正文右側的欄位 */
 .fig-wrap .margin-note { position: absolute; top: 20px; right: -16rem; width: 14rem; margin: 0; }
 
-.next-step h3 { font-size: 1.05rem; margin: 1.4em 0 0.3em; }
-.review-tip { font-size: 0.9em; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; }
-
-.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 48px; }
-.pager a {
-  display: block;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  padding: 12px 14px;
-  text-decoration: none;
-  color: var(--fg);
-  background: var(--card);
-  overflow-wrap: anywhere;
-}
-.pager a small { display: block; color: var(--muted); }
-.pager a.next { text-align: right; grid-column: 2; }
 
 @media (max-width: 1180px) {
   .reading-grid { grid-template-columns: 14rem minmax(0, 40rem); }

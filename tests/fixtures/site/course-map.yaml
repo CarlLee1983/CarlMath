@@ -1,4 +1,7 @@
-# e2e 用的小型課程地圖：已撰寫的單元是 sum-demo 與 math-demo（都是一般篇），其餘未撰寫。
+# e2e 用的小型課程地圖：已撰寫的單元是 fx-count（親子篇）、sum-demo 與 math-demo（一般篇），其餘未撰寫。
+# fx-count 沒有先修，下一個單元 fx-add 依賴它，所以「下一步」只預告下一個單元；它是第一個單元，所以沒有上一個單元。
+# fx-compare 是未撰寫的親子單元，也是沒有先修的單元，讓未撰寫頁的親子標記與「沒有先修」都有案例。
+# sum-demo 直接以 fx-count 為先修，讓「開過親子篇後，一般篇的先修標籤出現 ✓」有案例。
 # math-demo 的直接先修是 fx-add（未撰寫）與 sum-demo（已撰寫）；它的下一個單元 fx-compare 不依賴它，所以「下一步」列出反向依賴（fx-fraction、fx-ratio）。
 # sum-demo 的下一個單元 math-demo 依賴它，所以「下一步」只預告下一個單元。
 # fx-fraction 的直接先修是 math-demo 與 fx-compare，遞移先修另含 fx-count、fx-add、sum-demo（已撰寫與未撰寫混合）。
@@ -25,7 +28,7 @@ stages:
   - id: sum-demo
     title: 和的示範
     coreQuestion: 兩個量合起來，怎麼用算式說清楚？
-    prerequisites: [fx-add]
+    prerequisites: [fx-count, fx-add]
     family: false
     curriculum108:
       grades: [2]
@@ -44,8 +47,8 @@ stages:
   - id: fx-compare
     title: 比大小
     coreQuestion: 兩個數哪個比較大？
-    prerequisites: [fx-count]
-    family: false
+    prerequisites: []
+    family: true
     curriculum108:
       grades: [4]
       content: [N-4-1]

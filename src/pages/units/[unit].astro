@@ -6,6 +6,7 @@ import { loadValidContent } from "../../lib/content";
 import UnitLinks, { type UnitLink } from "../../components/UnitLinks.astro";
 import { gradeLabel } from "../../lib/grade-label";
 import { lessonComponents } from "../../components/lesson";
+import FamilyReadingLayout from "../../layouts/FamilyReadingLayout.astro";
 import SidebarReadingLayout from "../../layouts/SidebarReadingLayout.astro";
 import "../../styles/lesson.css";
 
@@ -52,73 +53,68 @@ const title = `${unit.title}｜CarlMath`;
 ---
 
 {
-  Content && rendered && !unit.family ? (
-    <SidebarReadingLayout
-      title={title}
-      description={description}
-      unit={unit}
-      stageTitle={stageTitle}
-      stageUnits={stageUnits}
-      grades={grades}
-      prerequisites={prerequisites}
-      suggested={suggested}
-      previous={previous}
-      next={next}
-      nextStep={nextStep}
-      sections={rendered.headings.filter((heading) => heading.depth === 2).map(({ slug, text }) => ({ slug, text }))}
-    >
-      <Content components={lessonComponents} />
-    </SidebarReadingLayout>
+  Content && rendered ? (
+    unit.family ? (
+      <FamilyReadingLayout
+        title={title}
+        description={description}
+        unit={unit}
+        stageTitle={stageTitle}
+        suggested={suggested}
+        previous={previous}
+        next={next}
+        nextStep={nextStep}
+      >
+        <Content components={lessonComponents} />
+      </FamilyReadingLayout>
+    ) : (
+      <SidebarReadingLayout
+        title={title}
+        description={description}
+        unit={unit}
+        stageTitle={stageTitle}
+        stageUnits={stageUnits}
+        grades={grades}
+        prerequisites={prerequisites}
+        suggested={suggested}
+        previous={previous}
+        next={next}
+        nextStep={nextStep}
+        sections={rendered.headings.filter((heading) => heading.depth === 2).map(({ slug, text }) => ({ slug, text }))}
+      >
+        <Content components={lessonComponents} />
+      </SidebarReadingLayout>
+    )
   ) : (
     <BaseLayout title={title} description={description} noindex={!written}>
-    <h1>{unit.title}</h1>
-    {
-      Content ? (
-        <Content components={lessonComponents} />
-      ) : (
-        <>
-          <p class="unit-status">尚未撰寫</p>
-          <dl class="unit-facts">
-            <dt>階段</dt>
-            <dd>{stageTitle}</dd>
-            <dt>核心問題</dt>
-            <dd>{unit.coreQuestion}</dd>
-            <dt>建議年級</dt>
-            <dd>{grades}</dd>
-            {unit.family && (
-              <>
-                <dt>親子</dt>
-                <dd class="unit-family">親子共學</dd>
-              </>
-            )}
-          </dl>
-          <section aria-labelledby="direct-prerequisites">
-            <h2 id="direct-prerequisites">直接先修</h2>
-            {prerequisites.length > 0 ? (
-              <UnitLinks units={prerequisites} />
-            ) : (
-              <p>這個單元沒有先修，可以直接開始。</p>
-            )}
-          </section>
-          <section aria-labelledby="dependents">
-            <h2 id="dependents">學完可接</h2>
-            {dependents.length > 0 ? (
-              <UnitLinks units={dependents} />
-            ) : (
-              <p>目前沒有其他單元以它為先修。</p>
-            )}
-          </section>
-          <section aria-labelledby="suggested-reading">
-            <h2 id="suggested-reading">建議先讀</h2>
-            {suggested.length > 0 ? (
-              <UnitLinks units={suggested} ordered />
-            ) : (
-              <p>不需要先讀其他單元。</p>
-            )}
-          </section>
-        </>
-      )
-    }
+      <h1>{unit.title}</h1>
+      <p class="unit-status">尚未撰寫</p>
+      <dl class="unit-facts">
+        <dt>階段</dt>
+        <dd>{stageTitle}</dd>
+        <dt>核心問題</dt>
+        <dd>{unit.coreQuestion}</dd>
+        <dt>建議年級</dt>
+        <dd>{grades}</dd>
+        {unit.family && (
+          <>
+            <dt>親子</dt>
+            <dd class="unit-family">親子共學</dd>
+          </>
+        )}
+      </dl>
+      <section aria-labelledby="direct-prerequisites">
+        <h2 id="direct-prerequisites">直接先修</h2>
+        {prerequisites.length > 0 ? <UnitLinks units={prerequisites} /> : <p>這個單元沒有先修，可以直接開始。</p>}
+      </section>
+      <section aria-labelledby="dependents">
+        <h2 id="dependents">學完可接</h2>
+        {dependents.length > 0 ? <UnitLinks units={dependents} /> : <p>目前沒有其他單元以它為先修。</p>}
+      </section>
+      <section aria-labelledby="suggested-reading">
+        <h2 id="suggested-reading">建議先讀</h2>
+        {suggested.length > 0 ? <UnitLinks units={suggested} ordered /> : <p>不需要先讀其他單元。</p>}
+      </section>
     </BaseLayout>
   )
 }

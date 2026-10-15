@@ -1,24 +1,19 @@
 ---
 import Document from "./Document.astro";
 import SiteNav from "../components/SiteNav.astro";
-import UnitLinks, { type UnitLink } from "../components/UnitLinks.astro";
+import type { UnitLink } from "../components/UnitLinks.astro";
+import SuggestedReading from "../components/SuggestedReading.astro";
+import UnitPager from "../components/UnitPager.astro";
+import type { ReadingProps } from "./reading-props";
 import NextStep from "../components/lesson/NextStep.astro";
 import "../styles/lesson.css";
 import "../styles/reading.css";
 
 // 一般篇（family: false）的閱讀版面：頂端固定列、左側 9 段目錄、右側邊註。slot 放教材內文。
-interface Props {
-  title: string;
-  description: string;
-  unit: { id: string; title: string; coreQuestion: string };
-  stageTitle: string;
+interface Props extends ReadingProps {
   stageUnits: UnitLink[];
   grades: string;
   prerequisites: UnitLink[];
-  suggested: UnitLink[];
-  previous: UnitLink | null;
-  next: UnitLink | null;
-  nextStep: { kind: "next" | "dependents"; units: UnitLink[] };
   /** 教材的 H2（Astro 依標題文字產生 slug，中文照留） */
   sections: { slug: string; text: string }[];
 }
@@ -88,34 +83,10 @@ const { title, description, unit, stageTitle, stageUnits, grades, prerequisites,
             }
           </p>
         </div>
-        <nav class="suggested" aria-label="建議先讀">
-          <p class="meta-label">建議先讀</p>
-          {suggested.length > 0 ? <UnitLinks units={suggested} ordered /> : <p>不需要先讀其他單元。</p>}
-        </nav>
+        <SuggestedReading suggested={suggested} />
         <slot />
         <NextStep kind={nextStep.kind} units={nextStep.units} />
-        <nav class="pager" aria-label="上一個與下一個單元">
-          {
-            previous ? (
-              <a class="prev" href={`/units/${previous.id}/`}>
-                <small>← 上一個單元</small>
-                {previous.title}
-              </a>
-            ) : (
-              <span />
-            )
-          }
-          {
-            next ? (
-              <a class="next" href={`/units/${next.id}/`}>
-                <small>下一個單元 →</small>
-                {next.title}
-              </a>
-            ) : (
-              <span />
-            )
-          }
-        </nav>
+        <UnitPager previous={previous} next={next} />
       </main>
     </div>
   </div>

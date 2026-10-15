@@ -1,0 +1,51 @@
+---
+import { ACTIVITY_FIELDS, displayMinutes, validMinutes } from "../../lib/lesson-activity.ts";
+
+interface Props {
+  /** 活動名稱（必填） */
+  title: string;
+  /** 約幾分鐘，5–15 的整數或「a–b」區間，例如 "5–10"（必填字串；區間的破折號 – 或 - 皆可，顯示一律用 –） */
+  minutes: string;
+}
+const { title, minutes } = Astro.props;
+if (typeof title !== "string" || title.trim() === "") throw new Error("<Activity> 必須有 title");
+// 與教材驗證（lesson-activity-shape）同一個判斷，build 時再擋一次。
+if (typeof minutes !== "string" || !validMinutes(minutes)) throw new Error(`<Activity> 的 minutes 必須是 5–15 的整數或「a–b」區間字串，目前是 ${JSON.stringify(minutes)}`);
+
+// 子內容是六個 H3 加各自的內容：切開後，H3 的文字當欄名，內容放進對應的 dd。
+// 教材驗證保證六個 H3 齊全且依序（lesson-activity-shape）；這裡再擋一次，避免壞掉的版面悄悄上線。
+const html = await Astro.slots.render("default");
+const [lead, ...rest] = html.split(/<h3\b[^>]*>(.*?)<\/h3>/s);
+const fields = new Map<string, string>();
+const names: string[] = [];
+for (let i = 0; i + 1 < rest.length; i += 2) {
+  const name = rest[i]!.replace(/<[^>]*>/g, "").trim();
+  names.push(name);
+  fields.set(name, rest[i + 1]!);
+}
+if ((lead ?? "").trim() !== "" || names.join("、") !== ACTIVITY_FIELDS.join("、")) {
+  throw new Error(`<Activity> 的子內容必須依序是六個 H3（${ACTIVITY_FIELDS.join("、")}），目前是：${names.join("、") || "沒有 H3"}`);
+}
+// 欄位順序以 ACTIVITY_FIELDS 為準；「時間」取自 minutes，插在「材料」之後。
+const rows = ACTIVITY_FIELDS.flatMap((name) => {
+  const row: { name: string; html?: string; text?: string } = { name, html: fields.get(name) };
+  return name === "材料" ? [row, { name: "時間", text: `${displayMinutes(minutes)} 分鐘` }] : [row];
+});
+---
+
+<div class="activity">
+  <header>
+    <h3>{title}</h3>
+    <span>約 {displayMinutes(minutes)} 分鐘</span>
+  </header>
+  <dl>
+    {
+      rows.map((row) => (
+        <>
+          <dt>{row.name}</dt>
+          <dd>{row.html === undefined ? row.text : <Fragment set:html={row.html} />}</dd>
+        </>
+      ))
+    }
+  </dl>
+</div>

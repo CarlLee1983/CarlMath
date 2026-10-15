@@ -164,7 +164,7 @@ test.describe("meta 列與頁尾", () => {
 
     const suggested = page.getByRole("navigation", { name: "建議先讀" });
     await expect(suggested.getByRole("listitem")).toHaveText(
-      ["數一數尚未撰寫", "合起來尚未撰寫", "和的示範"].map((text) => new RegExp(`^\\s*${text}\\s*$`)),
+      ["數一數", "合起來尚未撰寫", "和的示範"].map((text) => new RegExp(`^\\s*${text}\\s*$`)),
     );
     expect(await hrefs(suggested.getByRole("link"))).toEqual(["/units/fx-count/", "/units/fx-add/", "/units/sum-demo/"]);
   });

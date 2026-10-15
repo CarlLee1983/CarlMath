@@ -1,0 +1,15 @@
+---
+import UnitLinks, { type UnitLink } from "./UnitLinks.astro";
+
+interface Props {
+  /** 全部遞移先修，依建議閱讀順序 */
+  suggested: UnitLink[];
+}
+const { suggested } = Astro.props;
+---
+
+<!-- 「建議先讀」：兩種閱讀版面共用。 -->
+<nav class="suggested" aria-label="建議先讀">
+  <p class="meta-label">建議先讀</p>
+  {suggested.length > 0 ? <UnitLinks units={suggested} ordered /> : <p>不需要先讀其他單元。</p>}
+</nav>

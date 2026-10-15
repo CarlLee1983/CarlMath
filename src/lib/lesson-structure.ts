@@ -5,7 +5,14 @@ import type { ParsedLesson } from "./lesson-parse.ts";
 /** 一般篇第 7 段的標題；`<SkipCheck>` 的錨點用它（Astro 以標題文字當 id）。 */
 export const PRACTICE_HEADING = "練習";
 const GENERAL_HEADINGS = ["情境開場", "先修回顧", "直覺", "推理", "範例", "常見迷思", PRACTICE_HEADING, "提取題", "下一步"];
-const FAMILY_HEADINGS = ["給家長的話", "情境開場", "開始前", "大人先懂", "常見迷思", "親子活動", "練習與解析", "隔天再問", "下一步"];
+/** 親子篇「開始前」段：閱讀頁把「建議先讀」接在這一段之後 */
+export const BEFORE_START_HEADING = "開始前";
+/** 親子篇「親子活動」段：`<Activity>` 唯一允許出現的段落 */
+export const ACTIVITY_HEADING = "親子活動";
+/** 親子篇固定的 9 段 H2：驗證與閱讀頁共用的唯一來源 */
+export const FAMILY_HEADINGS = ["給家長的話", "情境開場", BEFORE_START_HEADING, "大人先懂", "常見迷思", ACTIVITY_HEADING, "練習與解析", "隔天再問", "下一步"];
+/** 親子篇中「和孩子一起」的段（金框）：親子活動、練習與解析、隔天再問 */
+export const WITH_CHILD_HEADINGS: readonly string[] = [ACTIVITY_HEADING, "練習與解析", "隔天再問"];
 const WARMUP = "暖身";
 const REVIEW = "先修回顧";
 

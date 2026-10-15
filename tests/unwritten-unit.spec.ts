@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "@playwright/test";
 
-// 依 tests/fixtures/site/course-map.yaml：只有 sum-demo 與 math-demo 已撰寫。
+// 依 tests/fixtures/site/course-map.yaml：只有 fx-count、sum-demo 與 math-demo 已撰寫。
 const link = (page: import("@playwright/test").Page, name: string) => page.getByRole("link", { name, exact: true });
 
 test("未撰寫單元頁列出狀態、階段、核心問題、建議年級", async ({ page }) => {
@@ -15,9 +15,9 @@ test("未撰寫單元頁列出狀態、階段、核心問題、建議年級", as
 });
 
 test("單一年級顯示「N 年級」，親子單元才有親子標記", async ({ page }) => {
-  await page.goto("/units/fx-count/");
-  await expect(page.locator("main")).toContainText("1 年級");
-  await expect(page.locator("main")).not.toContainText("1–1");
+  await page.goto("/units/fx-compare/");
+  await expect(page.locator("main")).toContainText("4 年級");
+  await expect(page.locator("main")).not.toContainText("4–4");
   await expect(page.getByText("親子共學", { exact: true })).toBeVisible();
 
   await page.goto("/units/fx-add/");
@@ -35,22 +35,24 @@ test("直接先修與學完可接連到對應單元頁", async ({ page }) => {
   ]);
   await expect(page.getByRole("region", { name: "學完可接" })).toContainText("目前沒有其他單元以它為先修");
 
-  await page.goto("/units/fx-count/");
+  await page.goto("/units/fx-add/");
   const dependents = page.getByRole("region", { name: "學完可接" }).getByRole("link");
-  await expect(dependents).toHaveText(["合起來", "比大小"]);
+  await expect(dependents).toHaveText(["和的示範", "數學式示範"]);
   expect(await dependents.evaluateAll((els) => els.map((el) => el.getAttribute("href")))).toEqual([
-    "/units/fx-add/",
-    "/units/fx-compare/",
+    "/units/sum-demo/",
+    "/units/math-demo/",
   ]);
+  await link(page, "和的示範").click();
+  await expect(page).toHaveURL(/\/units\/sum-demo\/$/);
+
+  await page.goto("/units/fx-compare/");
   await expect(page.getByRole("region", { name: "直接先修" })).toContainText("沒有先修");
-  await link(page, "合起來").click();
-  await expect(page).toHaveURL(/\/units\/fx-add\/$/);
 });
 
 test("建議先讀依建議閱讀順序列出全部遞移先修並標示撰寫狀態", async ({ page }) => {
   await page.goto("/units/fx-fraction/");
   const items = page.getByRole("region", { name: "建議先讀" }).getByRole("listitem");
-  await expect(items).toHaveText(["數一數尚未撰寫", "合起來尚未撰寫", "和的示範", "數學式示範", "比大小尚未撰寫"].map((s) => new RegExp(`^\\s*${s}\\s*$`)));
+  await expect(items).toHaveText(["數一數", "合起來尚未撰寫", "和的示範", "數學式示範", "比大小尚未撰寫"].map((s) => new RegExp(`^\\s*${s}\\s*$`)));
   const links = page.getByRole("region", { name: "建議先讀" }).getByRole("link");
   expect(await links.evaluateAll((els) => els.map((el) => el.getAttribute("href")))).toEqual([
     "/units/fx-count/",
@@ -60,7 +62,7 @@ test("建議先讀依建議閱讀順序列出全部遞移先修並標示撰寫�
     "/units/fx-compare/",
   ]);
 
-  await page.goto("/units/fx-count/");
+  await page.goto("/units/fx-compare/");
   await expect(page.getByRole("region", { name: "建議先讀" })).toContainText("不需要先讀");
 });
 
@@ -73,14 +75,14 @@ test("未撰寫頁有 noindex，已撰寫頁沒有", async ({ page }) => {
   await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
 });
 
-test("sitemap 不含未撰寫單元頁，含已撰寫單元頁與首頁", async ({ request }) => {
+test("sitemap 不含未撰寫單元頁，含已撰寫單元頁（含親子篇）與首頁", async ({ request }) => {
   const index = await request.get("/sitemap-index.xml");
   expect(index.ok()).toBe(true);
   const xml = await (await request.get("/sitemap-0.xml")).text();
   const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   expect(urls).toContain("https://math.gravito.dev/");
   expect(urls).toContain("https://math.gravito.dev/units/math-demo/");
-  expect(urls.filter((u) => u.includes("/units/fx-"))).toEqual([]);
+  expect(urls.filter((u) => u.includes("/units/fx-"))).toEqual(["https://math.gravito.dev/units/fx-count/"]);
 });
 
 test("各頁 title 與 description", async ({ page }) => {

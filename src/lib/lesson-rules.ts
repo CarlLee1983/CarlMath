@@ -1,4 +1,5 @@
 import type { Issue, Unit } from "./course-map-model.ts";
+import { activityIssues } from "./lesson-activity.ts";
 import { componentIssues } from "./lesson-components.ts";
 import { lessonFrontmatterSchema } from "./lesson-frontmatter.ts";
 import { lessonIssue } from "./lesson-issue.ts";
@@ -37,6 +38,7 @@ export function lessonRuleIssues(lesson: ParsedLesson, unit: Unit | undefined): 
     ...frontmatterIssues(lesson),
     ...(unit ? structureIssues(lesson, unit) : []),
     ...componentIssues(lesson, unit),
+    ...(unit ? activityIssues(lesson, unit) : []),
     ...(unit ? lengthIssues(lesson, unit) : []),
   ];
 }

@@ -1,4 +1,4 @@
-// 側欄目錄閱讀頁的瀏覽器端行為：目錄 scroll-spy、手機目錄按鈕、「已讀」標記。
+// 閱讀頁的瀏覽器端行為：「已讀」標記（一般篇與親子篇共用），以及側欄目錄版的目錄 scroll-spy、手機目錄按鈕。
 // 沒有這支 script 時，目錄連結仍是一般錨點，內容完整可讀。
 
 const READ_KEY = "cm-read";
@@ -92,12 +92,14 @@ function setUpTocButton(button: HTMLButtonElement, panel: HTMLElement): void {
   });
 }
 
-const root = document.querySelector<HTMLElement>(".reading");
+// 一般篇是 .reading（側欄目錄），親子篇是 .family-reading（分段步進，由 family-reading.ts 處理步進）。
+const root = document.querySelector<HTMLElement>(".reading, .family-reading");
 if (root) {
   const read = readUnits();
   showReadMarks(root, read);
   if (root.dataset.unit) markRead(root.dataset.unit, read);
-  setUpScrollSpy([...root.querySelectorAll<HTMLAnchorElement>("a.toc-link")]);
+  const tocLinks = [...root.querySelectorAll<HTMLAnchorElement>("a.toc-link")];
+  if (tocLinks.length > 0) setUpScrollSpy(tocLinks);
   const button = root.querySelector<HTMLButtonElement>("#toc-button");
   const panel = root.querySelector<HTMLElement>("#reading-toc");
   if (button && panel) setUpTocButton(button, panel);

@@ -50,6 +50,15 @@ h1, h2, h3 { line-height: 1.35; }
 .site-name { font-weight: 700; color: var(--fg); text-decoration: none; margin-right: auto; }
 .site-nav { display: flex; flex-wrap: wrap; gap: 0 16px; }
 
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .page { max-width: 40rem; margin: 0 auto; padding: 16px; }
 
 .katex-display { overflow: auto hidden; padding: 4px 0; }
