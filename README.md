@@ -22,4 +22,4 @@
 
 ## 內容目錄
 
-教材預設放在 `content/lessons`，可用環境變數 `CARLMATH_CONTENT_DIR` 指向別處（相對或絕對路徑），測試即以此指向 `tests/fixtures/`。
+內容根目錄預設為 `content`（教材在 `lessons/**/*.mdx`，課程地圖在 `course-map.yaml`），可用環境變數 `CARLMATH_CONTENT_DIR` 指向別處（相對或絕對路徑），測試即以此指向 `tests/fixtures/`。

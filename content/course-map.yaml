@@ -1,0 +1,1599 @@
+# 單元與先修的唯一來源（ADR 0001）；排列即建議閱讀順序
+stages:
+- id: number-sense
+  title: 數感與位值
+  units:
+  - id: counting
+    title: 數數：一個對一個
+    coreQuestion: 怎麼確定一堆東西到底有幾個？
+    prerequisites: []
+    family: true
+    curriculum108:
+      grades:
+      - 1
+      content:
+      - N-1-1
+  - id: comparing-quantities
+    title: 比多少
+    coreQuestion: 不數完，怎麼知道哪一邊比較多？
+    prerequisites:
+    - counting
+    family: true
+    curriculum108:
+      grades:
+      - 1
+      - 2
+      content:
+      - N-1-1
+      - R-2-1
+  - id: number-line
+    title: 數線：數字排成一條線
+    coreQuestion: 數字的大小為什麼可以排成一條線上的位置？
+    prerequisites:
+    - comparing-quantities
+    family: true
+    curriculum108:
+      grades:
+      - 3
+      content:
+      - N-3-11
+  - id: composing-ten
+    title: 湊十
+    coreQuestion: 為什麼 10 是特別好用的數？
+    prerequisites:
+    - counting
+    family: true
+    curriculum108:
+      grades:
+      - 1
+      content:
+      - N-1-1
+      - N-1-3
+  - id: place-value
+    title: 位值：同一個 3 不一樣大
+    coreQuestion: 為什麼 3 寫在不同位置代表不同的量？
+    prerequisites:
+    - composing-ten
+    family: true
+    curriculum108:
+      grades:
+      - 1
+      - 2
+      - 3
+      content:
+      - N-1-1
+      - N-2-1
+      - N-3-1
+  - id: large-numbers
+    title: 大數：萬與億
+    coreQuestion: 很大的數怎麼讀、怎麼感受它有多大？
+    prerequisites:
+    - place-value
+    family: false
+    curriculum108:
+      grades:
+      - 4
+      - 5
+      content:
+      - N-4-1
+      - N-5-1
+  - id: estimation-rounding
+    title: 估算與四捨五入
+    coreQuestion: 不需要算準時，怎麼快速知道大約多少？
+    prerequisites:
+    - place-value
+    - number-line
+    family: true
+    curriculum108:
+      grades:
+      - 2
+      - 3
+      - 4
+      - 5
+      content:
+      - N-2-4
+      - N-3-8
+      - N-4-4
+      - N-5-11
+- id: whole-number-operations
+  title: 整數四則
+  units:
+  - id: addition-meaning
+    title: 加法是合併與增加
+    coreQuestion: 什麼情況下要用加法？
+    prerequisites:
+    - counting
+    - composing-ten
+    family: true
+    curriculum108:
+      grades:
+      - 1
+      content:
+      - N-1-2
+      - N-1-3
+      - R-1-1
+  - id: subtraction-meaning
+    title: 減法是拿走與比較
+    coreQuestion: 「剩下多少」和「差多少」為什麼都是減法？
+    prerequisites:
+    - addition-meaning
+    - comparing-quantities
+    family: true
+    curriculum108:
+      grades:
+      - 1
+      content:
+      - N-1-2
+      - N-1-3
+  - id: multi-digit-add-sub
+    title: 直式加減與進退位
+    coreQuestion: 直式為什麼要對齊位數、借位到底借了什麼？
+    prerequisites:
+    - place-value
+    - subtraction-meaning
+    family: true
+    curriculum108:
+      grades:
+      - 2
+      - 3
+      content:
+      - N-2-2
+      - N-3-2
+  - id: multiplication-meaning
+    title: 乘法是等組與面積
+    coreQuestion: 幾個一樣多的組合在一起，怎麼算得比一直加更快？
+    prerequisites:
+    - addition-meaning
+    family: true
+    curriculum108:
+      grades:
+      - 2
+      content:
+      - N-2-6
+      - R-2-3
+  - id: times-table-patterns
+    title: 九九乘法的規律
+    coreQuestion: 九九乘法表裡藏著哪些不必硬背的規律？
+    prerequisites:
+    - multiplication-meaning
+    family: true
+    curriculum108:
+      grades:
+      - 2
+      content:
+      - N-2-7
+  - id: division-meaning
+    title: 除法是平分與包含
+    coreQuestion: 「分給幾個人」和「可以分成幾份」為什麼都是除法？
+    prerequisites:
+    - multiplication-meaning
+    - subtraction-meaning
+    family: true
+    curriculum108:
+      grades:
+      - 2
+      - 3
+      content:
+      - N-2-9
+      - N-3-4
+      - R-3-1
+  - id: remainders
+    title: 餘數
+    coreQuestion: 分不完的部分該怎麼說、怎麼用？
+    prerequisites:
+    - division-meaning
+    family: true
+    curriculum108:
+      grades:
+      - 3
+      content:
+      - N-3-4
+  - id: multi-digit-multiplication
+    title: 直式乘法為什麼可行
+    coreQuestion: 直式乘法每一行其實在算什麼？
+    prerequisites:
+    - times-table-patterns
+    - place-value
+    family: false
+    curriculum108:
+      grades:
+      - 3
+      - 4
+      content:
+      - N-3-3
+      - N-4-2
+  - id: long-division
+    title: 長除法
+    coreQuestion: 長除法每一步在分什麼？
+    prerequisites:
+    - multi-digit-multiplication
+    - remainders
+    family: false
+    curriculum108:
+      grades:
+      - 3
+      - 4
+      content:
+      - N-3-5
+      - N-4-2
+  - id: order-of-operations
+    title: 運算順序與括號
+    coreQuestion: 一串混合的算式，為什麼要先乘除後加減？
+    prerequisites:
+    - multiplication-meaning
+    - division-meaning
+    family: false
+    curriculum108:
+      grades:
+      - 4
+      content:
+      - R-4-1
+  - id: arithmetic-properties
+    title: 交換、結合與分配律
+    coreQuestion: 哪些重新排列算式的方法保證答案不變？
+    prerequisites:
+    - order-of-operations
+    family: false
+    curriculum108:
+      grades:
+      - 1
+      - 2
+      - 4
+      - 5
+      - 7
+      content:
+      - R-1-2
+      - R-2-2
+      - R-2-3
+      - R-4-2
+      - R-5-2
+      - N-7-4
+  - id: factors-multiples
+    title: 因數與倍數
+    coreQuestion: 一個數能被哪些數整除，這件事告訴我們什麼？
+    prerequisites:
+    - remainders
+    family: false
+    curriculum108:
+      grades:
+      - 5
+      content:
+      - N-5-3
+  - id: primes
+    title: 質數與質因數分解
+    coreQuestion: 為什麼每個數都能拆成質數的乘積，而且拆法只有一種？
+    prerequisites:
+    - factors-multiples
+    family: false
+    curriculum108:
+      grades:
+      - 6
+      - 7
+      content:
+      - N-6-1
+      - N-7-1
+      - N-7-2
+  - id: gcd-lcm
+    title: 最大公因數與最小公倍數
+    coreQuestion: 兩個數共同的因數與倍數能解決哪些問題？
+    prerequisites:
+    - primes
+    family: false
+    curriculum108:
+      grades:
+      - 5
+      - 6
+      content:
+      - N-5-3
+      - N-6-2
+- id: fractions-decimals-ratios
+  title: 分數、小數與比
+  units:
+  - id: unit-fractions
+    title: 單位分數：等分的一份
+    coreQuestion: 把一個東西平分後的一份，要怎麼用數表示？
+    prerequisites:
+    - division-meaning
+    family: true
+    curriculum108:
+      grades:
+      - 2
+      - 3
+      content:
+      - N-2-10
+      - N-3-9
+  - id: fractions-on-number-line
+    title: 分數在數線上
+    coreQuestion: 分數也是數，它在數線上的哪裡？
+    prerequisites:
+    - unit-fractions
+    - number-line
+    family: false
+    curriculum108:
+      grades:
+      - 4
+      content:
+      - N-4-8
+  - id: decimals-place-value
+    title: 小數是位值的延伸
+    coreQuestion: 比 1 還小的量，怎麼沿用位值來寫？
+    prerequisites:
+    - place-value
+    - unit-fractions
+    family: true
+    curriculum108:
+      grades:
+      - 3
+      - 4
+      - 5
+      content:
+      - N-3-10
+      - N-4-7
+      - N-5-1
+  - id: equivalent-fractions
+    title: 等值分數
+    coreQuestion: 為什麼 1/2 和 2/4 是同一個數？
+    prerequisites:
+    - fractions-on-number-line
+    - multiplication-meaning
+    family: true
+    curriculum108:
+      grades:
+      - 4
+      - 5
+      content:
+      - N-4-6
+      - N-5-4
+  - id: comparing-fractions
+    title: 比較分數大小
+    coreQuestion: 分母不同的分數怎麼比大小？
+    prerequisites:
+    - equivalent-fractions
+    family: false
+    curriculum108:
+      grades:
+      - 3
+      - 4
+      - 5
+      content:
+      - N-3-9
+      - N-4-5
+      - N-4-6
+      - N-5-4
+  - id: adding-fractions
+    title: 異分母分數加減
+    coreQuestion: 為什麼分數相加前要先通分？
+    prerequisites:
+    - comparing-fractions
+    - gcd-lcm
+    family: false
+    curriculum108:
+      grades:
+      - 4
+      - 5
+      content:
+      - N-4-6
+      - N-5-4
+  - id: multiplying-fractions
+    title: 分數乘法是取幾分之幾
+    coreQuestion: 「3/4 的 2/3」為什麼是乘法？
+    prerequisites:
+    - equivalent-fractions
+    - multi-digit-multiplication
+    family: false
+    curriculum108:
+      grades:
+      - 5
+      content:
+      - N-5-5
+  - id: dividing-fractions
+    title: 分數除法：為什麼顛倒相乘
+    coreQuestion: 除以一個分數，為什麼等於乘以它的倒數？
+    prerequisites:
+    - multiplying-fractions
+    family: false
+    curriculum108:
+      grades:
+      - 5
+      - 6
+      content:
+      - N-5-7
+      - N-6-3
+  - id: decimal-operations
+    title: 小數四則
+    coreQuestion: 小數點在乘除時為什麼會移動？
+    prerequisites:
+    - decimals-place-value
+    - multi-digit-multiplication
+    - long-division
+    family: false
+    curriculum108:
+      grades:
+      - 5
+      - 6
+      content:
+      - N-5-8
+      - N-5-9
+      - N-6-4
+  - id: ratio
+    title: 比與比值
+    coreQuestion: 「三杯水配一杯米」這種關係怎麼表示與放大縮小？
+    prerequisites:
+    - dividing-fractions
+    family: true
+    curriculum108:
+      grades:
+      - 6
+      - 7
+      content:
+      - N-6-6
+      - N-7-9
+  - id: percent
+    title: 百分率
+    coreQuestion: 為什麼要把比例換成「每一百裡有多少」？
+    prerequisites:
+    - ratio
+    - decimal-operations
+    family: true
+    curriculum108:
+      grades:
+      - 5
+      - 6
+      content:
+      - N-5-10
+      - N-6-8
+  - id: rates-unit-rate
+    title: 速率與單位量
+    coreQuestion: 怎麼比較「哪一包比較划算」「誰跑得比較快」？
+    prerequisites:
+    - ratio
+    family: false
+    curriculum108:
+      grades:
+      - 6
+      content:
+      - N-6-6
+      - N-6-7
+  - id: proportion
+    title: 正比
+    coreQuestion: 兩個量一起放大縮小時，它們之間有什麼不變的關係？
+    prerequisites:
+    - rates-unit-rate
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - N-7-9
+- id: measurement-shapes
+  title: 量與形
+  units:
+  - id: measurement-units
+    title: 長度、重量與容量的單位換算
+    coreQuestion: 為什麼 1 公尺是 100 公分，換單位時數字怎麼跟著變？
+    prerequisites:
+    - place-value
+    - multiplication-meaning
+    family: true
+    curriculum108:
+      grades:
+      - 2
+      - 3
+      - 4
+      - 5
+      content:
+      - N-2-11
+      - N-3-12
+      - N-3-15
+      - N-3-16
+      - N-4-9
+      - N-5-13
+  - id: area-perimeter
+    title: 面積與周長
+    coreQuestion: 「圍起來多長」和「蓋住多大」為什麼是兩件事？
+    prerequisites:
+    - multiplication-meaning
+    family: true
+    curriculum108:
+      grades:
+      - 2
+      - 3
+      - 4
+      - 5
+      content:
+      - S-2-4
+      - S-2-5
+      - N-3-14
+      - N-4-11
+      - S-4-3
+      - S-5-2
+  - id: angles
+    title: 角與角度
+    coreQuestion: 角的大小是在量什麼？
+    prerequisites:
+    - number-line
+    family: true
+    curriculum108:
+      grades:
+      - 3
+      - 4
+      content:
+      - N-3-13
+      - S-3-1
+      - N-4-10
+      - S-4-1
+      - S-4-2
+  - id: triangle-angle-sum
+    title: 三角形內角和
+    coreQuestion: 為什麼任何三角形的三個角加起來都是 180 度？
+    prerequisites:
+    - angles
+    family: true
+    curriculum108:
+      grades:
+      - 5
+      content:
+      - S-5-1
+  - id: circle-basics
+    title: 圓與圓周率
+    coreQuestion: 為什麼所有圓的周長除以直徑都一樣？
+    prerequisites:
+    - ratio
+    - decimal-operations
+    family: true
+    curriculum108:
+      grades:
+      - 3
+      - 6
+      content:
+      - S-3-3
+      - S-6-3
+  - id: circle-area
+    title: 圓面積
+    coreQuestion: 圓的面積為什麼是 πr²？
+    prerequisites:
+    - circle-basics
+    - area-perimeter
+    family: false
+    curriculum108:
+      grades:
+      - 6
+      content:
+      - S-6-3
+- id: integers-algebra-basics
+  title: 負數與代數入門
+  units:
+  - id: negative-numbers
+    title: 負數：比零還少
+    coreQuestion: 比零還少是什麼意思，數線怎麼往左延伸？
+    prerequisites:
+    - number-line
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - N-7-3
+      - N-7-5
+  - id: integer-add-sub
+    title: 負數加減
+    coreQuestion: 減去一個負數為什麼會變多？
+    prerequisites:
+    - negative-numbers
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - N-7-3
+  - id: absolute-value
+    title: 絕對值：到零的距離
+    coreQuestion: 為什麼 |a−b| 剛好是數線上兩點的距離？
+    prerequisites:
+    - negative-numbers
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - N-7-5
+  - id: integer-mul-div
+    title: 負負為何得正
+    coreQuestion: 負數乘負數為什麼一定是正數？
+    prerequisites:
+    - integer-add-sub
+    - arithmetic-properties
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - N-7-3
+  - id: exponents-intro
+    title: 指數：重複乘法的簡寫
+    coreQuestion: 很多個相同的數相乘，怎麼寫得簡潔又好算？
+    prerequisites:
+    - integer-mul-div
+    - primes
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - N-7-6
+      - N-7-7
+  - id: scientific-notation
+    title: 科學記號
+    coreQuestion: 極大和極小的數怎麼寫、怎麼比較？
+    prerequisites:
+    - exponents-intro
+    - decimal-operations
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - N-7-8
+  - id: variables
+    title: 用字母代表數
+    coreQuestion: 為什麼要用 x 代替還不知道或會變動的數？
+    prerequisites:
+    - arithmetic-properties
+    family: false
+    curriculum108:
+      grades:
+      - 5
+      - 6
+      - 7
+      content:
+      - R-5-3
+      - R-6-3
+      - A-7-1
+  - id: algebraic-expressions
+    title: 化簡式子：同類項
+    coreQuestion: 含有字母的式子怎麼合併得更簡單？
+    prerequisites:
+    - variables
+    - integer-mul-div
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - A-7-1
+  - id: expanding-brackets
+    title: 去括號與分配律
+    coreQuestion: 括號外的數乘進去時，為什麼每一項都要乘到？
+    prerequisites:
+    - algebraic-expressions
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - N-7-4
+      - A-7-1
+- id: equations
+  title: 方程式與不等式
+  units:
+  - id: equation-balance
+    title: 方程式是天平
+    coreQuestion: 為什麼等號兩邊做同樣的事，等式仍然成立？
+    prerequisites:
+    - expanding-brackets
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - A-7-2
+      - A-7-3
+  - id: linear-equations
+    title: 解一元一次方程式
+    coreQuestion: 怎麼一步步把未知數單獨留在一邊？
+    prerequisites:
+    - equation-balance
+    - adding-fractions
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - A-7-3
+  - id: word-problems-equations
+    title: 把文字題翻成方程式
+    coreQuestion: 怎麼把一段情境描述變成可以解的方程式？
+    prerequisites:
+    - linear-equations
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - A-7-2
+      - A-7-3
+  - id: linear-inequalities
+    title: 一元一次不等式
+    coreQuestion: 乘以負數時不等號為什麼要反過來？
+    prerequisites:
+    - linear-equations
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - A-7-7
+      - A-7-8
+  - id: linear-systems
+    title: 二元一次聯立方程式
+    coreQuestion: 兩個未知數需要幾個條件才能確定？
+    prerequisites:
+    - linear-equations
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - A-7-4
+      - A-7-5
+      - A-7-6
+  - id: square-roots
+    title: 平方根與根式
+    coreQuestion: 面積是 2 的正方形，邊長是多少？
+    prerequisites:
+    - exponents-intro
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      content:
+      - N-8-1
+      - N-8-2
+  - id: irrational-real-line
+    title: 無理數與實數線
+    coreQuestion: √2 為什麼不能寫成分數，數線上真的沒有空隙嗎？
+    prerequisites:
+    - square-roots
+    - fractions-on-number-line
+    family: false
+    curriculum108:
+      grades:
+      - 10
+      content:
+      - N-10-1
+  - id: polynomial-multiplication
+    title: 乘法公式：和的平方
+    coreQuestion: (a+b)² 為什麼不等於 a²+b²？
+    prerequisites:
+    - expanding-brackets
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      content:
+      - A-8-1
+      - A-8-3
+  - id: factoring
+    title: 因式分解
+    coreQuestion: 怎麼把一個多項式拆回幾個因式相乘？
+    prerequisites:
+    - polynomial-multiplication
+    - gcd-lcm
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      content:
+      - A-8-4
+      - A-8-5
+  - id: quadratic-equations
+    title: 一元二次方程式
+    coreQuestion: 「乘積為零」為什麼能幫我們解方程式？
+    prerequisites:
+    - factoring
+    - square-roots
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      content:
+      - A-8-6
+      - A-8-7
+  - id: completing-square
+    title: 配方法與公式解
+    coreQuestion: 不能因式分解的二次方程式要怎麼解？
+    prerequisites:
+    - quadratic-equations
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      content:
+      - A-8-7
+- id: coordinates-similarity
+  title: 坐標、相似與畢氏定理
+  units:
+  - id: coordinate-plane
+    title: 坐標平面
+    coreQuestion: 怎麼用兩個數精確說出平面上的一個位置？
+    prerequisites:
+    - negative-numbers
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      content:
+      - G-7-1
+  - id: pythagorean-theorem
+    title: 畢氏定理
+    coreQuestion: 直角三角形的三邊為什麼有 a²+b²=c² 的關係？
+    prerequisites:
+    - square-roots
+    - area-perimeter
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      content:
+      - S-8-6
+  - id: distance-formula
+    title: 兩點距離
+    coreQuestion: 知道兩點坐標，怎麼算出它們相距多遠？
+    prerequisites:
+    - pythagorean-theorem
+    - coordinate-plane
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      content:
+      - G-8-1
+  - id: similar-triangles
+    title: 相似三角形
+    coreQuestion: 形狀相同、大小不同的圖形，對應邊有什麼關係？
+    prerequisites:
+    - proportion
+    - triangle-angle-sum
+    family: false
+    curriculum108:
+      grades:
+      - 9
+      content:
+      - S-9-1
+      - S-9-2
+- id: functions
+  title: 函數
+  units:
+  - id: function-idea
+    title: 函數是對應關係
+    coreQuestion: 「一個輸入只對應一個輸出」為什麼值得特別命名？
+    prerequisites:
+    - variables
+    - coordinate-plane
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      content:
+      - F-8-1
+  - id: linear-functions
+    title: 一次函數與直線
+    coreQuestion: 為什麼一次函數畫出來一定是直線？
+    prerequisites:
+    - function-idea
+    - proportion
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      content:
+      - F-8-1
+      - F-8-2
+  - id: slope
+    title: 斜率是變化率
+    coreQuestion: 「每多 1 單位，另一個量變多少」怎麼從圖上讀出來？
+    prerequisites:
+    - linear-functions
+    family: false
+    curriculum108:
+      grades:
+      - 10
+      content:
+      - G-10-2
+  - id: line-equations
+    title: 直線方程式
+    coreQuestion: 已知兩點或一點與斜率，怎麼寫出直線？
+    prerequisites:
+    - slope
+    - linear-systems
+    family: false
+    curriculum108:
+      grades:
+      - 10
+      content:
+      - G-10-2
+  - id: quadratic-functions
+    title: 二次函數與拋物線
+    coreQuestion: 拋物線的頂點與開口方向藏在式子的哪裡？
+    prerequisites:
+    - linear-functions
+    - completing-square
+    family: false
+    curriculum108:
+      grades:
+      - 9
+      - 10
+      content:
+      - F-9-1
+      - F-9-2
+      - F-10-1
+  - id: function-transformations
+    title: 圖形的平移與伸縮
+    coreQuestion: 式子改一個數，圖形為什麼會整個移動或拉長？
+    prerequisites:
+    - quadratic-functions
+    family: false
+    curriculum108:
+      grades:
+      - 9
+      - 10
+      content:
+      - F-9-2
+      - F-10-1
+      - F-10-2
+  - id: circle-equation
+    title: 圓的方程式
+    coreQuestion: 「到圓心距離固定」怎麼寫成方程式？
+    prerequisites:
+    - distance-formula
+    - completing-square
+    family: false
+    curriculum108:
+      grades:
+      - 10
+      content:
+      - G-10-3
+  - id: polynomial-functions
+    title: 多項式函數
+    coreQuestion: 次數更高的函數圖形有哪些共同樣貌？
+    prerequisites:
+    - function-transformations
+    family: false
+    curriculum108:
+      grades:
+      - 10
+      content:
+      - F-10-2
+      - F-10-3
+  - id: polynomial-division
+    title: 多項式除法與餘式定理
+    coreQuestion: 不實際做除法，怎麼知道多項式除以 x−a 的餘數？
+    prerequisites:
+    - polynomial-functions
+    - long-division
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      - 10
+      content:
+      - A-8-3
+      - A-10-2
+  - id: polynomial-inequalities
+    title: 多項式不等式與符號表
+    coreQuestion: 怎麼看出一個多項式在哪些範圍是正、哪些是負？
+    prerequisites:
+    - polynomial-division
+    - linear-inequalities
+    family: false
+    curriculum108:
+      grades:
+      - 10
+      content:
+      - F-10-3
+  - id: composition-inverse
+    title: 合成函數與反函數
+    coreQuestion: 兩個函數接起來、或把函數倒過來，會得到什麼？
+    prerequisites:
+    - function-transformations
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-1
+      - F-12乙-1
+- id: exponentials-logarithms
+  title: 指數與對數
+  units:
+  - id: exponent-rules
+    title: 指數律與零次方
+    coreQuestion: 為什麼任何非零數的零次方都是 1？
+    prerequisites:
+    - exponents-intro
+    - dividing-fractions
+    family: false
+    curriculum108:
+      grades:
+      - 7
+      - 10
+      content:
+      - N-7-6
+      - N-7-7
+      - N-10-3
+  - id: rational-exponents
+    title: 分數指數
+    coreQuestion: 「2 的 1/2 次方」可能代表什麼？
+    prerequisites:
+    - exponent-rules
+    - square-roots
+    family: false
+    curriculum108:
+      grades:
+      - 10
+      content:
+      - N-10-3
+  - id: exponential-growth
+    title: 指數成長
+    coreQuestion: 每次都乘上固定倍數的變化，為什麼最後會大到超乎直覺？
+    prerequisites:
+    - rational-exponents
+    - percent
+    family: false
+    curriculum108:
+      grades:
+      - 11
+      content:
+      - F-11A-4
+      - F-11B-2
+  - id: exponential-functions
+    title: 指數函數
+    coreQuestion: y=aˣ 的圖形為什麼永遠在 x 軸上方？
+    prerequisites:
+    - exponential-growth
+    - function-transformations
+    family: false
+    curriculum108:
+      grades:
+      - 11
+      content:
+      - F-11A-4
+      - F-11B-2
+  - id: logarithm-idea
+    title: 對數是在問指數
+    coreQuestion: 「2 的幾次方是 8」這個問題要怎麼寫成一個數？
+    prerequisites:
+    - exponential-functions
+    family: false
+    curriculum108:
+      grades:
+      - 10
+      content:
+      - N-10-4
+  - id: log-rules
+    title: 對數律
+    coreQuestion: 為什麼對數能把乘法變成加法？
+    prerequisites:
+    - logarithm-idea
+    family: false
+    curriculum108:
+      grades:
+      - 11
+      content:
+      - A-11A-4
+  - id: logarithmic-functions
+    title: 對數函數
+    coreQuestion: 對數函數和指數函數的圖形為什麼對稱？
+    prerequisites:
+    - log-rules
+    - composition-inverse
+    family: false
+    curriculum108:
+      grades:
+      - 11
+      content:
+      - F-11A-4
+      - F-11B-2
+- id: trigonometry
+  title: 三角函數
+  units:
+  - id: trig-ratios
+    title: 直角三角形的三角比
+    coreQuestion: 為什麼只要知道角度，邊長的比例就確定了？
+    prerequisites:
+    - similar-triangles
+    - pythagorean-theorem
+    family: false
+    curriculum108:
+      grades:
+      - 9
+      - 10
+      content:
+      - S-9-4
+      - G-10-6
+  - id: radians
+    title: 弧度
+    coreQuestion: 為什麼數學家偏好用弧長來量角度？
+    prerequisites:
+    - circle-basics
+    - trig-ratios
+    family: false
+    curriculum108:
+      grades:
+      - 11
+      content:
+      - N-11A-1
+      - N-11B-1
+  - id: unit-circle
+    title: 單位圓與廣義角
+    coreQuestion: 超過 90 度的角，sin 和 cos 該怎麼定義？
+    prerequisites:
+    - radians
+    - coordinate-plane
+    family: false
+    curriculum108:
+      grades:
+      - 10
+      content:
+      - G-10-5
+      - G-10-6
+  - id: trig-function-graphs
+    title: 三角函數圖形與週期
+    coreQuestion: 繞圈的運動怎麼變成上下起伏的波？
+    prerequisites:
+    - unit-circle
+    - function-transformations
+    family: false
+    curriculum108:
+      grades:
+      - 11
+      content:
+      - F-11A-1
+      - F-11B-1
+  - id: angle-sum-identities
+    title: 和角公式
+    coreQuestion: sin(a+b) 為什麼不等於 sin a + sin b？
+    prerequisites:
+    - unit-circle
+    family: false
+    curriculum108:
+      grades:
+      - 11
+      content:
+      - G-11A-5
+- id: sequences-limits
+  title: 數列與極限
+  units:
+  - id: sequences
+    title: 數列與規律
+    coreQuestion: 一串數的規律怎麼用式子描述？
+    prerequisites:
+    - function-idea
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      - 10
+      content:
+      - N-8-3
+      - N-10-6
+  - id: arithmetic-geometric
+    title: 等差與等比數列
+    coreQuestion: 「每次加一樣多」和「每次乘一樣多」會長成什麼樣子？
+    prerequisites:
+    - sequences
+    - exponent-rules
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      - 10
+      content:
+      - N-8-4
+      - N-8-5
+      - N-8-6
+      - N-10-6
+  - id: summation
+    title: Σ 記號與級數
+    coreQuestion: 一長串加法怎麼寫得簡潔、怎麼快速加總？
+    prerequisites:
+    - arithmetic-geometric
+    family: false
+    curriculum108:
+      grades:
+      - 8
+      - 10
+      - 12
+      content:
+      - N-8-5
+      - N-10-6
+      - N-12甲-2
+      - N-12乙-2
+  - id: sequence-limits
+    title: 數列的極限
+    coreQuestion: 一串數「越來越接近某個數」要怎麼說得精確？
+    prerequisites:
+    - summation
+    - absolute-value
+    - irrational-real-line
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - N-12甲-1
+  - id: infinite-geometric-series
+    title: 無窮等比級數
+    coreQuestion: 無限多個數加起來，為什麼可能是有限的？
+    prerequisites:
+    - sequence-limits
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - N-12甲-2
+      - N-12乙-2
+  - id: number-e
+    title: 連續複利與 e
+    coreQuestion: 利息算得越來越頻繁，錢會無限增加嗎？
+    prerequisites:
+    - sequence-limits
+    - exponential-growth
+    family: false
+    curriculum108:
+      grades:
+      - 11
+      - 12
+      content:
+      - F-11B-2
+      - N-12甲-1
+  - id: function-limits
+    title: 函數的極限
+    coreQuestion: x 靠近某個值時，函數值往哪裡去？
+    prerequisites:
+    - sequence-limits
+    - polynomial-functions
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-2
+      - F-12乙-2
+  - id: continuity
+    title: 連續性
+    coreQuestion: 「一筆畫完不斷開」怎麼用極限精確定義？
+    prerequisites:
+    - function-limits
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-2
+      - F-12乙-2
+- id: differentiation
+  title: 微分
+  units:
+  - id: instantaneous-rate
+    title: 從平均速率到瞬時速率
+    coreQuestion: 某一瞬間的速度要怎麼定義？
+    prerequisites:
+    - slope
+    - function-limits
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-3
+      - F-12乙-3
+  - id: derivative-definition
+    title: 導數的定義
+    coreQuestion: 割線怎麼一步步變成切線？
+    prerequisites:
+    - instantaneous-rate
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-3
+      - F-12乙-3
+  - id: derivative-function
+    title: 導函數
+    coreQuestion: 每一點的斜率合起來，為什麼又是一個函數？
+    prerequisites:
+    - derivative-definition
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-3
+      - F-12乙-3
+  - id: power-rule
+    title: 冪次的微分
+    coreQuestion: xⁿ 的導函數為什麼是 nxⁿ⁻¹？
+    prerequisites:
+    - derivative-function
+    - polynomial-multiplication
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-3
+      - F-12乙-3
+  - id: tangent-lines
+    title: 切線與線性近似
+    coreQuestion: 曲線放大到很近時，為什麼看起來像直線？
+    prerequisites:
+    - power-rule
+    - line-equations
+    family: false
+    curriculum108:
+      grades:
+      - 10
+      - 12
+      content:
+      - F-10-2
+      - F-12甲-3
+      - F-12甲-4
+      - F-12乙-3
+  - id: product-quotient-rules
+    title: 乘法與除法法則
+    coreQuestion: 兩個函數相乘的變化率，為什麼不是各自變化率相乘？
+    prerequisites:
+    - power-rule
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-4
+  - id: chain-rule
+    title: 連鎖律
+    coreQuestion: 一層套一層的函數，變化率怎麼一路傳下去？
+    prerequisites:
+    - product-quotient-rules
+    - composition-inverse
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-4
+  - id: derivatives-exp-log
+    title: 指數與對數的導數
+    coreQuestion: 為什麼 eˣ 的導函數是它自己？
+    prerequisites:
+    - chain-rule
+    - number-e
+    - logarithmic-functions
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-3
+  - id: derivatives-trig
+    title: 三角函數的導數
+    coreQuestion: sin x 的變化率為什麼正好是 cos x？
+    prerequisites:
+    - chain-rule
+    - trig-function-graphs
+    - angle-sum-identities
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-3
+  - id: monotonicity-extrema
+    title: 遞增遞減與極值
+    coreQuestion: 怎麼從導數看出函數在哪裡轉彎？
+    prerequisites:
+    - power-rule
+    - polynomial-inequalities
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-4
+      - F-12乙-4
+  - id: concavity
+    title: 二階導數與凹凸
+    coreQuestion: 「變化率的變化率」告訴我們圖形的什麼？
+    prerequisites:
+    - monotonicity-extrema
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-1
+      - F-12甲-4
+      - F-12乙-1
+      - F-12乙-4
+  - id: curve-sketching
+    title: 描繪函數圖形
+    coreQuestion: 只憑導數資訊，怎麼畫出函數的大致樣貌？
+    prerequisites:
+    - concavity
+    - polynomial-functions
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-4
+      - F-12乙-4
+  - id: optimization
+    title: 最佳化問題
+    coreQuestion: 怎麼找出最省材料、最大面積的那個設計？
+    prerequisites:
+    - monotonicity-extrema
+    - word-problems-equations
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-4
+      - F-12乙-4
+  - id: mean-value-theorem
+    title: 均值定理
+    coreQuestion: 平均速率為什麼一定會在某個瞬間被剛好達到？
+    prerequisites:
+    - derivative-function
+    - continuity
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content: []
+      note: 超出 12甲 範圍。12甲 只有介值定理（F-12甲-2），無均值定理
+  - id: related-rates
+    title: 相關變化率
+    coreQuestion: 兩個互相牽動的量，變化快慢有什麼關係？
+    prerequisites:
+    - chain-rule
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content: []
+      note: 超出 12甲 範圍。12甲、12乙 均無相關變化率
+- id: integration
+  title: 積分
+  units:
+  - id: area-under-curve
+    title: 曲線下的面積問題
+    coreQuestion: 邊界彎曲的區域，面積要怎麼算？
+    prerequisites:
+    - summation
+    - function-limits
+    - area-perimeter
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-5
+      - F-12甲-6
+      - F-12乙-5
+  - id: riemann-sums
+    title: 黎曼和
+    coreQuestion: 用越來越細的長方形逼近，為什麼能得到精確面積？
+    prerequisites:
+    - area-under-curve
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-5
+  - id: definite-integral
+    title: 定積分
+    coreQuestion: 黎曼和的極限為什麼值得有自己的符號？
+    prerequisites:
+    - riemann-sums
+    - continuity
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-5
+      - F-12甲-6
+      - F-12乙-5
+  - id: antiderivatives
+    title: 反導函數
+    coreQuestion: 已知變化率，怎麼找回原本的函數？
+    prerequisites:
+    - power-rule
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-6
+      - F-12乙-5
+  - id: fundamental-theorem
+    title: 微積分基本定理
+    coreQuestion: 算面積和求變化率，為什麼是互逆的兩件事？
+    prerequisites:
+    - definite-integral
+    - antiderivatives
+    - mean-value-theorem
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-6
+      - F-12乙-5
+  - id: accumulation-motion
+    title: 速度累積成位移
+    coreQuestion: 知道每一刻的速度，怎麼算出走了多遠？
+    prerequisites:
+    - fundamental-theorem
+    - instantaneous-rate
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-6
+      - F-12乙-5
+      - F-12乙-6
+  - id: area-between-curves
+    title: 兩曲線之間的面積
+    coreQuestion: 夾在兩條曲線中間的區域怎麼算面積？
+    prerequisites:
+    - fundamental-theorem
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-6
+  - id: volumes-of-revolution
+    title: 旋轉體體積
+    coreQuestion: 把曲線繞軸轉一圈，怎麼算出立體的體積？
+    prerequisites:
+    - area-between-curves
+    - circle-area
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content:
+      - F-12甲-7
+  - id: substitution
+    title: 變數變換
+    coreQuestion: 連鎖律倒過來用，怎麼化簡積分？
+    prerequisites:
+    - fundamental-theorem
+    - chain-rule
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content: []
+      note: 超出 12甲 範圍。F-12甲-6、F-12乙-5 明文「不涉及分部積分與變數變換」
+  - id: integration-by-parts
+    title: 分部積分
+    coreQuestion: 乘法法則倒過來用，怎麼處理兩個函數相乘的積分？
+    prerequisites:
+    - substitution
+    - product-quotient-rules
+    family: false
+    curriculum108:
+      grades:
+      - 12
+      content: []
+      note: 超出 12甲 範圍。F-12甲-6、F-12乙-5 明文「不涉及分部積分與變數變換」
