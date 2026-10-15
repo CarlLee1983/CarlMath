@@ -1,0 +1,191 @@
+---
+import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
+
+interface Point {
+  at: number;
+  label?: string;
+}
+interface Move {
+  from: number;
+  to: number;
+  label?: string;
+}
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc>，給讀圖軟體與看不到圖的人 */
+  desc: string;
+  from: number;
+  to: number;
+  step?: number;
+  /** 只標這個數的倍數（須是 step 的倍數）；預設 10 段以內每格標，否則標 5 的倍數 */
+  labelEvery?: number;
+  points?: Point[];
+  jumps?: Move[];
+  spans?: Move[];
+}
+const props = Astro.props;
+const { title, desc, from, to, step = 1, points = [], jumps = [], spans = [] } = props;
+
+assertAltText("NumberLine", title, desc);
+
+const isInt = (n: unknown): n is number => Number.isInteger(n);
+if (![from, to, step].every(isInt)) throw new Error("<NumberLine> 的 from、to、step 必須是整數");
+if (step <= 0) throw new Error("<NumberLine> 的 step 必須大於 0");
+if (from >= to) throw new Error("<NumberLine> 的 from 必須小於 to");
+if ((to - from) % step !== 0) throw new Error("<NumberLine> 的 (to - from) 必須能被 step 整除");
+
+const segments = (to - from) / step;
+const { labelEvery } = props;
+if (labelEvery !== undefined && (!isInt(labelEvery) || labelEvery <= 0 || labelEvery % step !== 0)) {
+  throw new Error("<NumberLine> 的 labelEvery 必須是 step 的正整數倍");
+}
+
+const onTick = (v: unknown, where: string): number => {
+  if (!isInt(v)) throw new Error(`<NumberLine> 的 ${where} 必須是整數`);
+  if (v < from || v > to || (v - from) % step !== 0) throw new Error(`<NumberLine> 的 ${where}（${v}）必須落在範圍內的刻度上`);
+  return v;
+};
+points.forEach((p, i) => onTick(p.at, `points[${i}].at`));
+for (const [name, list] of [["jumps", jumps], ["spans", spans]] as const) {
+  list.forEach((m, i) => {
+    onTick(m.from, `${name}[${i}].from`);
+    onTick(m.to, `${name}[${i}].to`);
+  });
+}
+const labelCount = [...points, ...jumps, ...spans].filter((m) => m.label).length;
+if (labelCount > 3) throw new Error(`<NumberLine> 圖內最多三個文字標籤，目前有 ${labelCount} 個`);
+
+const prefix = figureIdPrefix("nl", props);
+
+// 版面（viewBox 單位）：左右留邊讓兩端數字不被裁切
+const WIDTH = 480;
+const MARGIN = 28;
+const x = (v: number) => MARGIN + ((v - from) / (to - from)) * (WIDTH - 2 * MARGIN);
+
+// 垂直方向由軸線往上、往下各自累加所需高度，不留大片空白
+const TICK_HALF = 7;
+const ZERO_TICK_HALF = 12;
+const LIFT = 12; // 跳躍弧離軸線的距離，避免蓋住點與刻度
+const arcHeight = (m: Move) => Math.min(18 + 0.2 * Math.abs(x(m.to) - x(m.from)), 56);
+const maxArc = Math.max(0, ...jumps.map(arcHeight));
+const jumpLabelRoom = jumps.some((j) => j.label) ? 26 : 6;
+const pointLabelRoom = points.some((p) => p.label) ? 38 : 14;
+const axisY = Math.ceil(Math.max(pointLabelRoom, jumps.length ? LIFT + maxArc + jumpLabelRoom : 0, 14));
+const numY = axisY + 36;
+const spanY = axisY + 54;
+const spanLabelY = spanY + 23;
+const height = spans.length ? (spans.some((s) => s.label) ? spanLabelY + 8 : spanY + 8) : numY + 8;
+
+const ticks = Array.from({ length: segments + 1 }, (_, i) => from + i * step);
+// 10 段以內每格標數字；超過 10 段（或指定 labelEvery）只標它的倍數（含 0），另加兩端點與 points
+const every = labelEvery ?? (segments <= 10 ? undefined : 5);
+const numbered = new Set<number>(every === undefined ? ticks : ticks.filter((v) => v % every === 0));
+numbered.add(from);
+numbered.add(to);
+for (const p of points) numbered.add(p.at);
+const numbers = [...numbered].sort((a, b) => a - b);
+
+const jumpPath = (m: Move) => {
+  const [x1, x2, y] = [x(m.from), x(m.to), axisY - LIFT];
+  return `M ${x1} ${y} Q ${(x1 + x2) / 2} ${y - 2 * arcHeight(m)} ${x2} ${y}`;
+};
+const bracketPath = (m: Move) => {
+  const [x1, x2] = [x(m.from), x(m.to)];
+  return `M ${x1} ${spanY - 8} V ${spanY} H ${x2} V ${spanY - 8}`;
+};
+---
+
+<svg class="nl-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {
+    jumps.length > 0 && (
+      <defs>
+        <marker id={`${prefix}-arrow`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto">
+          <path class="nl-arrow" d="M 0 0 L 10 5 L 0 10 z" />
+        </marker>
+      </defs>
+    )
+  }
+  <line class="nl-axis" x1={MARGIN} y1={axisY} x2={WIDTH - MARGIN} y2={axisY} />
+  {
+    ticks.map((v) => (
+      <line
+        class={v === 0 ? "nl-tick nl-tick-zero" : "nl-tick"}
+        x1={x(v)}
+        y1={axisY - (v === 0 ? ZERO_TICK_HALF : TICK_HALF)}
+        x2={x(v)}
+        y2={axisY + (v === 0 ? ZERO_TICK_HALF : TICK_HALF)}
+      />
+    ))
+  }
+  {numbers.map((v) => <text class="nl-num" x={x(v)} y={numY}>{v}</text>)}
+  {points.map((p) => <circle class="nl-point" cx={x(p.at)} cy={axisY} r="7" />)}
+  {points.filter((p) => p.label).map((p) => <text class="nl-label" x={x(p.at)} y={axisY - 16}>{p.label}</text>)}
+  {jumps.map((j) => <path class="nl-jump" d={jumpPath(j)} marker-end={`url(#${prefix}-arrow)`} />)}
+  {
+    jumps
+      .filter((j) => j.label)
+      .map((j) => (
+        <text class="nl-label" x={(x(j.from) + x(j.to)) / 2} y={axisY - LIFT - arcHeight(j) - 8}>
+          {j.label}
+        </text>
+      ))
+  }
+  {spans.map((s) => <path class="nl-span" d={bracketPath(s)} />)}
+  {spans.filter((s) => s.label).map((s) => <text class="nl-label" x={(x(s.from) + x(s.to)) / 2} y={spanLabelY}>{s.label}</text>)}
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.nl-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .nl-axis {
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linecap: round;
+  }
+  .nl-tick {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  .nl-tick-zero {
+    stroke-width: 3px;
+  }
+  .nl-num {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+  .nl-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+  .nl-point {
+    fill: var(--accent);
+  }
+  .nl-jump {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5px;
+    stroke-linecap: round;
+  }
+  .nl-arrow {
+    fill: var(--accent);
+  }
+  .nl-span {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+</style>

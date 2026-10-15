@@ -326,28 +326,27 @@ $$
 教材檔裡唯一允許的陳述是教具元件的 import。上面六個 MDX 元件不必 import；教材不得有任何 `export`，也不得 import 教具以外的東西，例如其他元件、資料檔或函式庫。教具的 import 只有兩種合格寫法，一律是預設 import：
 
 - **一次性教具**：從同目錄的 `./<主題>Figure.astro` 匯入。匯入名稱必須以 `Figure` 結尾，而且不能剛好叫 `Figure`，以免和 `<Figure>` 元件撞名。
-- **共用教具**：從 `src/components/figures/` 匯入，例如 `NumberLine`、`Counters`。匯入名稱沿用元件原名（PascalCase），路徑是從教材檔出發的相對路徑。
+- **共用教具**：用路徑別名 `@figures/<元件名>.astro` 匯入 `src/components/figures/` 下的元件，例如 `NumberLine`、`Counters`。匯入名稱必須和元件檔名相同。別名在 `tsconfig.json` 的 `paths` 設定，寫法不隨教材所在的目錄深度改變。
 
-以放在 `content/lessons/` 下的教材為例，合格的寫法如下：
+合格的寫法如下：
 
 ```mdx
-import NumberLine from "../../src/components/figures/NumberLine.astro";
-import Counters from "../../src/components/figures/Counters.astro";
+import NumberLine from "@figures/NumberLine.astro";
+import Counters from "@figures/Counters.astro";
 import BlocksOnLineFigure from "./BlocksOnLineFigure.astro";
 ```
 
-下列寫法都不合格：`import Figure from "./Figure.astro"`（名稱剛好是 `Figure`）、`import Blocks from "./Blocks.astro"`（名稱沒有以 `Figure` 結尾）、`import { NumberLine } from "..."`（不是預設 import）、`import NL from "../../src/components/figures/NumberLine.astro"`（沒有沿用原名），以及任何 `export const …`。
+下列寫法都不合格：`import Figure from "./Figure.astro"`（名稱剛好是 `Figure`）、`import Blocks from "./Blocks.astro"`（名稱沒有以 `Figure` 結尾）、`import { NumberLine } from "..."`（不是預設 import）、`import NL from "@figures/NumberLine.astro"`（沒有沿用原名）、`import NumberLine from "../../src/components/figures/NumberLine.astro"`（共用教具用了相對路徑），以及任何 `export const …`。
 
 ## 教具
 
 教具是教材中輔助理解的圖解，以原生 SVG 繪製，只作輔助，不取代文字推理。撰寫教材時遵守下列使用規則：
 
-- **一律配文字說明**：每張教具都用 `<Figure>` 包起來，並在正文說明它在表達什麼，不讓圖單獨出現（CPA-6）。每個 `<svg>` 都要有 `<title>` 與 `<desc>`：`title` 是簡短的圖名，`desc` 用完整句子寫出圖中的數值和對應關係，讓不看圖的讀者也能理解。
+- **一律配文字說明**：每張教具都用 `<Figure>` 包起來，並在正文說明它在表達什麼，不讓圖單獨出現（CPA-6）。每個 `<svg>` 都要有 `<title>` 與 `<desc>`，寫法見教具繪製規範的「替代文字」。
 - **主要表徵不超過三種**：同一個概念的主要表徵不超過三種（CPA-3），例如情境、圖、符號。不要為了同一件事換好幾種圖。
 - **數線是主表徵**：數線是從整數、分數、負數一路貫穿到實數與函數的主要表徵（CPA-4）。能用數線表達的概念，優先用數線，並使用共用的 `NumberLine` 元件，讓數線在全路線長得一樣；小物圓點用共用的 `Counters` 元件。其他教具做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起。
-- **顏色只用色票 token**：教具裡的顏色屬性（例如 `fill`、`stroke`）只允許 `currentColor`、`none`、`transparent`、`inherit` 或 `var(--…)`，而且 `var()` 不得帶 fallback 色碼，例如 `var(--accent, #2563eb)` 不合格。hex、色名（如 `red`）、`rgb()`、`hsl()` 都不允許。每個 token 都有全站固定的語意，顏色也不能是唯一的訊息來源。
 
-教具的繪製規範，包括 `viewBox`、字級、線寬、色票 token 的語意、文字標籤數量、`NumberLine` 與 `Counters` 的參數，以及什麼時候要拆成兩張圖，見 `docs/figure-guide.md`（由教具共用元件票建立）。單一版面與封閉色盤的理由見 [ADR 0002：教具採單一版面與封閉色盤](adr/0002-figures-single-layout-closed-palette.md)。本文件不重述這些細則。
+教具怎麼畫，包括 `viewBox`、字級、線寬、色票 token 的語意與顏色允許清單、文字標籤數量、替代文字、`NumberLine` 與 `Counters` 的參數、什麼時候要拆成兩張圖，以及發布前的目視驗收，見[教具繪製規範](figure-guide.md)。本文件不重述這些細則。
 
 ## 下一步
 
@@ -374,13 +373,13 @@ import BlocksOnLineFigure from "./BlocksOnLineFigure.astro";
 | frontmatter | `unit` 必填且存在於課程地圖；`updated` 是合法日期；不得有 `unit`、`description`、`updated` 以外的欄位；每個單元至多一篇教材 | 錯誤 |
 | 結構 | 依單元的 `family` 檢查 9 個固定 H2 齊全且依序 | 錯誤 |
 | 暖身 | 一般篇在課程地圖上沒有先修的單元，第 2 段必須是「暖身」；有先修的單元，第 2 段必須是「先修回顧」，不得是「暖身」 | 錯誤 |
-| 元件 | 只允許 `<Answer>`、`<Figure>`、`<Misconception>`、`<SkipCheck>`、`<ParentNote>`、`<Activity>` 與教具元件；import 只接受預設 import 的同目錄 `./<主題>Figure.astro`（名稱以 `Figure` 結尾且不是 `Figure`），或 `src/components/figures/` 下以原名匯入的共用教具（相對路徑）；不得有 `export`，也不得 import 其他東西 | 錯誤 |
+| 元件 | 只允許 `<Answer>`、`<Figure>`、`<Misconception>`、`<SkipCheck>`、`<ParentNote>`、`<Activity>` 與教具元件；import 只接受預設 import 的同目錄 `./<主題>Figure.astro`（名稱以 `Figure` 結尾且不是 `Figure`），或以 `@figures/<元件名>.astro` 別名、原名匯入的共用教具；不得有 `export`，也不得 import 其他東西 | 錯誤 |
 | 親子篇 | 不得出現 `<SkipCheck>` | 錯誤 |
 | 親子活動結構 | 每個 `<Activity>` 都有非空的 `title`，`minutes` 是 5–15 的整數字串或「a–b」區間，子內容依序是「目的、材料、步驟、家長引導語、卡關時、回饋語範例」六個 H3（不得多、少、換順序，H3 之前不得有內容，也不得有其他標題）；`<Activity>` 只能出現在親子篇的「親子活動」段（`lesson-activity-shape`） | 錯誤 |
 | 親子活動數量 | 親子篇的「親子活動」段有 1–3 個 `<Activity>`（`lesson-activity-count`） | 錯誤 |
 | 可列印材料 | 親子篇至少一個 `<Activity>` 的材料欄連到 `/print/…`；列印頁之後才建，所以先只提醒（`lesson-activity-printable`） | 提醒，不擋 build |
 | 迷思對照 | 每個 `<Misconception>` 的子內容恰有一條直接子層的分隔線（`---`）分開錯誤範例與正確範例，0 條、2 條以上或巢狀的都報錯 | 錯誤 |
-| 教具 | 每個 `<svg>` 都有 `title` 與 `desc`；顏色屬性只允許 `currentColor`、`none`、`transparent`、`inherit` 或不帶 fallback 色碼的 `var(--…)`，hex、色名、`rgb()`、`hsl()` 都擋 | 錯誤 |
+| 教具 | 每個 `<svg>` 都有 `title` 與 `desc`；顏色只用色票 token，允許清單見[教具繪製規範](figure-guide.md)的「色票」。共用教具（`src/components/figures/`）不在內容根目錄，改由 `pnpm test` 的 `tests/figure-components.test.mjs` 套用同一套規則 | 錯誤 |
 | 篇幅 | 一般篇 2,000–3,500 字、親子篇 2,500–4,000 字，不含解析 | 提醒，不擋 build |
 
 同一個指令也會檢查課程地圖本身，例如 id 不重複、先修存在且排在前面、親子共學單元的課綱年級最小值不超過 6；這些屬於課程地圖的維護，不是撰寫教材時的規則。數學式錯誤則由 build 本身擋下，不經過這個指令。

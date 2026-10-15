@@ -151,25 +151,27 @@ test("非法 import（非教具檔、套件、具名、namespace、名稱不以 
   assert.ok(issues.some((i) => i.code === "lesson-component-forbidden" && /<Foo>/.test(i.message)));
 });
 
-test("來源在別的目錄或不在 src/components/figures/ 的教具 import 違規，其元件也不放行", () => {
+test("來源在別的目錄、不在共用教具目錄，或以相對路徑匯入共用教具的 import 違規，其元件也不放行", () => {
   const issues = componentIssues("cm-figure-elsewhere");
-  assert.equal(issues.filter((i) => i.code === "lesson-import-forbidden").length, 2);
+  assert.equal(issues.filter((i) => i.code === "lesson-import-forbidden").length, 3);
   const text = messagesOf(issues.filter((i) => i.code === "lesson-component-forbidden"));
   assert.match(text, /<OtherFigure>/);
   assert.match(text, /<LibFigure>/);
+  assert.match(text, /<NumberLine>/);
 });
 
-test("站內共用教具（src/components/figures/）可用 PascalCase 原名 import，不必以 Figure 結尾", () => {
+test("共用教具以 @figures/ 別名與原名 import，不必以 Figure 結尾", () => {
   assert.deepEqual(componentIssues("cm-ok"), []);
 });
 
-test("站內教具 import 若名稱非 PascalCase、用具名 import 或蓋掉內建元件名稱則違規", () => {
+test("共用教具 import 若名稱非 PascalCase、不是原名、用具名 import 或蓋掉內建元件名稱則違規", () => {
   const imports = componentIssues("cm-site-bad").filter((i) => i.code === "lesson-import-forbidden");
-  assert.equal(imports.length, 3);
+  assert.equal(imports.length, 4);
   const text = messagesOf(imports);
   assert.match(text, /NumberLine\.astro/);
   assert.match(text, /Counters\.astro/);
   assert.match(text, /Answer\.astro/);
+  assert.ok(imports.some((i) => /"@figures\/NumberLine\.astro"/.test(i.message) && /\bNL\b/.test(i.message)), text);
   // 蓋掉內建名稱的 Answer 不會被當成教具放行，其餘內建元件用法不受影響
   assert.deepEqual(componentIssues("cm-site-bad").filter((i) => i.code === "lesson-component-forbidden"), []);
 });

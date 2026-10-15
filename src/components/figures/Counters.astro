@@ -1,0 +1,116 @@
+---
+import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc>，給讀圖軟體與看不到圖的人 */
+  desc: string;
+  count: number;
+  layout: "row" | "grid" | "scatter";
+  /** grid 每排顆數，預設 5 */
+  columns?: number;
+  /** 前 marked 顆標記為實心強調，其餘變空心 */
+  marked?: number;
+  /** scatter 的亂數種子，預設 1 */
+  seed?: number;
+}
+const props = Astro.props;
+const { title, desc, count, layout, columns = 5, marked, seed = 1 } = props;
+
+assertAltText("Counters", title, desc);
+if (!Number.isInteger(count) || count < 1 || count > 30) throw new Error("<Counters> 的 count 必須是 1 到 30 的整數");
+if (!["row", "grid", "scatter"].includes(layout)) throw new Error(`<Counters> 的 layout 必須是 row、grid 或 scatter：${layout}`);
+if (marked !== undefined && (!Number.isInteger(marked) || marked < 0 || marked > count)) {
+  throw new Error(`<Counters> 的 marked 必須是 0 到 count 的整數：${marked}`);
+}
+if (!Number.isInteger(seed)) throw new Error("<Counters> 的 seed 必須是整數");
+
+const prefix = figureIdPrefix("ct", props);
+
+const WIDTH = 480;
+const R = 17;
+const GAP = 8; // 相鄰圓點外緣的最小間隙
+const PITCH = 2 * R + 10; // 預設圓心距
+const PAD = R + 8; // 圓心到畫布邊緣的距離（含 3 的線寬）
+
+/** 決定性亂數（mulberry32），同一個 seed 永遠排出同一張圖 */
+function mulberry32(seed: number) {
+  let a = seed >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+type Center = [number, number];
+let centers: Center[] = [];
+let height = 0;
+
+if (layout === "row") {
+  const spacing = count > 1 ? Math.min(PITCH, (WIDTH - 2 * PAD) / (count - 1)) : 0;
+  if (count > 1 && spacing < 2 * R + GAP) throw new Error(`<Counters> 一排放不下 ${count} 顆，請改用 grid`);
+  height = 2 * PAD;
+  centers = Array.from({ length: count }, (_, i) => [WIDTH / 2 + (i - (count - 1) / 2) * spacing, PAD]);
+} else if (layout === "grid") {
+  if (!Number.isInteger(columns) || columns < 1 || columns * PITCH > WIDTH - PAD) {
+    throw new Error(`<Counters> 的 columns 必須是 1 到 ${Math.floor((WIDTH - PAD) / PITCH)} 的整數：${columns}`);
+  }
+  const rows = Math.ceil(count / columns);
+  height = (rows - 1) * PITCH + 2 * PAD;
+  centers = Array.from({ length: count }, (_, i) => {
+    const col = i % columns;
+    return [WIDTH / 2 + (col - (columns - 1) / 2) * PITCH, PAD + Math.floor(i / columns) * PITCH];
+  });
+} else {
+  // 散開：高度隨顆數增加，拒絕取樣到圓心距離都 ≥ 2R + GAP
+  height = 100 + count * 6;
+  const random = mulberry32(seed);
+  const minDist = 2 * R + GAP;
+  for (let i = 0; i < count; i++) {
+    let placed: Center | undefined;
+    for (let tries = 0; tries < 2000 && !placed; tries++) {
+      const c: Center = [PAD + random() * (WIDTH - 2 * PAD), PAD + random() * (height - 2 * PAD)];
+      if (centers.every(([cx, cy]) => Math.hypot(cx - c[0], cy - c[1]) >= minDist)) placed = c;
+    }
+    if (!placed) throw new Error(`<Counters> scatter 放不下第 ${i + 1} 顆，請換 seed 或減少 count`);
+    centers.push(placed);
+  }
+}
+
+const round = (n: number) => Math.round(n * 100) / 100;
+const classOf = (i: number) => (marked === undefined ? "ct-counter" : i < marked ? "ct-counter ct-marked" : "ct-counter ct-open");
+---
+
+<svg class="ct-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {centers.map(([cx, cy], i) => <circle class={classOf(i)} cx={round(cx)} cy={round(cy)} r={R} />)}
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.ct-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 實心與空心靠填色與否區分；標記的另用 --accent，顏色不是唯一訊息 */
+  .ct-counter {
+    fill: var(--fg);
+    stroke: var(--fg);
+    stroke-width: 3px;
+  }
+  .ct-open {
+    fill: none;
+  }
+  .ct-marked {
+    fill: var(--accent);
+    stroke: var(--accent);
+  }
+</style>

@@ -3,6 +3,9 @@ unit: sum-demo
 description: 一般篇的 fixture 頁，示範「下一步」只預告下一個單元的情況。
 ---
 
+import NumberLine from "@figures/NumberLine.astro";
+import Counters from "@figures/Counters.astro";
+
 ## 情境開場
 
 小明有 3 顆彈珠，姊姊給他 4 顆。核心問題：兩個量合起來，怎麼用算式說清楚？
@@ -18,6 +21,48 @@ description: 一般篇的 fixture 頁，示範「下一步」只預告下一個�
 ## 直覺
 
 合起來就是把兩個數量接在一起。
+
+<Figure caption="從 3 往右跳 4 格，停在哪裡">
+  <NumberLine
+    title="從 3 跳到 7"
+    desc="0 到 10 的數線，每一格是 1。3 有一個點，從 3 往右畫一道弧線跳到 7，弧線上標著加 4；3 到 7 下方有括號，標著 4 格。"
+    from={0}
+    to={10}
+    points={[{ at: 3 }]}
+    jumps={[{ from: 3, to: 7, label: "+4" }]}
+    spans={[{ from: 3, to: 7, label: "4 格" }]}
+  />
+</Figure>
+
+<Figure caption="格子變多時，只標 0、每 5 格和終點">
+  <NumberLine
+    title="0 到 20 的數線"
+    desc="0 到 20 的數線，每一格是 1，標出 0、5、10、15、20 與 7，7 上有一個點。"
+    from={0}
+    to={20}
+    points={[{ at: 7, label: "7" }]}
+  />
+</Figure>
+
+<Figure caption="每次跳 2，從 1 數到 9">
+  <NumberLine title="單數的數線" desc="1 到 9 的數線，每一格是 2，標出 1、3、5、7、9。" from={1} to={9} step={2} />
+</Figure>
+
+<Figure caption="彈珠排成一排">
+  <Counters title="一排 7 顆" desc="7 顆彈珠排成一排，前 3 顆塗滿，後 4 顆是空心圓。" count={7} layout="row" marked={3} />
+</Figure>
+
+<Figure caption="每排 5 顆，看出 10 顆">
+  <Counters title="兩排 10 顆" desc="10 顆彈珠排成兩排，每排 5 顆。" count={10} layout="grid" columns={5} />
+</Figure>
+
+<Figure caption="散開的彈珠">
+  <Counters title="散開的 8 顆" desc="8 顆彈珠散開放著，彼此不重疊。" count={8} layout="scatter" />
+</Figure>
+
+<Figure caption="同樣的散開彈珠再畫一次，位置不變">
+  <Counters title="再畫一次 8 顆" desc="8 顆彈珠散開放著，位置和上一張相同。" count={8} layout="scatter" />
+</Figure>
 
 ## 推理
 
