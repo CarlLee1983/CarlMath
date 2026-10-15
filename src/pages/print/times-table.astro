@@ -1,0 +1,76 @@
+---
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+const nums = Array.from({ length: 9 }, (_, i) => i + 1);
+const tables = [
+  { id: "filled", label: "填好的九九乘法表", filled: true },
+  { id: "blank", label: "空白的九九乘法表", filled: false },
+];
+---
+
+<PrintLayout title="九九乘法表" description="列印填好的與空白的 1 到 9 九九乘法表，找規律與塗色的親子活動使用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料用在「九九乘法的規律」的親子活動，共兩張。第一張是填好的 1 到 9 乘法表：每一列是「每組幾個」，每一欄是「幾組」，所以第 4 列、第 3 欄的格子寫的是每組 4 個、3 組，共 12。格子是 17 公釐的正方形，沿左上到右下的對角線對折，(列 r、欄 c) 的格子會剛好疊在 (列 c、欄 r) 上，兩格的數一樣。拿它找規律，例如 5 的那一列個位數只有 0 和 5，9 的那一列十位數一格加 1、個位數一格減 1。第二張是同尺寸的空白表，只有表頭：照填好的表，用色筆塗出 5 的那一列、9 的那一列，看圖案怎麼分布；也可以先自己填空白表再對答案。
+    </p>
+  </Fragment>
+  {
+    tables.map(({ label, filled }) => (
+      <div class="print-card times-card">
+        <table class="times-table">
+          <caption>{label}：列是每組幾個，欄是幾組</caption>
+          <thead>
+            <tr>
+              <th scope="col">×</th>
+              {nums.map((c) => <th scope="col">{c}</th>)}
+            </tr>
+          </thead>
+          <tbody>
+            {nums.map((r) => (
+              <tr>
+                <th scope="row">{r}</th>
+                {nums.map((c) => <td>{filled ? r * c : ""}</td>)}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    ))
+  }
+</PrintLayout>
+
+<style>
+  /* 表 170mm 寬：10 欄各 17mm、10 列各 17mm（正方格，對折時 (r,c) 才會疊上 (c,r)）；兩張各佔一頁。螢幕上寬度跟著容器縮，欄寬等分 */
+  .times-card {
+    padding: 4mm;
+  }
+  .times-table {
+    width: 170mm;
+    max-width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    font-size: min(6mm, 3.4vw);
+  }
+  .times-table caption {
+    padding-bottom: 2mm;
+    font-size: min(4mm, 3.4vw);
+  }
+  .times-table th,
+  .times-table td {
+    height: 17mm;
+    padding: 0;
+    border: 1px solid var(--fg);
+    text-align: center;
+  }
+  .times-table thead th,
+  .times-table tbody th {
+    border-width: 0.6mm;
+    font-weight: 700;
+  }
+  @media (max-width: 600px) {
+    .times-table th,
+    .times-table td {
+      height: 9vw;
+    }
+  }
+</style>
