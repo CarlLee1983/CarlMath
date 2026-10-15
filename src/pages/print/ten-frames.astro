@@ -1,0 +1,82 @@
+---
+import Counters from "../../components/figures/Counters.astro";
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+const blanks = [1, 2, 3, 4];
+const counts = Array.from({ length: 10 }, (_, i) => i + 1);
+const describe = (n: number) => {
+  const placed = n <= 5 ? `上排從左邊放了 ${n} 個` : `上排 5 個排滿，下排從左邊放了 ${n - 5} 個`;
+  return `十格框裡有 ${n} 個圓點，${placed}，空了 ${10 - n} 格。`;
+};
+---
+
+<PrintLayout title="十格框" description="列印空白十格框與 1 到 10 的圓點十格框卡，湊十的親子活動使用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料是湊十的親子活動使用的十格框：前 4 張是空白十格框，用在「把十格框放滿」，每格 16 公釐，放得下一顆鈕扣或豆子；後 10 張是 1 到 10 的圓點十格框卡，用在「快閃十格框」，圓點一律從上排左邊開始放，上排滿了才放下排。
+    </p>
+  </Fragment>
+  {
+    blanks.map((n) => (
+      <div class="print-card print-card-wide">
+        <div class="ten-frame" role="img" aria-label={`空白十格框 ${n}`}>
+          <div class="ten-frame-grid">
+            {counts.map(() => <span />)}
+          </div>
+        </div>
+      </div>
+    ))
+  }
+  {
+    counts.map((n) => (
+      <div class="print-card print-card-wide">
+        <div class="ten-frame">
+          <Counters count={n} layout="grid" columns={5} title={`十格框 ${n}`} desc={describe(n)} />
+          <div class="ten-frame-grid" aria-hidden="true">
+            {counts.map(() => <span />)}
+          </div>
+        </div>
+      </div>
+    ))
+  }
+</PrintLayout>
+
+<style>
+  /* 十格框 80 × 32mm、每格 16mm，放在 90 × 50mm 的卡片裡（A4 一頁 2 × 5）；螢幕上跟著卡片縮小 */
+  .ten-frame {
+    position: relative;
+    width: 80mm;
+    max-width: 100%;
+    aspect-ratio: 5 / 2;
+    overflow: hidden;
+  }
+  .ten-frame-grid {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    border: 0.6mm solid var(--fg);
+  }
+  .ten-frame-grid span {
+    border-right: 0.6mm solid var(--fg);
+    border-bottom: 0.6mm solid var(--fg);
+  }
+  .ten-frame-grid span:nth-child(5n) { border-right: 0; }
+  .ten-frame-grid span:nth-child(n + 6) { border-bottom: 0; }
+  /*
+   * 把 Counters 的圓點對進格子中心。Counters 的 grid（columns 5）在 viewBox 寬 480 裡，
+   * 圓心距 44、第一排圓心 y = 25、五欄圓心 x = 152…328，所以 x 130…350、y 3…91 這塊 220 × 88
+   * 正好是 5 × 2 個 44 的方格。把 SVG 放大成框寬的 480/220 倍，再用 margin 百分比（以框寬為準）
+   * 把 x 130、y 3 移到框的左上角。Counters 的間距若改了，這裡要跟著改。
+   */
+  .ten-frame :global(svg.ct-fig[role="img"]) {
+    /* 絕對定位，SVG 比框高也不會把框撐高 */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: calc(100% * 480 / 220);
+    max-width: none;
+    margin: calc(-100% * 3 / 220) 0 0 calc(-100% * 130 / 220);
+  }
+</style>

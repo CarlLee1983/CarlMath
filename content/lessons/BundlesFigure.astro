@@ -1,0 +1,96 @@
+---
+// 位值的一次性教具：左邊是用橡皮筋綁好的「捆」（每捆 10 根），右邊是單根，下方可標「N 個十」「N 個一」。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+  /** 幾捆（每捆 10 根），0–4 */
+  tens: number;
+  /** 幾根單根，0–9 */
+  ones: number;
+  /** 在兩組下方標「N 個十」「N 個一」，預設 true；練習題設 false，不洩漏答案 */
+  labelled?: boolean;
+}
+const props = Astro.props;
+const { title, desc, tens, ones, labelled = true } = props;
+
+assertAltText("BundlesFigure", title, desc);
+if (!Number.isInteger(tens) || tens < 0 || tens > 4) throw new Error(`<BundlesFigure> 的 tens 必須是 0 到 4 的整數：${tens}`);
+if (!Number.isInteger(ones) || ones < 0 || ones > 9) throw new Error(`<BundlesFigure> 的 ones 必須是 0 到 9 的整數：${ones}`);
+if (tens + ones === 0) throw new Error("<BundlesFigure> 至少要有一捆或一根");
+
+const prefix = figureIdPrefix("bf", props);
+
+const WIDTH = 480;
+const STICK_W = 5;
+const STICK_H = 130;
+const BUNDLE_PITCH = 6; // 捆裡的根靠得很緊
+const BUNDLE_W = 9 * BUNDLE_PITCH + STICK_W;
+const BUNDLE_GAP = 18;
+const ONE_PITCH = 16; // 單根之間留空隙，一眼看得出沒綁在一起
+const GROUP_GAP = 40;
+const TOP = 16;
+const LABEL_Y = TOP + STICK_H + 36;
+const height = labelled ? LABEL_Y + 14 : TOP + STICK_H + 16;
+
+const tensWidth = tens > 0 ? tens * BUNDLE_W + (tens - 1) * BUNDLE_GAP : 0;
+const onesWidth = ones > 0 ? (ones - 1) * ONE_PITCH + STICK_W : 0;
+const total = tensWidth + onesWidth + (tens > 0 && ones > 0 ? GROUP_GAP : 0);
+if (total > WIDTH - 32) throw new Error(`<BundlesFigure> 放不下 ${tens} 捆 ${ones} 根，請減少數量或拆成兩張圖`);
+
+const left = (WIDTH - total) / 2;
+const bundles = Array.from({ length: tens }, (_, b) => {
+  const x0 = left + b * (BUNDLE_W + BUNDLE_GAP);
+  return { x0, sticks: Array.from({ length: 10 }, (_, i) => x0 + i * BUNDLE_PITCH) };
+});
+const onesLeft = left + tensWidth + (tens > 0 ? GROUP_GAP : 0);
+const loose = Array.from({ length: ones }, (_, i) => onesLeft + i * ONE_PITCH);
+
+const BAND_H = 16;
+const bandY = TOP + STICK_H / 2 - BAND_H / 2;
+---
+
+<svg class="bf-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {
+    bundles.map(({ x0, sticks }) => (
+      <g>
+        {sticks.map((x) => <rect class="bf-stick" x={x} y={TOP} width={STICK_W} height={STICK_H} rx={2.5} />)}
+        <rect class="bf-band" x={x0 - 4} y={bandY} width={BUNDLE_W + 8} height={BAND_H} rx={4} />
+      </g>
+    ))
+  }
+  {loose.map((x) => <rect class="bf-stick" x={x} y={TOP} width={STICK_W} height={STICK_H} rx={2.5} />)}
+  {labelled && tens > 0 && <text class="bf-label" x={left + tensWidth / 2} y={LABEL_Y}>{`${tens} 個十`}</text>}
+  {labelled && ones > 0 && <text class="bf-label" x={onesLeft + onesWidth / 2} y={LABEL_Y}>{`${ones} 個一`}</text>}
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.bf-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .bf-stick {
+    fill: var(--fg);
+  }
+  /* 橡皮筋：除了 --accent，還有「緊靠成一束、外面套一圈框」的形狀差別，顏色不是唯一訊息 */
+  .bf-band {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  .bf-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+</style>
