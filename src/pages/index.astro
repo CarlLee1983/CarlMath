@@ -1,6 +1,7 @@
 ---
 import { getCollection } from "astro:content";
 import RouteLine from "../components/home/RouteLine.astro";
+import { websiteJsonLd } from "../lib/structured-data";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { contentRoot } from "../content/content-dir";
 import { loadValidContent } from "../lib/content";
@@ -27,7 +28,7 @@ const cards = recentlyUpdated(written, (unit) => updatedById.get(unit.id), 6).ma
 const stairs = ["每個單元只問一個問題。", "答得出來，就往下走；", "答不出來，", "就回到它的先修，", "一路走到微積分。"];
 ---
 
-<BaseLayout title="CarlMath" description="重直覺與推理的中小學數學自學教材。" fullBleed>
+<BaseLayout title="CarlMath" description="重直覺與推理的中小學數學自學教材。" jsonLd={websiteJsonLd(Astro.site!)} fullBleed>
   <section class="home-hero" aria-labelledby="home-title">
     <h1 id="home-title" class="hero-name">
       <span class="hero-line hero-line-1">從數數</span>

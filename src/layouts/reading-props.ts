@@ -1,3 +1,4 @@
+import type { JsonLd } from "../lib/structured-data.ts";
 import type { UnitLink } from "../components/UnitLinks.astro";
 
 /** 兩種閱讀版面（側欄目錄、分段步進）共用的 props；單元頁一律傳這一組。 */
@@ -8,6 +9,8 @@ export interface ReadingProps {
   modifiedTime?: string;
   /** 單元專屬分享圖，交給文件外殼 */
   image: { url: string; width: number; height: number; alt: string };
+  /** 麵包屑結構化資料，交給文件外殼 */
+  jsonLd: JsonLd;
   unit: { id: string; title: string; coreQuestion: string };
   stageTitle: string;
   /** 全部遞移先修，依建議閱讀順序 */

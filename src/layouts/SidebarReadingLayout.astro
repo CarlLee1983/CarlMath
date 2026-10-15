@@ -17,11 +17,11 @@ interface Props extends ReadingProps {
   /** 教材的 H2（Astro 依標題文字產生 slug，中文照留） */
   sections: { slug: string; text: string }[];
 }
-const { title, description, modifiedTime, image, unit, stageTitle, stageUnits, grades, prerequisites, suggested, previous, next, nextStep, sections } =
+const { title, description, modifiedTime, image, jsonLd, unit, stageTitle, stageUnits, grades, prerequisites, suggested, previous, next, nextStep, sections } =
   Astro.props;
 ---
 
-<Document title={title} description={description} path={Astro.url.pathname} ogType="article" modifiedTime={modifiedTime} image={image}>
+<Document title={title} description={description} path={Astro.url.pathname} ogType="article" modifiedTime={modifiedTime} image={image} jsonLd={jsonLd}>
   <script is:inline>
     document.documentElement.classList.add("js");
   </script>

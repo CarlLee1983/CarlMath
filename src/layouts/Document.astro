@@ -3,6 +3,7 @@ import "@fontsource-variable/hanken-grotesk";
 import "@fontsource-variable/noto-sans-tc";
 import "katex/dist/katex.min.css";
 import "../styles/global.css";
+import { serializeJsonLd, type JsonLd } from "../lib/structured-data.ts";
 import { DEFAULT_SHARE_CARD, shareImageMeta } from "../lib/share-cards.ts";
 
 // 文件外殼：只有 <html>／<head>／<body>，頁首與 main 由各版面自己組。
@@ -20,8 +21,10 @@ interface Props {
   modifiedTime?: string;
   /** 分享圖；網址須為絕對網址，沒傳就用全站預設圖 */
   image?: { url: string; width: number; height: number; alt: string };
+  /** 結構化資料（JSON-LD）；沒傳就不輸出 */
+  jsonLd?: JsonLd;
 }
-const { title, description, noindex, path, ogType = "website", modifiedTime } = Astro.props;
+const { title, description, noindex, path, ogType = "website", modifiedTime, jsonLd } = Astro.props;
 const image = Astro.props.image ?? shareImageMeta(DEFAULT_SHARE_CARD, Astro.site!);
 const canonical = new URL(path, Astro.site).href;
 ---
@@ -47,6 +50,7 @@ const canonical = new URL(path, Astro.site).href;
     <meta property="og:image:height" content={String(image.height)} />
     <meta property="og:image:alt" content={image.alt} />
     <meta name="twitter:card" content="summary_large_image" />
+    {jsonLd && <script type="application/ld+json" set:html={serializeJsonLd(jsonLd)} />}
   </head>
   <body>
     <slot />

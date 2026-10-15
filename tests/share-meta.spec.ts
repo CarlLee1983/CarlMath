@@ -113,3 +113,51 @@ test("未撰寫單元頁使用預設圖，也不產它的單元圖", async ({ pa
   await expect(meta(page, "og:image")).toHaveAttribute("content", new RegExp(`^${SITE}/og/default-[0-9a-f]{10}\\.png$`));
   expect((await request.get("/og/fx-fraction-0000000000.png", { failOnStatusCode: false })).status()).toBe(404);
 });
+
+// 結構化資料：只有首頁（WebSite）與已撰寫單元頁（BreadcrumbList）有 JSON-LD
+const jsonLd = async (page: Page) =>
+  (await page.locator('script[type="application/ld+json"]').allTextContents()).map((text) => JSON.parse(text));
+
+test("首頁輸出 WebSite JSON-LD", async ({ page }) => {
+  await page.goto("/");
+  const blocks = await jsonLd(page);
+  expect(blocks).toHaveLength(1);
+  expect(blocks[0]).toMatchObject({ "@context": "https://schema.org", "@type": "WebSite", name: "CarlMath", url: `${SITE}/` });
+});
+
+for (const unit of ["fx-count", "math-demo"]) {
+  test(`已撰寫單元 ${unit} 輸出三層 BreadcrumbList`, async ({ page }) => {
+    await page.goto(`/units/${unit}/`);
+    const blocks = await jsonLd(page);
+    expect(blocks).toHaveLength(1);
+    const list = blocks[0];
+    expect(list).toMatchObject({ "@context": "https://schema.org", "@type": "BreadcrumbList" });
+    const items = list.itemListElement;
+    expect(items.map((item: { position: number }) => item.position)).toEqual([1, 2, 3]);
+    expect(items.map((item: { "@type": string }) => item["@type"])).toEqual(["ListItem", "ListItem", "ListItem"]);
+    expect(items[0]).toMatchObject({ name: "CarlMath", item: `${SITE}/` });
+    // 階段名與階段錨點要和課程地圖頁一致
+    await page.goto("/map/");
+    const stageId = new URL(items[1].item).hash.slice(1);
+    expect(items[1].item).toBe(`${SITE}/map/#${stageId}`);
+    expect(stageId).toMatch(/^stage-/);
+    const stageHeading = await page.locator(`#${stageId} h2`).innerText();
+    expect(stageHeading).toContain(items[1].name);
+    await page.goto(`/units/${unit}/`);
+    expect(items[2].item).toBe(`${SITE}/units/${unit}/`);
+    expect(items[2].name).toBe(await page.locator("h1").innerText());
+  });
+}
+
+test("其他頁面沒有 JSON-LD", async ({ page }) => {
+  for (const path of ["/guide/", "/map/", "/print/number-board/", "/units/fx-fraction/", "/404/"]) {
+    await page.goto(path);
+    await expect(page.locator('script[type="application/ld+json"]'), path).toHaveCount(0);
+  }
+});
+
+test("JSON-LD 序列化不會讓 </script> 提前結束", async ({ page }) => {
+  await page.goto("/units/fx-count/");
+  const raw = await page.locator('script[type="application/ld+json"]').innerHTML();
+  expect(raw).not.toContain("<");
+});

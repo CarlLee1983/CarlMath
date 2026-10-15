@@ -8,7 +8,7 @@ test("數學式在 build 期渲染成 HTML 與 MathML，頁面沒有數學相關
   expect(await page.locator(".katex-mathml math").count()).toBeGreaterThan(0);
   expect(await page.locator(".katex-display").count()).toBe(2);
 
-  const scripts = await page.locator("script").evaluateAll((els) =>
+  const scripts = await page.locator('script:not([type="application/ld+json"])').evaluateAll((els) =>
     els.map((el) => `${el.getAttribute("src") ?? ""}${el.textContent ?? ""}`),
   );
   expect(scripts.filter((s) => /katex|mathjax|math/i.test(s))).toEqual([]);

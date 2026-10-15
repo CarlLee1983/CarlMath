@@ -1,5 +1,6 @@
 ---
 import SiteNav from "../components/SiteNav.astro";
+import type { JsonLd } from "../lib/structured-data.ts";
 import Document from "./Document.astro";
 
 interface Props {
@@ -13,8 +14,9 @@ interface Props {
   ogType?: "website" | "article";
   modifiedTime?: string;
   image?: { url: string; width: number; height: number; alt: string };
+  jsonLd?: JsonLd;
 }
-const { title, description, noindex, fullBleed = false, ogType, modifiedTime, image } = Astro.props;
+const { title, description, noindex, fullBleed = false, ogType, modifiedTime, image, jsonLd } = Astro.props;
 ---
 
 <Document
@@ -25,6 +27,7 @@ const { title, description, noindex, fullBleed = false, ogType, modifiedTime, im
   ogType={ogType}
   modifiedTime={modifiedTime}
   image={image}
+  jsonLd={jsonLd}
 >
   <header class="site-header">
     <div class="site-header-inner">
