@@ -3,6 +3,7 @@ import "@fontsource-variable/hanken-grotesk";
 import "@fontsource-variable/noto-sans-tc";
 import "katex/dist/katex.min.css";
 import "../styles/global.css";
+import { DEFAULT_SHARE_CARD, shareImageMeta } from "../lib/share-cards.ts";
 
 // 文件外殼：只有 <html>／<head>／<body>，頁首與 main 由各版面自己組。
 // canonical、Open Graph、Twitter Card 一律在這裡輸出，各版面只傳「分享資訊」的值。
@@ -17,10 +18,11 @@ interface Props {
   ogType?: "website" | "article";
   /** 最後實質修訂日（YYYY-MM-DD），只在 article 輸出 article:modified_time */
   modifiedTime?: string;
-  /** 分享圖；網址須為絕對網址 */
+  /** 分享圖；網址須為絕對網址，沒傳就用全站預設圖 */
   image?: { url: string; width: number; height: number; alt: string };
 }
-const { title, description, noindex, path, ogType = "website", modifiedTime, image } = Astro.props;
+const { title, description, noindex, path, ogType = "website", modifiedTime } = Astro.props;
+const image = Astro.props.image ?? shareImageMeta(DEFAULT_SHARE_CARD, Astro.site!);
 const canonical = new URL(path, Astro.site).href;
 ---
 
@@ -40,16 +42,10 @@ const canonical = new URL(path, Astro.site).href;
     <meta property="og:locale" content="zh_TW" />
     <meta property="og:site_name" content="CarlMath" />
     {ogType === "article" && modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
-    {
-      image && (
-        <>
-          <meta property="og:image" content={image.url} />
-          <meta property="og:image:width" content={String(image.width)} />
-          <meta property="og:image:height" content={String(image.height)} />
-          <meta property="og:image:alt" content={image.alt} />
-        </>
-      )
-    }
+    <meta property="og:image" content={image.url} />
+    <meta property="og:image:width" content={String(image.width)} />
+    <meta property="og:image:height" content={String(image.height)} />
+    <meta property="og:image:alt" content={image.alt} />
     <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>

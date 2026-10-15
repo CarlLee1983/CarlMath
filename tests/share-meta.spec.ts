@@ -58,3 +58,24 @@ test("404 與未撰寫單元頁有 noindex，其餘公開頁沒有", async ({ pa
     await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
   }
 });
+
+for (const item of pages) {
+  test(`${item.name}：og:image 可取得、是 PNG，寬高與 meta 一致`, async ({ page, request }) => {
+    await page.goto(item.path);
+    const url = await meta(page, "og:image").getAttribute("content");
+    expect(url).toMatch(new RegExp(`^${SITE}/og/default-[0-9a-f]{10}\\.png$`));
+    const width = Number(await meta(page, "og:image:width").getAttribute("content"));
+    const height = Number(await meta(page, "og:image:height").getAttribute("content"));
+    expect([width, height]).toEqual([1200, 630]);
+    await expect(meta(page, "og:image:alt")).toHaveAttribute("content", /\S/);
+
+    // 絕對網址指向正式網域；測試站台只取同一路徑
+    const response = await request.get(new URL(url!).pathname);
+    expect(response.ok()).toBe(true);
+    expect(response.headers()["content-type"]).toContain("image/png");
+    const bytes = await response.body();
+    expect(bytes.subarray(1, 4).toString("latin1")).toBe("PNG");
+    // IHDR：偏移 16 起依序是寬、高（大端 32 位元）
+    expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([width, height]);
+  });
+}
