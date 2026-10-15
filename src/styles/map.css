@@ -1,0 +1,100 @@
+/* 課程地圖頁（/map/）：階段清單。只用 global.css 的色票 token。 */
+
+.map-intro { color: var(--muted); margin: 0 0 16px; }
+
+/* 跳轉目標的 scroll-margin-top：要大於 320px 寬時折成兩行的篩選列高度，目標才不會被 sticky 篩選列蓋住 */
+:root { --map-sticky-offset: 9rem; }
+
+/* 篩選列固定在頂端 */
+.map-filters {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 16px;
+  padding: 8px 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.map-filters[hidden] { display: none; }
+.map-filters input[type="search"] {
+  flex: 1 1 14rem;
+  min-width: 0;
+  padding: 4px 10px;
+  font: inherit;
+  color: var(--fg);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+/* 不用 display: contents：部分瀏覽器會讓 fieldset 從無障礙樹消失，失去分組語意 */
+.map-filters fieldset { display: flex; flex-wrap: wrap; gap: inherit; min-width: 0; border: 0; margin: 0; padding: 0; }
+.map-count { margin: 0; flex: 1 1 100%; font-size: 0.85em; color: var(--muted); }
+.map-filters label { font-size: 0.9em; white-space: nowrap; }
+
+/* 階段跳轉膠囊：水平捲動，不撐寬整頁 */
+.map-pills {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px 0;
+}
+.map-pills a {
+  flex: none;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--fg); /* --accent 在 --accent-soft 上對比不足 4.5:1 */
+  text-decoration: none;
+  font-size: 0.9em;
+}
+
+.map-stage { scroll-margin-top: var(--map-sticky-offset); }
+.map-stage[hidden] { display: none; }
+.map-stage h2 { font-size: 1.3rem; margin: 1.6em 0 0.4em; }
+.map-stage h2 small { color: var(--muted); font-size: 0.65em; font-weight: 400; }
+
+.map-row {
+  display: grid;
+  grid-template-columns: 2.5rem minmax(0, 1fr) auto;
+  gap: 0 12px;
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: var(--map-sticky-offset);
+}
+.map-row[hidden] { display: none; }
+.map-row:target { background: var(--accent-soft); }
+.map-no { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+.map-title { font-weight: 700; overflow-wrap: anywhere; }
+.map-core { margin: 0; color: var(--muted); font-size: 0.9em; }
+.map-prereq { margin: 4px 0 0; font-size: 0.85em; color: var(--muted); }
+.map-row:target .chip { background: var(--card); }
+
+.map-side {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  font-size: 0.8em;
+  color: var(--muted);
+}
+.map-row .unit-family { font-size: inherit; }
+.map-status.done { color: var(--ok); }
+
+.map-empty { color: var(--muted); text-align: center; padding: 24px 0; }
+.map-empty[hidden] { display: none; }
+
+/* 窄螢幕：右側欄落到內容下方 */
+@media (max-width: 30rem) {
+  .map-row { grid-template-columns: 2rem minmax(0, 1fr); }
+  .map-side {
+    grid-column: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 12px;
+    margin-top: 4px;
+  }
+}

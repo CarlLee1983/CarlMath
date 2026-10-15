@@ -60,19 +60,6 @@
 .reading .meta-label { margin: 8px 0 0; color: var(--muted); font-size: 0.85em; }
 .reading .suggested { font-size: 0.85em; }
 .reading .suggested .unit-links { margin: 0; }
-.chip {
-  display: inline-block;
-  font-size: 0.9em;
-  line-height: 1.6;
-  padding: 1px 10px;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--fg); /* --accent 在 --accent-soft 上對比不足 4.5:1 */
-  text-decoration: none;
-  margin: 2px 4px 2px 0;
-}
-.chip.done { background: var(--ok-soft); }
-.chip .read-mark { color: var(--ok); font-weight: 700; }
 
 /* 寬螢幕：邊註放在正文右側的欄位 */
 .fig-wrap .margin-note { position: absolute; top: 20px; right: -16rem; width: 14rem; margin: 0; }

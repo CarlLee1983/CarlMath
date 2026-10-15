@@ -84,6 +84,19 @@ h1, h2, h3 { line-height: 1.35; }
   background: var(--family-soft);
   color: var(--family);
 }
+.chip {
+  display: inline-block;
+  font-size: 0.9em;
+  line-height: 1.6;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--fg); /* --accent 在 --accent-soft 上對比不足 4.5:1 */
+  text-decoration: none;
+  margin: 2px 4px 2px 0;
+}
+.chip.done { background: var(--ok-soft); }
+.chip .read-mark { color: var(--ok); font-weight: 700; }
 .unit-links { padding-left: 1.5em; }
 .unit-links a { overflow-wrap: anywhere; }
 .unit-tag {

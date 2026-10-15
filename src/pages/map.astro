@@ -1,0 +1,85 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { contentRoot } from "../content/content-dir";
+import { loadValidContent } from "../lib/content";
+import { gradeLabel } from "../lib/grade-label";
+import "../styles/map.css";
+
+// 課程地圖頁：build 時從課程地圖產生，階段清單依建議閱讀順序排列；篩選由 script 在瀏覽器端加上。
+const { courseMap, index } = loadValidContent(contentRoot());
+const stages = courseMap.stages.map((stage, i) => ({
+  id: stage.id,
+  title: stage.title,
+  stageNumber: i + 1,
+  units: stage.units.map((unit) => ({
+    unit,
+    sequence: index.sequenceOf(unit.id),
+    written: index.isWritten(unit.id),
+    grades: gradeLabel(index.gradeRange(unit.id)),
+    prerequisites: index.prerequisites(unit.id),
+  })),
+}));
+---
+
+<BaseLayout title="課程地圖｜CarlMath" description="CarlMath 的課程地圖：依建議閱讀順序列出所有單元，可搜尋、篩選親子共學與已撰寫的單元。">
+  <h1>課程地圖</h1>
+  <p class="map-intro">
+    共 {stages.length} 個階段、{index.units.length} 個單元，依建議閱讀順序排列。年級是 108 課綱的參照。
+  </p>
+
+  <div class="map-filters" hidden>
+    <input type="search" aria-label="搜尋單元" placeholder="搜尋單元或核心問題" />
+    <fieldset>
+      <legend class="sr-only">篩選</legend>
+      <label><input type="checkbox" data-filter="family" /> 只看親子共學</label>
+      <label><input type="checkbox" data-filter="written" /> 只看已撰寫</label>
+    </fieldset>
+    <p class="map-count" role="status"></p>
+  </div>
+
+  <nav class="map-pills" aria-label="階段">
+    {stages.map((stage) => <a href={`#stage-${stage.id}`}>{stage.stageNumber}. {stage.title}</a>)}
+  </nav>
+
+  {
+    stages.map((stage) => (
+      <section class="map-stage" id={`stage-${stage.id}`}>
+        <h2>
+          {stage.stageNumber}. {stage.title} <small>{stage.units.length} 單元</small>
+        </h2>
+        {stage.units.map(({ unit, sequence, written, grades, prerequisites }) => (
+          <div
+            class="map-row"
+            id={`unit-${unit.id}`}
+            data-family={String(unit.family)}
+            data-written={String(written)}
+            data-search={`${unit.title} ${unit.coreQuestion}`}
+          >
+            <span class="map-no">{sequence}</span>
+            <div class="map-body">
+              <a class="map-title" href={`/units/${unit.id}/`}>{unit.title}</a>
+              <p class="map-core">{unit.coreQuestion}</p>
+              {prerequisites.length > 0 && (
+                <p class="map-prereq">
+                  先修：
+                  {prerequisites.map((pre) => <a class="chip" href={`#unit-${pre.id}`}>{pre.title}</a>)}
+                </p>
+              )}
+            </div>
+            <div class="map-side">
+              {unit.family && <span class="unit-family">親子共學</span>}
+              <span class="map-grade">{grades}</span>
+              <span class={written ? "map-status done" : "map-status"}>{written ? "已撰寫" : "尚未撰寫"}</span>
+            </div>
+          </div>
+        ))}
+      </section>
+    ))
+  }
+
+  <p class="map-empty" hidden>沒有符合條件的單元。</p>
+
+  <script>
+    import "../scripts/course-map.ts";
+  </script>
+</BaseLayout>
