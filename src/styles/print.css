@@ -1,0 +1,83 @@
+/* 可列印材料頁：A4 直式、可印範圍 190mm × 277mm（四邊各留 10mm）。卡片尺寸一律用 mm，列印比例 100% 時才是實際大小。 */
+@page {
+  size: A4 portrait;
+  margin: 10mm;
+}
+
+.print-intro { margin: 16px 0; }
+.print-intro button {
+  padding: 6px 20px;
+  border: 1px solid var(--accent);
+  border-radius: 6px;
+  background: var(--accent-soft);
+  color: var(--fg);
+  font: inherit;
+  cursor: pointer;
+}
+
+/* 螢幕上卡片自動換行；寬度以 mm 定、但不超過容器，320px 寬不會出現水平捲軸 */
+.print-sheet {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4mm;
+}
+.print-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  border: 1px dashed var(--fg);
+  break-inside: avoid;
+}
+
+/* 點卡與兩排圓點卡共用：90 × 50mm，A4 一頁 2 × 5 */
+.print-card-wide {
+  width: 90mm;
+  height: 50mm;
+  padding: 4mm;
+}
+
+/* 線性數字盤面：一列 11 格，螢幕上跟著卡片縮放，列印時每格 17mm（11 × 17 = 187mm） */
+.print-board { width: 187mm; padding: 0; }
+.print-board-row {
+  display: grid;
+  grid-template-columns: repeat(11, 1fr);
+  width: 100%;
+}
+.print-board-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  aspect-ratio: 1;
+  border-right: 1px solid var(--fg);
+  font-size: min(8mm, 4.5vw);
+  line-height: 1;
+}
+.print-board-cell:last-child { border-right: 0; }
+
+@media print {
+  .site-header,
+  h1,
+  .print-intro { display: none; }
+
+  .page {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* 不論系統深色或 data-theme="dark"，一律印淺色；選擇器疊高一層，不受 global.css 載入順序影響 */
+  html:root,
+  html:root[data-theme] {
+    color-scheme: light;
+    --bg: #fff;
+    --fg: #000;
+  }
+
+  /* 列印時尺寸只由 mm 決定，不跟螢幕視窗寬度縮放 */
+  .print-card {
+    flex-shrink: 0;
+    max-width: none;
+    border-color: currentColor;
+  }
+}

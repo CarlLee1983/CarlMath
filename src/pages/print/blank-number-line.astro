@@ -1,0 +1,35 @@
+---
+import NumberLine from "../../components/figures/NumberLine.astro";
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+const lines = [1, 2, 3, 4, 5];
+---
+
+<PrintLayout title="空白 0–20 數線" description="列印只標 0 和 20 的空白數線，數線的先估再量活動使用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料是數線的「在空白 0–20 線上先估再量 7 的位置」親子活動使用的數線，每條只標 0 和 20，0 到 20 實際長 16 公分（每 1 是 8 公釐），請孩子先憑感覺點出 7 的位置，再用尺或小物量一量。
+    </p>
+  </Fragment>
+  {
+    lines.map((n) => (
+      <div class="print-card blank-line-card">
+        <NumberLine from={0} to={20} step={20} title={`空白數線 ${n}`} desc={`第 ${n} 條空白數線，只標 0 和 20。`} />
+      </div>
+    ))
+  }
+</PrintLayout>
+
+<style>
+  /* 190 × 40mm，A4 一頁放 5 條 */
+  .blank-line-card {
+    width: 190mm;
+    height: 40mm;
+    padding: 4mm;
+  }
+  /* NumberLine 的 viewBox 寬 480、左右各留 28，主線佔 424；讓 0 到 20 印出來正好 160mm。螢幕上仍不超過容器 */
+  .blank-line-card :global(svg.nl-fig[role="img"]) {
+    width: calc(160mm * 480 / 424);
+    max-width: 100%;
+  }
+</style>

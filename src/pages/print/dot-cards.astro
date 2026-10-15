@@ -1,0 +1,24 @@
+---
+import Counters from "../../components/figures/Counters.astro";
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+const counts = Array.from({ length: 10 }, (_, i) => i + 1);
+const describe = (n: number) =>
+  n <= 5 ? `${n} 個圓點，排在上排。` : `${n} 個圓點，上排 5 個、下排 ${n - 5} 個。`;
+---
+
+<PrintLayout title="點卡 1–10" description="列印 1 到 10 的點卡，數數的快閃點卡活動使用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料是數數的「快閃點卡」親子活動使用的點卡，每張以 5 和 10 的結構排列圓點，家長快速亮出一張，請孩子說出看到幾個。
+    </p>
+  </Fragment>
+  {
+    counts.map((n) => (
+      <div class="print-card print-card-wide">
+        <Counters count={n} layout="grid" columns={5} title={`${n} 個點`} desc={describe(n)} />
+      </div>
+    ))
+  }
+</PrintLayout>
+
