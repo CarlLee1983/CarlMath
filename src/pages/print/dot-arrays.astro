@@ -1,0 +1,58 @@
+---
+import Counters from "../../components/figures/Counters.astro";
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+// [每排個數, 排數]：互為轉置的配對排在一起，乘法篇說明轉 90 度時可以直接拿來對照
+const cards: [number, number][] = [
+  [2, 2], [3, 3], [4, 4], [5, 5],
+  [3, 2], [2, 3], [4, 2], [2, 4],
+  [5, 2], [2, 5], [6, 2], [2, 6],
+  [4, 3], [3, 4], [5, 3], [3, 5],
+  [6, 3], [3, 6], [5, 4], [4, 5],
+  [6, 4], [4, 6], [6, 5], [5, 6],
+];
+---
+
+<PrintLayout title="點陣卡" description="列印從每排 2 個 2 排到每排 6 個 5 排、每排 5 個 6 排的圓點陣列卡，乘法、除法與餘數的親子活動使用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料是乘法、除法與餘數的親子活動使用的點陣卡，共 24 張，每張把圓點排成整齊的長方形，卡片下方只寫「每排幾個，幾排」，不寫算式，讓孩子自己說。乘法用它看「等組與面積」：每排個數相同、一排一排疊起來，說說一共有幾個；每排 4 個 3 排和每排 3 個 4 排互為轉 90 度的一對，把卡轉一轉就看得出總數沒變。除法用它看「平分與包含」：用白紙蓋住卡的一部分，告訴孩子總數是 12、每排 4 個，問一共有幾排，再掀開來核對。餘數則用小物一個一個放在圓點上，一排放滿再放下一排，排不滿的那一排就是餘數。圓點直徑約 6 公釐，放小物時請用綠豆、紅豆這類小東西。
+    </p>
+  </Fragment>
+  {
+    cards.map(([perRow, rows]) => (
+      <div class="print-card dot-array-card">
+        <div class="dot-array-fig">
+          <Counters
+            count={perRow * rows}
+            layout="grid"
+            columns={perRow}
+            title={`${perRow} 個 ${rows} 排`}
+            desc={`圓點陣列，每排 ${perRow} 個，共 ${rows} 排。`}
+          />
+        </div>
+        <p class="dot-array-caption">每排 {perRow} 個，{rows} 排</p>
+      </div>
+    ))
+  }
+</PrintLayout>
+
+<style>
+  /* 90 × 64mm，A4 一頁 2 × 4（2 × 90 + 4 = 184mm，4 × 64 + 3 × 4 = 268mm）；最高的 6 排陣列在 80mm 寬下約 45mm 高 */
+  .dot-array-card {
+    flex-direction: column;
+    gap: 2mm;
+    width: 90mm;
+    height: 64mm;
+    padding: 3mm;
+  }
+  .dot-array-fig {
+    width: 80mm;
+    max-width: 100%;
+  }
+  .dot-array-caption {
+    margin: 0;
+    font-size: min(4mm, 3.6vw);
+    line-height: 1;
+  }
+</style>

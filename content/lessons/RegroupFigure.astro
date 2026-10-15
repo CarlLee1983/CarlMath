@@ -1,0 +1,101 @@
+---
+// 進位與退位的一次性教具：10 根單根和 1 捆之間的互換，箭頭方向就是進位（單根 → 捆）或退位（捆 → 單根）。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+  /** carry：10 個一換成 1 個十（進位）；borrow：1 個十換回 10 個一（退位） */
+  direction: "carry" | "borrow";
+}
+const props = Astro.props;
+const { title, desc, direction } = props;
+
+assertAltText("RegroupFigure", title, desc);
+if (direction !== "carry" && direction !== "borrow") throw new Error(`<RegroupFigure> 的 direction 必須是 carry 或 borrow：${direction}`);
+
+const prefix = figureIdPrefix("rg", props);
+
+const WIDTH = 480;
+const STICK_W = 5;
+const STICK_H = 90;
+const BUNDLE_PITCH = 6;
+const BUNDLE_W = 9 * BUNDLE_PITCH + STICK_W;
+const ONE_PITCH = 16;
+const ONES_W = 9 * ONE_PITCH + STICK_W;
+const ARROW_W = 70;
+const GAP = 24;
+const TOP = 16;
+const LABEL_Y = TOP + STICK_H + 36;
+const height = LABEL_Y + 14;
+
+const total = ONES_W + GAP * 2 + ARROW_W + BUNDLE_W;
+const left = (WIDTH - total) / 2;
+const carry = direction === "carry";
+
+// carry：單根在左、捆在右；borrow：捆在左、單根在右
+const leftW = carry ? ONES_W : BUNDLE_W;
+const leftX = left;
+const arrowX = leftX + leftW + GAP;
+const rightX = arrowX + ARROW_W + GAP;
+
+const sticksAt = (x0: number, pitch: number) => Array.from({ length: 10 }, (_, i) => x0 + i * pitch);
+const onesX = carry ? leftX : rightX;
+const bundleX = carry ? rightX : leftX;
+const onesSticks = sticksAt(onesX, ONE_PITCH);
+const bundleSticks = sticksAt(bundleX, BUNDLE_PITCH);
+
+const BAND_H = 14;
+const bandY = TOP + STICK_H / 2 - BAND_H / 2;
+const arrowY = TOP + STICK_H / 2;
+const arrowFrom = arrowX;
+const arrowTo = arrowX + ARROW_W;
+const head = -12;
+const onesLabelX = onesX + ONES_W / 2;
+const bundleLabelX = bundleX + BUNDLE_W / 2;
+---
+
+<svg class="rg-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {onesSticks.map((x) => <rect class="rg-stick" x={x} y={TOP} width={STICK_W} height={STICK_H} rx={2.5} />)}
+  {bundleSticks.map((x) => <rect class="rg-stick" x={x} y={TOP} width={STICK_W} height={STICK_H} rx={2.5} />)}
+  <rect class="rg-band" x={bundleX - 4} y={bandY} width={BUNDLE_W + 8} height={BAND_H} rx={4} />
+  <line class="rg-arrow" x1={arrowFrom} y1={arrowY} x2={arrowTo} y2={arrowY} />
+  <polyline class="rg-arrow" points={`${arrowTo + head},${arrowY - 10} ${arrowTo},${arrowY} ${arrowTo + head},${arrowY + 10}`} />
+  <text class="rg-label" x={onesLabelX} y={LABEL_Y}>10 個一</text>
+  <text class="rg-label" x={bundleLabelX} y={LABEL_Y}>1 個十</text>
+</svg>
+
+<style>
+  svg.rg-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .rg-stick {
+    fill: var(--fg);
+  }
+  .rg-band {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  .rg-arrow {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .rg-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+</style>

@@ -11,6 +11,8 @@ const MATERIALS = [
   { id: "ten-frames", title: "十格框" },
   { id: "place-value-mat", title: "位值板與數字卡" },
   { id: "tens-number-lines", title: "整十數線 0–100" },
+  { id: "dot-arrays", title: "點陣卡" },
+  { id: "times-table", title: "九九乘法表" },
 ] as const;
 
 const MM = 96 / 25.4; // CSS 1mm 的 px 數
