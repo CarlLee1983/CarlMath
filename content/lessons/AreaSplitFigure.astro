@@ -1,0 +1,83 @@
+---
+// 分配律的一次性教具：每排 b + c 個、共 a 排的長方形，每排被切成 b 與 c 兩段，兩塊各標面積算式，左邊標排數。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+  /** 長方形的高（幾排），1–9 */
+  rows: number;
+  /** 左塊的寬（幾個），1–15 */
+  left: number;
+  /** 右塊的寬（幾個），1–15 */
+  right: number;
+}
+const props = Astro.props;
+const { title, desc, rows, left, right } = props;
+
+assertAltText("AreaSplitFigure", title, desc);
+for (const [name, value, max] of [["rows", rows, 9], ["left", left, 15], ["right", right, 15]] as const) {
+  if (!Number.isInteger(value) || value < 1 || value > max) throw new Error(`<AreaSplitFigure> 的 ${name} 必須是 1 到 ${max} 的整數：${value}`);
+}
+if (left + right > 20) throw new Error(`<AreaSplitFigure> 的 left + right 最多 20：${left + right}`);
+
+const prefix = figureIdPrefix("asf", props);
+
+const WIDTH = 480;
+const PAD_L = 64; // 左邊留給「高」的標籤
+const PAD_R = 16;
+const TOP = 16;
+const unit = (WIDTH - PAD_L - PAD_R) / (left + right);
+const unitH = Math.min(unit, 44);
+const leftW = left * unit;
+const rightW = right * unit;
+const h = rows * unitH;
+const height = TOP + h + 16;
+const midY = TOP + h / 2;
+---
+
+<svg class="asf-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  <rect class="asf-left" x={PAD_L} y={TOP} width={leftW} height={h} />
+  <rect class="asf-right" x={PAD_L + leftW} y={TOP} width={rightW} height={h} />
+  <text class="asf-label asf-side" x={PAD_L - 12} y={midY + 7}>{rows}</text>
+  <text class="asf-label" x={PAD_L + leftW / 2} y={midY + 7}>{`${left} × ${rows}`}</text>
+  <text class="asf-label" x={PAD_L + leftW + rightW / 2} y={midY + 7}>{`${right} × ${rows}`}</text>
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.asf-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .asf-left {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  /* 右塊：除了 --accent，還用虛線外框，和實線的左塊分得出來 */
+  .asf-right {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 3px;
+    stroke-dasharray: 8 6;
+    stroke-linejoin: round;
+  }
+  .asf-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+  .asf-side {
+    text-anchor: end;
+    font-size: 22px;
+  }
+</style>
