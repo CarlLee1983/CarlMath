@@ -91,3 +91,8 @@ export function createCourseIndex(courseMap: CourseMap, writtenUnitIds: Iterable
     },
   };
 }
+
+/** 建議閱讀順序中第一個親子共學單元；沒有時回傳 undefined。 */
+export function firstFamilyUnit(index: CourseIndex): Unit | undefined {
+  return index.units.find((unit) => unit.family);
+}

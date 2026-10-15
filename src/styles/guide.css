@@ -1,0 +1,56 @@
+/* 「親子共學怎麼用」（/guide/）：四步流程、三方分工、共用材料。只用 global.css 的色票 token。 */
+
+.guide-intro { color: var(--muted); margin: 0 0 16px; }
+
+.guide-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.guide-step {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-top: 4px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+}
+.guide-step-together { border-color: var(--family); background: var(--family-soft); }
+.guide-step h2 { margin: 2px 0 6px; font-size: 1.3rem; }
+.guide-step p { margin: 0; }
+.guide-when { color: var(--muted); font-size: 0.8em; }
+.guide-time { font-weight: 700; }
+.guide-uses { display: flex; flex-wrap: wrap; gap: 4px; margin: 8px 0 0; padding: 0; list-style: none; font-size: 0.8em; }
+.guide-uses .chip { margin: 0; }
+/* 金色底的步驟：膠囊改用頁面底色以保持對比 */
+.guide-step-together .chip { background: var(--bg); }
+
+.guide-roles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+.guide-role { min-width: 0; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.guide-role h3 { margin: 0; font-size: 1rem; }
+.guide-role p { margin: 0; font-size: 0.9em; }
+
+.guide-kit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 20px;
+  margin: 24px 0;
+  padding: 12px 18px;
+  border: 2px dashed var(--family);
+  border-radius: 14px;
+}
+.guide-kit p { margin: 0; }
+
+.guide-start { text-align: center; margin: 24px 0; }
+/* 底部的開始按鈕：家長從這裡進入第一篇親子篇 */
+.guide-start a {
+  display: inline-block;
+  padding: 8px 24px;
+  border-radius: 8px;
+  background: var(--family);
+  color: var(--bg);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+@media (max-width: 36rem) {
+  .guide-steps, .guide-roles { grid-template-columns: 1fr; }
+}

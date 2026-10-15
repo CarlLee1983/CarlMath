@@ -1,8 +1,71 @@
 ---
+import { getCollection } from "astro:content";
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { contentRoot } from "../content/content-dir";
+import { loadValidContent } from "../lib/content";
+import { gradeLabel } from "../lib/grade-label";
+import { firstFamilyUnit } from "../lib/course-map-index";
+import { recentlyUpdated } from "../lib/recent-lessons";
+import "../styles/home.css";
+
+// 首頁：路線規模、撰寫進度與最近撰寫的單元，全部在 build 時由課程地圖與教材 frontmatter 推導。
+const { courseMap, index } = loadValidContent(contentRoot());
+const updatedById = new Map((await getCollection("lessons")).map((entry) => [entry.data.unit, entry.data.updated]));
+const total = index.units.length;
+const written = index.units.filter((unit) => index.isWritten(unit.id));
+const firstUnit = index.units[0];
+const firstFamily = firstFamilyUnit(index);
+const familyCount = index.units.filter((unit) => unit.family).length;
+const cards = recentlyUpdated(written, (unit) => updatedById.get(unit.id), 6).map((unit) => ({
+  unit,
+  sequence: index.sequenceOf(unit.id),
+  grades: gradeLabel(index.gradeRange(unit.id)),
+}));
 ---
 
 <BaseLayout title="CarlMath" description="重直覺與推理的中小學數學自學教材。">
-  <h1>CarlMath</h1>
-  <p>重直覺與推理的中小學數學自學教材。</p>
+  <div class="home-hero">
+    <h1>從數數到微積分，重新走一次</h1>
+    <p>一條依概念先後排好的路線：{courseMap.stages.length} 個階段、{total} 個單元。重直覺與推理，不是公式條目。</p>
+  </div>
+
+  <div class="home-doors">
+    <section class="home-door" aria-labelledby="door-self">
+      <h2 id="door-self">我想自己重新學數學</h2>
+      <p>每個單元一個核心問題，20–30 分鐘。不確定從哪開始，就從地圖上找第一個你答不出來的問題。</p>
+      <p class="home-acts">
+        <a href="/map/">看課程地圖</a>
+        <a href={`/units/${firstUnit.id}/`}>從第一個單元開始</a>
+      </p>
+    </section>
+    <section class="home-door home-door-family" aria-labelledby="door-family">
+      <h2 id="door-family">我想陪孩子一起學</h2>
+      <p>{familyCount} 個親子共學單元，每篇先讓你弄懂，再帶孩子做 5–15 分鐘的家中活動。</p>
+      <p class="home-acts">
+        <a href="/guide/">親子共學怎麼用</a>
+        {firstFamily && <a href={`/units/${firstFamily.id}/`}>第一篇：{firstFamily.title}</a>}
+      </p>
+    </section>
+  </div>
+
+  <h2 class="home-progress-title">撰寫進度</h2>
+  <div class="home-progress" role="progressbar" aria-label="撰寫進度" aria-valuenow={written.length} aria-valuemin="0" aria-valuemax={total}>
+    <div class="home-progress-fill" style={`width: ${(written.length / total) * 100}%`}></div>
+  </div>
+  <p class="home-progress-text">{written.length} / {total} 個單元已撰寫，其餘單元已列在地圖上，依建議閱讀順序陸續補上。</p>
+
+  <h2 class="home-recent">最近撰寫或更新</h2>
+  <div class="home-cards">
+    {
+      cards.map(({ unit, sequence, grades }) => (
+        <a class="home-card" href={`/units/${unit.id}/`}>
+          <span class="home-card-meta">第 {sequence} 單元 · {grades}</span>
+          <strong>{unit.title}</strong>
+          <span class="home-card-core">{unit.coreQuestion}</span>
+          {unit.family && <span class="unit-family">親子共學</span>}
+        </a>
+      ))
+    }
+  </div>
+  <p><a href="/map/?written=1">看全部已撰寫的單元</a></p>
 </BaseLayout>

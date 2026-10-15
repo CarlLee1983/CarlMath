@@ -1,0 +1,52 @@
+/* 首頁（/）：兩扇門、撰寫進度、最近撰寫的單元。只用 global.css 的色票 token。 */
+
+.home-hero { text-align: center; padding: 24px 0 12px; }
+.home-hero h1 { font-family: var(--serif); font-size: clamp(1.6rem, 6vw, 2.2rem); margin: 0 0 0.3em; }
+.home-hero p { color: var(--muted); margin: 0; }
+
+.home-doors { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0 32px; }
+.home-door {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  background: var(--card);
+}
+.home-door-family { border: 2px solid var(--family); background: var(--family-soft); }
+.home-door h2 { margin: 0; font-family: var(--serif); font-size: 1.2rem; }
+.home-door p { margin: 0; }
+.home-door .home-acts { margin-top: auto; display: flex; flex-direction: column; gap: 4px; }
+.home-acts a { overflow-wrap: anywhere; }
+/* --accent 在 --family-soft 上對比不足 4.5:1 */
+.home-door-family .home-acts a { color: var(--family); }
+
+.home-progress-title, .home-recent { font-family: var(--serif); font-size: 1.15rem; margin: 0; }
+.home-recent { margin-top: 20px; }
+.home-progress { height: 8px; margin: 8px 0 4px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.home-progress-fill { height: 100%; background: var(--ok); }
+.home-progress-text { margin: 0 0 12px; color: var(--muted); font-size: 0.85em; }
+
+.home-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 8px; }
+.home-card {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  color: var(--fg);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+.home-card-meta { color: var(--muted); font-size: 0.8em; }
+.home-card-core { color: var(--muted); font-size: 0.88em; }
+.home-card .unit-family { align-self: flex-start; margin-top: 4px; font-size: 0.85em; }
+
+@media (max-width: 36rem) {
+  .home-doors, .home-cards { grid-template-columns: 1fr; }
+}
