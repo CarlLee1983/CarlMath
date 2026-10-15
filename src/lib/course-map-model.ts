@@ -25,6 +25,7 @@ export type IssueCode =
   | "lesson-activity-shape"
   | "lesson-activity-count"
   | "lesson-activity-printable"
+  | "lesson-activity-print-missing"
   | "figure-title-missing"
   | "figure-desc-missing"
   | "figure-color-not-token"

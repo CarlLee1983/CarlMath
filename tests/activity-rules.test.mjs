@@ -174,9 +174,9 @@ test("至少一個 <Activity> 的材料欄連到 /print/ 沒有 printable 提醒
   assert.deepEqual(printableIssues(text), []);
 });
 
-test("沒有任何材料欄連到 /print/ 回報 lesson-activity-printable（warning，不擋 build）", () => {
+test("沒有任何材料欄連到 /print/ 回報 lesson-activity-printable（error）", () => {
   const [issue, ...rest] = printableIssues(familyLesson([activity(), activity({ material: "[說明](/guide/)" })]));
-  assert.equal(issue?.level, "warning");
+  assert.equal(issue?.level, "error");
   assert.equal(issue.unitId, "ac-fam");
   assert.equal(rest.length, 0);
   assert.match(issue.message, /\/print\//);
@@ -187,14 +187,34 @@ test("/print/ 連結不在材料欄時不算", () => {
   assert.equal(printableIssues(text).length, 1);
 });
 
-test("printable 只有 warning：loadContent 仍然 ok", () => {
+test("缺可列印材料會擋下 loadContent", () => {
   const root = mkdtempSync(join(tmpdir(), "carlmath-activity-"));
   try {
     writeFileSync(join(root, "course-map.yaml"), COURSE_MAP);
     mkdirSync(join(root, "lessons"));
     writeFileSync(join(root, "lessons", "a.mdx"), familyLesson([activity()]));
-    assert.equal(loadContent(root).ok, true);
+    assert.equal(loadContent(root).ok, false);
   } finally {
     rmSync(root, { recursive: true, force: true });
   }
+});
+
+// ---- lesson-activity-print-missing ----
+
+const printMissing = (text) => issuesOf(text, "lesson-activity-print-missing");
+
+test("材料欄連到存在的可列印材料頁沒有問題", () => {
+  assert.deepEqual(printMissing(familyLesson([activity({ material: "[數字卡](/print/number-cards/) 與 [點卡](/print/dot-cards/)" })])), []);
+});
+
+test("材料欄連到不存在或寫法不對的 /print/ 頁面回報 lesson-activity-print-missing（error），逐一點名", () => {
+  const issues = printMissing(
+    familyLesson([activity({ material: "[A](/print/no-such/)、[B](/print/number-cards)、[C](/print/../units/x/)、[D](/print/number-cards/)" })]),
+  );
+  assert.equal(issues.length, 3);
+  assert.ok(issues.every((i) => i.level === "error" && i.unitId === "ac-fam"));
+  const text = issues.map((i) => i.message).join("\n");
+  assert.match(text, /\/print\/no-such\//);
+  assert.match(text, /"\/print\/number-cards"/);
+  assert.match(text, /\/print\/\.\.\/units\/x\//);
 });

@@ -23,8 +23,8 @@ function withContent(lessons, run) {
 
 // 這些測試用的單元（u-one、u-two、u-three）在 valid.yaml 都是親子共學單元，教材要符合親子篇的 9 段 H2，才不會被教材規則擋下。
 const familyHeadings = ["給家長的話", "情境開場", "開始前", "大人先懂", "常見迷思", "親子活動", "練習與解析", "隔天再問", "下一步"];
-// 「親子活動」段須有 1–3 個 <Activity>，所以放一個最小的合格活動。
-const activity = `<Activity title="活動" minutes="10">\n\n${["目的", "材料", "步驟", "家長引導語", "卡關時", "回饋語範例"].map((h) => `### ${h}\n\n內容\n`).join("\n")}\n</Activity>\n`;
+// 「親子活動」段須有 1–3 個 <Activity>，且至少一個材料欄連到可列印材料，所以放一個最小的合格活動。
+const activity = `<Activity title="活動" minutes="10">\n\n${["目的", "材料", "步驟", "家長引導語", "卡關時", "回饋語範例"].map((h) => `### ${h}\n\n${h === "材料" ? "[數字卡](/print/number-cards/)" : "內容"}\n`).join("\n")}\n</Activity>\n`;
 const lesson = (unit) =>
   `---\nunit: ${unit}\n---\n\n${familyHeadings.map((h) => `## ${h}\n\n${h === "親子活動" ? activity : "內文"}\n`).join("\n")}`;
 const errorCodes = (loaded) => loaded.issues.filter((i) => i.level === "error").map((i) => i.code);

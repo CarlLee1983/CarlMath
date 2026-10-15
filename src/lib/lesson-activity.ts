@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join, resolve } from "node:path";
 import type { Issue, Unit } from "./course-map-model.ts";
 import { lessonIssue } from "./lesson-issue.ts";
 import type { ParsedActivity, ParsedLesson } from "./lesson-parse.ts";
@@ -10,6 +12,18 @@ const MAX_ACTIVITIES = 3;
 const MIN_MINUTES = 5;
 const MAX_MINUTES = 15;
 const PRINT_PREFIX = "/print/";
+/**
+ * 可列印材料頁的唯一來源：`src/pages/print/<材料 id>.astro`，網址是 `/print/<材料 id>/`。
+ * 以專案根目錄（目前工作目錄）定位，和 contentRoot 相同；astro.config 會被打包到別處執行，不能用 import.meta.url。
+ */
+const PRINT_PAGES_DIR = resolve("src/pages/print");
+const PRINT_URL = /^\/print\/([a-z0-9]+(?:-[a-z0-9]+)*)\/$/;
+
+/** `/print/` 連結是否對應到存在的可列印材料頁（寫法必須是 `/print/<材料 id>/`）。 */
+function printPageExists(url: string): boolean {
+  const id = PRINT_URL.exec(url)?.[1];
+  return id !== undefined && existsSync(join(PRINT_PAGES_DIR, `${id}.astro`));
+}
 
 /** `minutes` 合格寫法：5–15 的整數（`"10"`），或用短破折號 `–`（U+2013）或 `-` 寫的區間（`"5–10"`、`"5-10"`，前小後大且都在範圍內）。 */
 export function validMinutes(minutes: string): boolean {
@@ -86,7 +100,12 @@ export function activityIssues(lesson: ParsedLesson, unit: Unit): Issue[] {
   }
   const printable = activities.some((activity) => activity.materialLinks.some((url) => url.startsWith(PRINT_PREFIX)));
   if (activities.length > 0 && !printable) {
-    issues.push(lessonIssue("lesson-activity-printable", `教材 ${path} 沒有任何 <Activity> 的材料欄連到可列印材料（${PRINT_PREFIX}<材料 id>/）；親子篇至少要有一個附可列印材料的活動`, unit.id, "warning"));
+    issues.push(lessonIssue("lesson-activity-printable", `教材 ${path} 沒有任何 <Activity> 的材料欄連到可列印材料（${PRINT_PREFIX}<材料 id>/）；親子篇至少要有一個附可列印材料的活動`, unit.id));
+  }
+  for (const url of new Set(activities.flatMap((activity) => activity.materialLinks))) {
+    if (url.startsWith(PRINT_PREFIX) && !printPageExists(url)) {
+      issues.push(lessonIssue("lesson-activity-print-missing", `教材 ${path} 的材料欄連到 ${JSON.stringify(url)}，但沒有這份可列印材料；寫法是 ${PRINT_PREFIX}<材料 id>/，頁面在 src/pages/print/<材料 id>.astro`, unit.id));
+    }
   }
   return issues;
 }
