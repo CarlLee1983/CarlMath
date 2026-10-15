@@ -16,7 +16,8 @@
     "validate:content": "node scripts/validate-content.ts",
     "build:e2e": "CARLMATH_CONTENT_DIR=tests/fixtures/site ASTRO_OUT_DIR=${ASTRO_OUT_DIR:-dist-e2e} astro build",
     "test:e2e": "pnpm build:e2e && playwright test",
-    "deploy:dry": "pnpm build && wrangler deploy --dry-run"
+    "deploy:dry": "pnpm build && wrangler deploy --dry-run",
+    "verify": "pnpm validate:content && pnpm check && pnpm test && pnpm test:e2e && pnpm deploy:dry"
   },
   "dependencies": {
     "@astrojs/compiler-rs": "^0.5.1",
