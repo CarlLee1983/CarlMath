@@ -1,13 +1,16 @@
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect, type Locator, type Page } from "@playwright/test";
 
-// 可列印材料頁（/print/<材料 id>/）：第一版五份材料，A4 直式、卡片以 mm 定尺寸、列印時只留材料本身。
+// 可列印材料頁（/print/<材料 id>/）：A4 直式、卡片以 mm 定尺寸、列印時只留材料本身。
 const MATERIALS = [
   { id: "number-cards", title: "數字卡 0–20" },
   { id: "dot-cards", title: "點卡 1–10" },
   { id: "two-row-dots", title: "兩排圓點卡" },
   { id: "number-board", title: "線性數字盤面 0–10" },
   { id: "blank-number-line", title: "空白 0–20 數線" },
+  { id: "ten-frames", title: "十格框" },
+  { id: "place-value-mat", title: "位值板與數字卡" },
+  { id: "tens-number-lines", title: "整十數線 0–100" },
 ] as const;
 
 const MM = 96 / 25.4; // CSS 1mm 的 px 數
