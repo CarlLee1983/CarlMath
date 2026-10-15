@@ -1,5 +1,6 @@
 ---
 import { getCollection } from "astro:content";
+import RouteLine from "../components/home/RouteLine.astro";
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { contentRoot } from "../content/content-dir";
 import { loadValidContent } from "../lib/content";
@@ -21,51 +22,160 @@ const cards = recentlyUpdated(written, (unit) => updatedById.get(unit.id), 6).ma
   sequence: index.sequenceOf(unit.id),
   grades: gradeLabel(index.gradeRange(unit.id)),
 }));
+
+// 階梯式陳述：一句話拆成五行，每行往右退一階
+const stairs = ["每個單元只問一個問題。", "答得出來，就往下走；", "答不出來，", "就回到它的先修，", "一路走到微積分。"];
 ---
 
-<BaseLayout title="CarlMath" description="重直覺與推理的中小學數學自學教材。">
-  <div class="home-hero">
-    <h1>從數數到微積分，重新走一次</h1>
-    <p>一條依概念先後排好的路線：{courseMap.stages.length} 個階段、{total} 個單元。重直覺與推理，不是公式條目。</p>
-  </div>
+<BaseLayout title="CarlMath" description="重直覺與推理的中小學數學自學教材。" fullBleed>
+  <section class="home-hero" aria-labelledby="home-title">
+    <h1 id="home-title" class="hero-name">
+      <span class="hero-line hero-line-1">從數數</span>
+      <span class="hero-line hero-line-2">到微積分</span>
+    </h1>
+    <div class="hero-bottom">
+      <div class="hero-foot">
+        <p class="hero-sentence">一條依概念先後排好的路線：{courseMap.stages.length} 個階段、{total} 個單元。重直覺與推理，不是公式條目。</p>
+        <p class="hero-actions">
+          <a class="button" href="/map/">看課程地圖</a>
+          <a href="/guide/">陪孩子一起學</a>
+        </p>
+      </div>
+      <RouteLine index={index} />
+    </div>
+  </section>
 
-  <div class="home-doors">
-    <section class="home-door" aria-labelledby="door-self">
-      <h2 id="door-self">我想自己重新學數學</h2>
-      <p>每個單元一個核心問題，20–30 分鐘。不確定從哪開始，就從地圖上找第一個你答不出來的問題。</p>
-      <p class="home-acts">
-        <a href="/map/">看課程地圖</a>
-        <a href={`/units/${firstUnit.id}/`}>從第一個單元開始</a>
-      </p>
-    </section>
-    <section class="home-door home-door-family" aria-labelledby="door-family">
-      <h2 id="door-family">我想陪孩子一起學</h2>
-      <p>{familyCount} 個親子共學單元，每篇先讓你弄懂，再帶孩子做 5–15 分鐘的家中活動。</p>
-      <p class="home-acts">
-        <a href="/guide/">親子共學怎麼用</a>
-        {firstFamily && <a href={`/units/${firstFamily.id}/`}>第一篇：{firstFamily.title}</a>}
-      </p>
-    </section>
-  </div>
+  <section class="home-paths" aria-labelledby="paths-title">
+    <div class="paths-head">
+      <h2 id="paths-title">兩種讀法</h2>
+      <p>同一條路線，兩種走法。自學者照著核心問題一段一段往下推；家長先讀懂「大人先懂」，再帶孩子做家中的小活動。</p>
+    </div>
+    <div class="home-doors">
+      <section class="home-door" aria-labelledby="door-self">
+        <p class="specimen" aria-hidden="true">為什麼</p>
+        <h2 id="door-self">我想自己重新學數學</h2>
+        <p>每個單元一個核心問題，20–30 分鐘。不確定從哪開始，就從地圖上找第一個你答不出來的問題。</p>
+        <p class="home-acts">
+          <a href="/map/">看課程地圖</a>
+          <a href={`/units/${firstUnit.id}/`}>從第一個單元開始</a>
+        </p>
+      </section>
 
-  <h2 class="home-progress-title">撰寫進度</h2>
-  <div class="home-progress" role="progressbar" aria-label="撰寫進度" aria-valuenow={written.length} aria-valuemin="0" aria-valuemax={total}>
-    <div class="home-progress-fill" style={`width: ${(written.length / total) * 100}%`}></div>
-  </div>
-  <p class="home-progress-text">{written.length} / {total} 個單元已撰寫，其餘單元已列在地圖上，依建議閱讀順序陸續補上。</p>
+      <section class="home-door home-door-family" aria-labelledby="door-family">
+        <p class="specimen" aria-hidden="true">一起數</p>
+        <h2 id="door-family">我想陪孩子一起學</h2>
+        <p>{familyCount} 個親子共學單元，每篇先讓你弄懂，再帶孩子做 5–15 分鐘的家中活動。</p>
+        <p class="home-acts">
+          <a href="/guide/">親子共學怎麼用</a>
+          {firstFamily && <a href={`/units/${firstFamily.id}/`}>第一篇：{firstFamily.title}</a>}
+        </p>
+      </section>
+    </div>
+  </section>
 
-  <h2 class="home-recent">最近撰寫或更新</h2>
-  <div class="home-cards">
-    {
-      cards.map(({ unit, sequence, grades }) => (
-        <a class="home-card" href={`/units/${unit.id}/`}>
-          <span class="home-card-meta">第 {sequence} 單元 · {grades}</span>
-          <strong>{unit.title}</strong>
-          <span class="home-card-core">{unit.coreQuestion}</span>
-          {unit.family && <span class="unit-family">親子共學</span>}
-        </a>
-      ))
-    }
-  </div>
-  <p><a href="/map/?written=1">看全部已撰寫的單元</a></p>
+  <section class="home-stairs" aria-label="怎麼讀這條路線">
+    <p class="stairs">
+      {stairs.map((line, i) => <span class:list={["stair", `stair-${i}`]}>{line}</span>)}
+    </p>
+    <div class="stairs-photos">
+      <img
+        src="/home/block-stairs.jpg"
+        width="1120"
+        height="1400"
+        alt="亞麻布上，原木方塊疊成 1、2、3、4、5 塊高的五柱，由左往右像階梯一樣升高，最高一柱頂端是一塊苔綠色方塊。"
+        loading="lazy"
+        decoding="async"
+      />
+      <img
+        src="/home/cups-and-spoons.jpg"
+        width="1400"
+        height="933"
+        alt="桌上排成一列的五個小杯子，前四個各放一支木湯匙，最右邊的苔綠色杯子是空的。"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+    <p class="stairs-note">先修只列直接相依的單元，完整的先後關係都在課程地圖上。</p>
+  </section>
+
+  <figure class="home-band">
+    <figcaption>在地上貼一條膠帶、刻度一樣遠，就是一條可以走的數線。</figcaption>
+    <div class="home-band-frame">
+      <img
+        src="/home/tape-number-line.jpg"
+        width="1800"
+        height="1013"
+        alt="淺色木地板上貼著一條橫越畫面的紙膠帶，上面有等距的短刻度，旁邊散著幾顆木鈕扣和積木，其中一塊是苔綠色。"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+  </figure>
+
+  <section class="home-progress-area" aria-labelledby="progress-title">
+    <div class="progress-side">
+      <p class="progress-count" aria-hidden="true"><span>{written.length}</span> / {total}</p>
+      <h2 id="progress-title" class="home-progress-title">撰寫進度</h2>
+      <div class="home-progress" role="progressbar" aria-label="撰寫進度" aria-valuenow={written.length} aria-valuemin="0" aria-valuemax={total}>
+        <div class="home-progress-fill" style={`width: ${(written.length / total) * 100}%`}></div>
+      </div>
+      <p class="home-progress-text">{written.length} / {total} 個單元已撰寫，其餘單元已列在地圖上，依建議閱讀順序陸續補上。</p>
+      <img
+        class="progress-photo"
+        src="/home/dot-cards.jpg"
+        width="1400"
+        height="933"
+        alt="亞麻布上攤成扇形的五張點卡，分別印著 1 到 5 個圓點，其中 3 點的那張是苔綠色。"
+        loading="lazy"
+        decoding="async"
+      />
+    </div>
+    <div class="recent">
+      <h2 class="home-recent">最近撰寫或更新</h2>
+      <div class="home-cards">
+        {
+          cards.map(({ unit, sequence, grades }) => (
+            <a class:list={["home-card", { family: unit.family }]} href={`/units/${unit.id}/`}>
+              <span class="home-card-main">
+                <strong>{unit.title}</strong>
+                <span class="home-card-core">{unit.coreQuestion}</span>
+              </span>
+              <span class="home-card-meta">
+                第 {sequence} 單元 · {grades}
+                {unit.family && <span class="unit-family">親子共學</span>}
+              </span>
+            </a>
+          ))
+        }
+      </div>
+      <p class="recent-all"><a href="/map/?written=1">看全部已撰寫的單元</a></p>
+    </div>
+  </section>
+
+  <footer class="home-close">
+    <div class="close-top">
+      <div class="close-invite">
+        <h2>從第一個問題開始</h2>
+        <a class="button button-inverse" href={`/units/${firstUnit.id}/`}>讀第一個單元</a>
+      </div>
+      <ul class="close-links">
+        <li><a href="/map/">課程地圖</a></li>
+        <li><a href="/guide/">親子共學怎麼用</a></li>
+        <li><a href="https://github.com/CarlLee1983/CarlMath">GitHub 原始碼</a></li>
+      </ul>
+    </div>
+    <p class="close-credits">首頁照片是以 AI 生成的示意圖，畫的是各單元親子活動會用到的小物。</p>
+    <p class="close-wordmark" aria-hidden="true">CarlMath</p>
+  </footer>
 </BaseLayout>
+
+<script>
+  import { revealOnScroll } from "../scripts/reveal";
+  revealOnScroll([
+    [".home-paths", ".paths-head > *, .home-door"],
+    [".home-stairs", ".stair, .stairs-photos img, .stairs-note"],
+    [".home-band", "figcaption"],
+    [".home-progress-area", ".progress-side > *, .home-recent, .home-card, .recent-all"],
+    [".home-close", ".close-invite > *, .close-links li"],
+  ]);
+</script>

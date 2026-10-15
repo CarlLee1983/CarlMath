@@ -65,7 +65,8 @@ test.describe("寬螢幕版面", () => {
 
   test("字級 17px、行高 1.85，正文寬在 38–44rem 之間", async ({ page }) => {
     await page.goto(unitPath);
-    const p = page.getByRole("main").locator("p").first();
+    // 正文段落：教材內容是 main 的直接子層；標題下的核心問題（.core）是放大的導言，不算正文
+    const p = page.getByRole("main").locator(":scope > p:not(.core)").first();
     const style = await p.evaluate((el) => ({ size: getComputedStyle(el).fontSize, line: getComputedStyle(el).lineHeight }));
     expect(style.size).toBe("17px");
     expect(style.line).toBe("31.45px");

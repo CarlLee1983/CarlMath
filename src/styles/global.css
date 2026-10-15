@@ -1,23 +1,36 @@
 /* 色票 token 取自閱讀頁原型（.scratch/foundation/assets/reading-page.prototype.html），light-dark() 的前者為淺色、後者為深色 */
+/* 色票：沙色地、炭墨、苔綠強調（首頁改版時定稿）。light-dark() 前者淺色、後者深色；各 token 的語意見 docs/figure-guide.md「色票」 */
 :root {
   /* 預設跟隨系統；data-theme 以 color-scheme 強制切換 */
   color-scheme: light dark;
-  --bg: light-dark(#fbfaf7, #17191c);
-  --fg: light-dark(#22252a, #e6e4df);
-  --muted: light-dark(#6b6f76, #9a9ea6);
-  --line: light-dark(#e3e0d8, #2e3136);
-  --card: light-dark(#ffffff, #1f2226);
-  --accent: light-dark(#2f6fde, #7aa7ff);
-  --accent-soft: light-dark(#e8f0fd, #1e2a40);
-  --warn: light-dark(#c2410c, #fb923c);
-  --warn-soft: light-dark(#fdf0e8, #3a2418);
-  --ok: light-dark(#15803d, #4ade80);
-  --ok-soft: light-dark(#e8f6ec, #173022);
-  --family: light-dark(#8a5a00, #f0c060);
-  --family-soft: light-dark(#fdf5e1, #33290f);
+  --bg: light-dark(#ddd6c6, #1c1d19);
+  --fg: light-dark(#2a2a26, #e4dfd2);
+  --muted: light-dark(#59574e, #a9a593);
+  --line: light-dark(#c4bba6, #3a3b33);
+  --card: light-dark(#e8e2d6, #25261f);
+  --accent: light-dark(#4f6238, #a9c08a);
+  --accent-soft: light-dark(#cdd3bd, #2c3423);
+  --accent-ink: light-dark(#ffffff, #1c1d19);
+  --warn: light-dark(#9b3a1c, #f08a5d);
+  --warn-soft: light-dark(#ecd6c8, #3a2418);
+  --ok: light-dark(#29604a, #7cc59f);
+  --ok-soft: light-dark(#cfdcce, #173022);
+  --family: light-dark(#6e500e, #e2bb5c);
+  --family-soft: light-dark(#e6d7ad, #33290f);
+  /* 整片的色塊：苔綠底與其上的字 */
+  --field: light-dark(#3f5a2a, #2c3a20);
+  --field-ink: light-dark(#f2eee4, #e4dfd2);
+  --field-ink-2: #d3e3a1;
   --shadow: light-dark(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.5));
-  --serif: "Noto Serif TC", "Songti TC", serif;
-  --sans: "Noto Sans TC", "PingFang TC", system-ui, sans-serif;
+  /* 拉丁字母與數字用 Hanken Grotesk，中文逐字落到 Noto Sans TC；兩者皆自架（@fontsource-variable） */
+  --sans: "Hanken Grotesk Variable", "Noto Sans TC Variable", "PingFang TC", system-ui, sans-serif;
+  --serif: var(--sans);
+  --step-small: clamp(0.9375rem, 0.9rem + 0.1vw, 1rem);
+  --step-body: clamp(1.0625rem, 1rem + 0.25vw, 1.1875rem);
+  --step-lead: clamp(1.25rem, 1.1rem + 0.7vw, 1.625rem);
+  --step-head: clamp(1.5rem, 1.1rem + 1.6vw, 2.25rem);
+  --margin: clamp(16px, 2.2vw, 32px);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }
 :root[data-theme="light"] { color-scheme: light; }
 :root[data-theme="dark"] { color-scheme: dark; }
@@ -32,23 +45,34 @@ body {
   font-size: 18px;
   line-height: 1.85;
 }
-a { color: var(--accent); }
-h1, h2, h3 { line-height: 1.35; }
+a { color: var(--accent); text-underline-offset: 0.18em; }
+h1, h2, h3 { line-height: 1.3; font-weight: 600; letter-spacing: -0.01em; }
+:focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+/* 腳本為了螢幕閱讀器把焦點移到標題（tabindex=-1）時不畫框；Tab 走得到的元素照常有框 */
+[tabindex="-1"]:focus { outline: none; }
+::selection { background: var(--accent); color: var(--accent-ink); }
 
-.site-header {
-  border-bottom: 1px solid var(--line);
-  padding: 8px 16px;
-}
+/* 站頭：字標、兩個連結，不畫邊框，與內容之間只靠留白 */
+.site-header { padding: 8px var(--margin); }
 .site-header-inner {
-  max-width: 40rem;
-  margin: 0 auto;
   display: flex;
   flex-wrap: wrap;
   align-items: baseline;
-  gap: 0 16px;
+  gap: 0 24px;
 }
-.site-name { font-weight: 700; color: var(--fg); text-decoration: none; margin-right: auto; }
-.site-nav { display: flex; flex-wrap: wrap; gap: 0 16px; }
+.site-name {
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  text-decoration: none;
+  margin-right: auto;
+}
+.site-nav { display: flex; flex-wrap: wrap; gap: 0 24px; }
+.site-name,
+.site-nav a { display: inline-flex; align-items: center; min-height: 44px; }
+.site-nav a { color: var(--fg); text-decoration: none; font-size: 0.95rem; }
+.site-nav a:hover { text-decoration: underline; }
 
 .sr-only {
   position: absolute;
@@ -60,30 +84,44 @@ h1, h2, h3 { line-height: 1.35; }
 }
 
 .page { max-width: 40rem; margin: 0 auto; padding: 16px; }
+.page-full { display: block; }
+
+/* 主要行動：方角、單一填色；按下時微縮 */
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 24px;
+  background: var(--accent);
+  color: var(--accent-ink);
+  font-weight: 500;
+  text-decoration: none;
+  transition: transform 160ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+.button:hover { background: var(--fg); color: var(--bg); }
+.button:active { transform: scale(0.97); }
+.button-inverse { background: var(--bg); color: var(--fg); }
+.button-inverse:hover { background: var(--accent); color: var(--accent-ink); }
 
 .katex-display { overflow: auto hidden; padding: 4px 0; }
 
-/* 未撰寫的單元頁 */
-.unit-status {
-  display: inline-block;
-  margin: 0;
-  padding: 0 12px;
-  border: 1px solid var(--warn);
-  border-radius: 999px;
-  background: var(--warn-soft);
-  color: var(--warn);
-  font-weight: 700;
+/* 未撰寫的單元頁：標題、放大的核心問題、一行狀態；接著是「現在可以先讀」的苔綠色塊 */
+.unit-head h1 { margin: 0.4em 0 0.2em; font-size: var(--step-head); letter-spacing: -0.02em; }
+.unit-core { margin: 0 0 12px; font-size: var(--step-lead); line-height: 1.5; }
+.unit-meta { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: 0; font-size: var(--step-small); color: var(--muted); }
+.unit-status { color: var(--warn); font-weight: 600; }
+.unit-family { color: var(--family); font-weight: 600; }
+.unit-read-now {
+  margin: 32px 0;
+  padding: 24px;
+  background: var(--field);
+  color: var(--field-ink);
 }
-.unit-facts { margin: 16px 0; }
-.unit-facts dt { color: var(--muted); font-size: 0.8em; }
-.unit-facts dd { margin: 0 0 8px; overflow-wrap: anywhere; }
-.unit-family {
-  display: inline-block;
-  padding: 0 10px;
-  border-radius: 999px;
-  background: var(--family-soft);
-  color: var(--family);
-}
+.unit-read-now h2 { margin: 0 0 8px; font-size: var(--step-small); font-weight: 600; }
+.unit-read-now p { margin: 0; }
+.unit-read-now a { color: var(--field-ink); }
+.read-now-title { margin-top: 12px !important; font-size: var(--step-lead); font-weight: 600; }
+.read-now-core { color: var(--field-ink-2); }
 .chip {
   display: inline-block;
   font-size: 0.9em;
@@ -101,10 +139,7 @@ h1, h2, h3 { line-height: 1.35; }
 .unit-links a { overflow-wrap: anywhere; }
 .unit-tag {
   margin-left: 8px;
-  padding: 0 8px;
-  border-radius: 999px;
-  background: var(--warn-soft);
-  color: var(--warn);
+  color: var(--muted);
   font-size: 0.8em;
   white-space: nowrap;
 }

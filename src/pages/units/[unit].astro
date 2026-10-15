@@ -24,6 +24,8 @@ export async function getStaticPaths() {
     const step = index.nextStep(unit.id);
     const written = index.isWritten(unit.id);
     const entry = lessons.get(unit.id);
+    // 未撰寫的單元：遞移先修裡、依閱讀順序最後（最接近它）的一篇已撰寫單元，就是現在能先讀的
+    const readNow = written ? undefined : index.transitivePrerequisites(unit.id).filter((pre) => index.isWritten(pre.id)).at(-1);
     if (written && !entry) throw new Error(`單元「${unit.id}」已撰寫，但教材 collection 找不到它`);
     return {
       params: { unit: unit.id },
@@ -40,12 +42,14 @@ export async function getStaticPaths() {
         previous: toNeighbor(index.previous(unit.id)),
         next: toNeighbor(index.next(unit.id)),
         nextStep: { kind: step.kind, units: step.units.map(toUnitLink) },
+        readNow: readNow ? { id: readNow.id, title: readNow.title, coreQuestion: readNow.coreQuestion } : null,
       },
     };
   });
 }
 
-const { unit, written, entry, stageTitle, grades, prerequisites, dependents, suggested, stageUnits, previous, next, nextStep } = Astro.props;
+const { unit, written, entry, stageTitle, grades, prerequisites, dependents, suggested, stageUnits, previous, next, nextStep, readNow } =
+  Astro.props;
 const rendered = written && entry ? await render(entry) : null;
 const Content = rendered?.Content ?? null;
 const description = entry?.data.description ?? unit.coreQuestion;
@@ -87,22 +91,34 @@ const title = `${unit.title}｜CarlMath`;
     )
   ) : (
     <BaseLayout title={title} description={description} noindex={!written}>
-      <h1>{unit.title}</h1>
-      <p class="unit-status">尚未撰寫</p>
-      <dl class="unit-facts">
-        <dt>階段</dt>
-        <dd>{stageTitle}</dd>
-        <dt>核心問題</dt>
-        <dd>{unit.coreQuestion}</dd>
-        <dt>建議年級</dt>
-        <dd>{grades}</dd>
-        {unit.family && (
-          <>
-            <dt>親子</dt>
-            <dd class="unit-family">親子共學</dd>
-          </>
-        )}
-      </dl>
+      <div class="unit-head">
+        <h1>{unit.title}</h1>
+        <p class="unit-core">{unit.coreQuestion}</p>
+        <p class="unit-meta">
+          <span class="unit-status">尚未撰寫</span>
+          <span>{stageTitle}</span>
+          <span>{grades}</span>
+          {unit.family && <span class="unit-family">親子共學</span>}
+        </p>
+      </div>
+      <section class="unit-read-now" aria-labelledby="read-now">
+        <h2 id="read-now">現在可以先讀</h2>
+        {
+          readNow ? (
+            <>
+              <p>這篇還沒寫好。它的先修裡，離它最近的已撰寫單元是：</p>
+              <p class="read-now-title">
+                <a href={`/units/${readNow.id}/`}>{readNow.title}</a>
+              </p>
+              <p class="read-now-core">{readNow.coreQuestion}</p>
+            </>
+          ) : (
+            <p>
+              這篇還沒寫好，它的先修也都還沒寫。可以先從<a href="/map/?written=1">已撰寫的單元</a>挑一篇讀。
+            </p>
+          )
+        }
+      </section>
       <section aria-labelledby="direct-prerequisites">
         <h2 id="direct-prerequisites">直接先修</h2>
         {prerequisites.length > 0 ? <UnitLinks units={prerequisites} /> : <p>這個單元沒有先修，可以直接開始。</p>}

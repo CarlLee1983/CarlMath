@@ -96,8 +96,8 @@ test.describe("分段步進", () => {
   });
 
   test("第 6–8 段的卡片是金框，其他段是一般框線（淺色與深色）", async ({ page }) => {
-    const family = { light: "rgb(138, 90, 0)", dark: "rgb(240, 192, 96)" };
-    const line = { light: "rgb(227, 224, 216)", dark: "rgb(46, 49, 54)" };
+    const family = { light: "rgb(110, 80, 14)", dark: "rgb(226, 187, 92)" };
+    const line = { light: "rgb(196, 187, 166)", dark: "rgb(58, 59, 51)" };
     await page.goto(familyPath);
     for (const scheme of ["light", "dark"] as const) {
       await page.emulateMedia({ colorScheme: scheme });
@@ -119,7 +119,7 @@ test.describe("分段步進", () => {
 
   test("進度點：目前段、看過的段、和孩子一起的段各有樣式（淺色）", async ({ page }) => {
     await page.emulateMedia({ colorScheme: "light" });
-    const colors = { current: "rgb(47, 111, 222)", seen: "rgb(232, 240, 253)", unseen: "rgb(227, 224, 216)", family: "rgb(253, 245, 225)", familyCurrent: "rgb(138, 90, 0)" };
+    const colors = { current: "rgb(79, 98, 56)", seen: "rgb(205, 211, 189)", unseen: "rgb(196, 187, 166)", family: "rgb(230, 215, 173)", familyCurrent: "rgb(110, 80, 14)" };
     await page.goto(familyPath);
     expect(await background(dot(page, 1))).toBe(colors.current);
     expect(await background(dot(page, 2))).toBe(colors.unseen);
@@ -285,7 +285,7 @@ test.describe("段落內容", () => {
     await expect(first).toContainText("約 5–10 分鐘");
     await expect(second.getByRole("heading", { level: 3 })).toHaveText("數字卡配對");
     await expect(second).toContainText("約 10 分鐘");
-    expect(await borderColor(first)).toBe("rgb(138, 90, 0)");
+    expect(await borderColor(first)).toBe("rgb(110, 80, 14)");
 
     for (const activity of [first, second]) {
       await expect(activity.locator("dt")).toHaveText(["目的", "材料", "時間", "步驟", "家長引導語", "卡關時", "回饋語範例"]);

@@ -2,16 +2,16 @@ import { test, expect, type Page } from "@playwright/test";
 
 // 取自色票 token 的淺色與深色值（computed color 格式）
 const LIGHT = {
-  "--bg": "rgb(251, 250, 247)",
-  "--fg": "rgb(34, 37, 42)",
-  "--accent": "rgb(47, 111, 222)",
-  "--family": "rgb(138, 90, 0)",
+  "--bg": "rgb(221, 214, 198)",
+  "--fg": "rgb(42, 42, 38)",
+  "--accent": "rgb(79, 98, 56)",
+  "--family": "rgb(110, 80, 14)",
 };
 const DARK = {
-  "--bg": "rgb(23, 25, 28)",
-  "--fg": "rgb(230, 228, 223)",
-  "--accent": "rgb(122, 167, 255)",
-  "--family": "rgb(240, 192, 96)",
+  "--bg": "rgb(28, 29, 25)",
+  "--fg": "rgb(228, 223, 210)",
+  "--accent": "rgb(169, 192, 138)",
+  "--family": "rgb(226, 187, 92)",
 };
 
 // 以探針元素讀 token 的實際顏色，不依賴 token 在 CSS 裡的寫法

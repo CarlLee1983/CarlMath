@@ -1,0 +1,77 @@
+---
+import type { CourseIndex } from "../../lib/course-map-index";
+import { gradeLabel } from "../../lib/grade-label";
+
+// 首頁的整條路線：每個單元是數線上的一格。滑鼠移過去先預覽，點選或拖曳選定，也能用按鈕一格一格走或跳到下一篇已撰寫。
+// 沒有 script 時，讀數停在第一個單元、步進按鈕隱藏，連結照常可用。
+interface Props {
+  index: CourseIndex;
+}
+const { index } = Astro.props;
+
+interface RouteStop {
+  sequence: number;
+  href: string;
+  title: string;
+  coreQuestion: string;
+  stage: string;
+  grades: string;
+  written: boolean;
+  stageStart: boolean;
+}
+
+const stops: RouteStop[] = index.units.map((unit, i) => {
+  const stage = index.stageOf(unit.id);
+  return {
+    sequence: i + 1,
+    href: `/units/${unit.id}/`,
+    title: unit.title,
+    coreQuestion: unit.coreQuestion,
+    stage: stage.title,
+    grades: gradeLabel(index.gradeRange(unit.id)),
+    written: index.isWritten(unit.id),
+    stageStart: i === 0 || index.stageOf(index.units[i - 1]!.id) !== stage,
+  };
+});
+const first = stops[0]!;
+const metaOf = (stop: RouteStop) => `第 ${stop.sequence} 單元 · ${stop.stage} · ${stop.grades}`;
+---
+
+<div class="route" data-route>
+  <label class="route-label" for="route-input">沿著路線移動、點選或用按鈕，看每個單元問什麼</label>
+  <div class="route-line" style={`--count: ${stops.length}; --pos: 0`}>
+    <ol class="route-ticks" aria-hidden="true">
+      {stops.map((stop) => <li class:list={["route-tick", { written: stop.written, "stage-start": stop.stageStart }]} />)}
+    </ol>
+    <span class="route-marker" aria-hidden="true"></span>
+    <input
+      id="route-input"
+      class="route-input"
+      type="range"
+      min="1"
+      max={stops.length}
+      value="1"
+      aria-valuetext={`${metaOf(first)}：${first.title}`}
+    />
+  </div>
+  <div class="route-ends" aria-hidden="true">
+    <span>數數</span>
+    <span>積分</span>
+  </div>
+  <div class="route-steps" data-route-steps hidden>
+    <button type="button" class="route-step" data-step="-1">上一個</button>
+    <button type="button" class="route-step" data-step="1">下一個</button>
+    <button type="button" class="route-step" data-step="written">下一篇已撰寫</button>
+  </div>
+  <div class="route-readout" aria-live="polite">
+    <p class="route-meta" data-route-meta>{metaOf(first)}{first.written ? "" : " · 尚未撰寫"}</p>
+    <p class="route-title"><a href={first.href} data-route-link>{first.title}</a></p>
+    <p class="route-core" data-route-core>{first.coreQuestion}</p>
+  </div>
+  <script type="application/json" data-route-stops set:html={JSON.stringify(stops)} />
+</div>
+
+<script>
+  import { mountRouteLine } from "../../scripts/route-line";
+  document.querySelectorAll<HTMLElement>("[data-route]").forEach(mountRouteLine);
+</script>
