@@ -11,7 +11,7 @@ import "../styles/family.css";
 
 // 親子篇（family: true）的閱讀版面：分段步進，一次顯示一張段落卡。slot 放教材內文。
 type Props = ReadingProps;
-const { title, description, unit, stageTitle, suggested, previous, next, nextStep } = Astro.props;
+const { title, description, modifiedTime, image, jsonLd, unit, stageTitle, suggested, previous, next, nextStep } = Astro.props;
 
 // 把教材渲染結果依 H2 切成 9 張卡。這個做法依賴兩個不變式：
 // 1. 教材 HTML 裡只有 9 個段落標題會輸出 <h2>：MDX 元件（Answer、Activity、Misconception…）都不輸出 h2，
@@ -32,7 +32,7 @@ const withChild = (card: { title: string }) => WITH_CHILD_HEADINGS.includes(card
 const lastCard = cards[cards.length - 1]!;
 ---
 
-<Document title={title} description={description}>
+<Document title={title} description={description} path={Astro.url.pathname} ogType="article" modifiedTime={modifiedTime} image={image} jsonLd={jsonLd}>
   <div class="family-reading" data-unit={unit.id}>
     <header class="site-header">
       <div class="site-header-inner">

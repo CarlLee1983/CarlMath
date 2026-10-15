@@ -3,15 +3,30 @@ import "@fontsource-variable/hanken-grotesk";
 import "@fontsource-variable/noto-sans-tc";
 import "katex/dist/katex.min.css";
 import "../styles/global.css";
+import { serializeJsonLd, type JsonLd } from "../lib/structured-data.ts";
+import { DEFAULT_SHARE_CARD, shareImageMeta, type ShareImage } from "../lib/share-cards.ts";
 
 // 文件外殼：只有 <html>／<head>／<body>，頁首與 main 由各版面自己組。
+// canonical、Open Graph、Twitter Card 一律在這裡輸出，各版面只傳「分享資訊」的值。
 interface Props {
   title: string;
   description?: string;
-  /** 不讓搜尋引擎收錄（未撰寫的單元頁） */
+  /** 不讓搜尋引擎收錄（未撰寫的單元頁、404） */
   noindex?: boolean;
+  /** 頁面路徑（帶尾斜線），與 `site` 組成 canonical 與 og:url；沒傳就都不輸出（404：不是實際存在的網址） */
+  path?: string;
+  /** og:type；已撰寫的單元頁用 article，預設 website */
+  ogType?: "website" | "article";
+  /** 最後實質修訂日（YYYY-MM-DD），只在 article 輸出 article:modified_time */
+  modifiedTime?: string;
+  /** 分享圖；網址須為絕對網址，沒傳就用全站預設圖 */
+  image?: ShareImage;
+  /** 結構化資料（JSON-LD）；沒傳就不輸出 */
+  jsonLd?: JsonLd;
 }
-const { title, description, noindex } = Astro.props;
+const { title, description, noindex, path, ogType = "website", modifiedTime, jsonLd } = Astro.props;
+const image = Astro.props.image ?? shareImageMeta(DEFAULT_SHARE_CARD, Astro.site!);
+const canonical = path === undefined ? undefined : new URL(path, Astro.site).href;
 ---
 
 <!doctype html>
@@ -22,6 +37,25 @@ const { title, description, noindex } = Astro.props;
     <title>{title}</title>
     {noindex && <meta name="robots" content="noindex" />}
     {description && <meta name="description" content={description} />}
+    {canonical && <link rel="canonical" href={canonical} />}
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    {/* 值對應 global.css 的 --bg：light-dark(亮色, 暗色)，改色票時要一起改 */}
+    <meta name="theme-color" content="#ddd6c6" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#1c1d19" media="(prefers-color-scheme: dark)" />
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    {canonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:type" content={ogType} />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:site_name" content="CarlMath" />
+    {ogType === "article" && modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+    <meta property="og:image" content={image.url} />
+    <meta property="og:image:width" content={String(image.width)} />
+    <meta property="og:image:height" content={String(image.height)} />
+    <meta property="og:image:alt" content={image.alt} />
+    <meta name="twitter:card" content="summary_large_image" />
+    {jsonLd && <script type="application/ld+json" set:html={serializeJsonLd(jsonLd)} />}
   </head>
   <body>
     <slot />

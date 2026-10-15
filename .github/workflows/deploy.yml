@@ -1,0 +1,40 @@
+name: Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# 同群組排隊，不取消進行中的部署，避免半途中斷。
+concurrency:
+  group: cloudflare-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    # 設好本 repo 專用的 Cloudflare 憑證（secrets：CLOUDFLARE_API_TOKEN、CLOUDFLARE_ACCOUNT_ID）
+    # 後，把 repo 變數 CLOUDFLARE_DEPLOY_ENABLED 設為 true 才會部署。
+    if: github.ref == 'refs/heads/main' && vars.CLOUDFLARE_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - uses: pnpm/setup@5d160c5bc68a09337ad0d5654e237e03253b5879 # v1
+        with:
+          runtime: node@24
+          cache: true
+          install: false
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      # verify 最後一步以正式內容 build 到 dist，部署的就是這份輸出。
+      - run: pnpm run verify
+      # token 只經由環境變數傳遞；不開 debug、不 echo。
+      - name: Publish static assets
+        run: pnpm exec wrangler deploy
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}

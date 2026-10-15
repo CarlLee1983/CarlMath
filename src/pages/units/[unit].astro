@@ -4,6 +4,8 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { contentRoot } from "../../content/content-dir";
 import { loadValidContent } from "../../lib/content";
 import UnitLinks, { type UnitLink } from "../../components/UnitLinks.astro";
+import { shareImageMeta, unitShareCard } from "../../lib/share-cards";
+import { unitBreadcrumbJsonLd } from "../../lib/structured-data";
 import { gradeLabel } from "../../lib/grade-label";
 import { lessonComponents } from "../../components/lesson";
 import FamilyReadingLayout from "../../layouts/FamilyReadingLayout.astro";
@@ -34,6 +36,7 @@ export async function getStaticPaths() {
         written,
         entry,
         stageTitle: index.stageOf(unit.id).title,
+        stageId: index.stageOf(unit.id).id,
         grades: gradeLabel(index.gradeRange(unit.id)),
         prerequisites: index.prerequisites(unit.id).map(toUnitLink),
         dependents: index.dependents(unit.id).map(toUnitLink),
@@ -48,12 +51,15 @@ export async function getStaticPaths() {
   });
 }
 
-const { unit, written, entry, stageTitle, grades, prerequisites, dependents, suggested, stageUnits, previous, next, nextStep, readNow } =
+const { unit, written, entry, stageTitle, stageId, grades, prerequisites, dependents, suggested, stageUnits, previous, next, nextStep, readNow } =
   Astro.props;
 const rendered = written && entry ? await render(entry) : null;
 const Content = rendered?.Content ?? null;
 const description = entry?.data.description ?? unit.coreQuestion;
 const title = `${unit.title}｜CarlMath`;
+// 已撰寫單元用自己的分享圖與麵包屑（閱讀版面只在已撰寫時渲染，傳入處以 ! 斷言）；未撰寫的沿用文件外殼的預設圖，也不輸出 JSON-LD
+const image = written ? shareImageMeta(unitShareCard(unit, stageTitle), Astro.site!) : undefined;
+const jsonLd = written ? unitBreadcrumbJsonLd(Astro.site!, { id: stageId, title: stageTitle }, unit) : undefined;
 ---
 
 {
@@ -62,6 +68,9 @@ const title = `${unit.title}｜CarlMath`;
       <FamilyReadingLayout
         title={title}
         description={description}
+        modifiedTime={entry?.data.updated}
+        image={image!}
+        jsonLd={jsonLd!}
         unit={unit}
         stageTitle={stageTitle}
         suggested={suggested}
@@ -75,6 +84,9 @@ const title = `${unit.title}｜CarlMath`;
       <SidebarReadingLayout
         title={title}
         description={description}
+        modifiedTime={entry?.data.updated}
+        image={image!}
+        jsonLd={jsonLd!}
         unit={unit}
         stageTitle={stageTitle}
         stageUnits={stageUnits}

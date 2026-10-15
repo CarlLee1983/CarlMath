@@ -16,7 +16,8 @@
     "validate:content": "node scripts/validate-content.ts",
     "build:e2e": "CARLMATH_CONTENT_DIR=tests/fixtures/site ASTRO_OUT_DIR=${ASTRO_OUT_DIR:-dist-e2e} astro build",
     "test:e2e": "pnpm build:e2e && playwright test",
-    "deploy:dry": "pnpm build && wrangler deploy --dry-run"
+    "deploy:dry": "pnpm build && wrangler deploy --dry-run",
+    "verify": "pnpm validate:content && pnpm check && pnpm test && pnpm test:e2e && pnpm deploy:dry"
   },
   "dependencies": {
     "@astrojs/compiler-rs": "^0.5.1",
@@ -38,9 +39,13 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@axe-core/playwright": "^4.13.0",
+    "@fontsource/noto-sans": "5.3.0",
+    "@fontsource/noto-sans-tc": "^5.3.1",
     "@playwright/test": "^1.64.0",
+    "@resvg/resvg-js": "^2.6.2",
     "@types/mdast": "^4.0.4",
     "@types/node": "^24.19.2",
+    "satori": "0.56.1",
     "typescript": "^6.0.3",
     "wrangler": "^4.150.0"
   }
