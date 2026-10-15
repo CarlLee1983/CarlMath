@@ -6,13 +6,13 @@
 .crumbs ol { list-style: none; display: flex; flex-wrap: wrap; gap: 0 6px; padding: 0; margin: 0; font-size: 0.85em; color: var(--muted); }
 .crumbs li + li::before { content: "›"; margin-right: 6px; }
 .crumbs [aria-current] { color: var(--fg); }
-.chapter h1 { font-size: 1.25rem; margin: 0; }
-.chapter .core { color: var(--muted); font-size: 0.9em; margin: 0; }
+.chapter h1 { font-size: var(--step-head); line-height: 1.2; letter-spacing: -0.02em; margin: 0.3em 0 0.1em; }
+.chapter .core { font-size: var(--step-lead); line-height: 1.5; margin: 0 0 4px; }
 
 /* 進度點：連結本身是 24px 高的點擊範圍，8px 高的細條畫在 ::before */
 .steps { display: flex; gap: 4px; margin: 8px 0 4px; }
 .steps a { flex: 1; height: 24px; display: flex; align-items: center; }
-.steps a::before { content: ""; flex: 1; height: 8px; border-radius: 4px; background: var(--line); }
+.steps a::before { content: ""; flex: 1; height: 8px; background: var(--line); }
 .steps a.family::before { background: var(--family-soft); box-shadow: inset 0 0 0 1px var(--family); }
 .steps a.seen::before { background: var(--accent-soft); }
 .steps a.cur::before { background: var(--accent); }
@@ -21,20 +21,18 @@
 .stage { max-width: 44rem; margin: 0 auto; padding: 12px 16px 140px; }
 .stage > section {
   background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: 16px;
-  padding: 8px 24px 20px;
-  box-shadow: 0 2px 10px var(--shadow);
+  border-top: 8px solid var(--line);
+  padding: 12px 28px 28px;
   margin-bottom: 16px;
 }
-.stage > section.family { border: 2px solid var(--family); }
+.stage > section.family { border-top-color: var(--family); }
 /* 腳本成功啟用分段（setUp 加上 stepping）後才收起其他段；腳本沒載入或失敗時 9 段都可見 */
 .stepping .stage > section:not(.cur) { display: none; }
 .step-no { margin: 0.6em 0 0; font-size: 0.8em; color: var(--muted); }
-.with-child { margin-left: 8px; padding: 0 10px; border-radius: 999px; background: var(--family-soft); color: var(--family); font-weight: 700; }
-.stage h2 { font-size: 1.5rem; margin: 0.1em 0 0.5em; }
+.with-child { margin-left: 8px; color: var(--family); font-weight: 700; }
+.stage h2 { font-size: var(--step-head); line-height: 1.25; letter-spacing: -0.02em; margin: 0.1em 0 0.5em; }
 
-.suggested { font-size: 0.85em; border-top: 1px solid var(--line); margin-top: 1.5em; padding-top: 0.5em; }
+.suggested { font-size: 0.85em; margin-top: 1.5em; padding-top: 0.5em; }
 .suggested .meta-label { margin: 0; color: var(--muted); }
 .suggested .unit-links { margin: 0; }
 .stage .pager { margin-top: 32px; }
@@ -46,19 +44,21 @@
   pointer-events: auto;
   flex: 0 1 14rem;
   min-width: 0;
-  border: 1px solid var(--line);
+  border: 0;
   background: var(--card);
   color: var(--fg);
-  border-radius: 10px;
+  min-height: 48px;
   padding: 10px;
   font: inherit;
   font-size: 0.9em;
   line-height: 1.5;
   cursor: pointer;
-  box-shadow: 0 2px 8px var(--shadow);
+  box-shadow: 0 4px 16px var(--shadow); /* 固定浮在內容上方，才用陰影 */
   overflow-wrap: anywhere;
+  transition: transform 160ms var(--ease-out);
 }
-.stepnav button.primary { background: var(--accent); color: var(--card); border-color: var(--accent); }
+.stepnav button:active { transform: scale(0.97); }
+.stepnav button.primary { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
 
 /* <Answer> 在分段步進版改用「翻開」樣式 */
 .family-reading details.answer { border-style: dashed; }
@@ -68,5 +68,5 @@
 .family-reading details.answer[open] > summary::before { content: none; }
 
 @media (max-width: 600px) {
-  .stage > section { padding: 8px 16px 20px; }
+  .stage > section { padding: 8px 18px 24px; }
 }

@@ -7,8 +7,10 @@ interface Props {
   description?: string;
   /** 不讓搜尋引擎收錄（未撰寫的單元頁） */
   noindex?: boolean;
+  /** 滿版頁面（首頁）：main 不套 .page 的置中窄欄，版面由頁面自己決定 */
+  fullBleed?: boolean;
 }
-const { title, description, noindex } = Astro.props;
+const { title, description, noindex, fullBleed = false } = Astro.props;
 ---
 
 <Document title={title} description={description} noindex={noindex}>
@@ -17,7 +19,7 @@ const { title, description, noindex } = Astro.props;
       <SiteNav />
     </div>
   </header>
-  <main class="page">
+  <main class={fullBleed ? "page-full" : "page"}>
     <slot />
   </main>
 </Document>

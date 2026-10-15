@@ -3,7 +3,7 @@
 .map-intro { color: var(--muted); margin: 0 0 16px; }
 
 /* 跳轉目標的 scroll-margin-top：要大於 320px 寬時折成兩行的篩選列高度，目標才不會被 sticky 篩選列蓋住 */
-:root { --map-sticky-offset: 9rem; }
+:root { --map-sticky-offset: 10rem; }
 
 /* 篩選列固定在頂端 */
 .map-filters {
@@ -16,7 +16,6 @@
   gap: 4px 16px;
   padding: 8px 0;
   background: var(--bg);
-  border-bottom: 1px solid var(--line);
 }
 .map-filters[hidden] { display: none; }
 .map-filters input[type="search"] {
@@ -24,46 +23,52 @@
   min-width: 0;
   padding: 4px 10px;
   font: inherit;
+  min-height: 44px;
   color: var(--fg);
   background: var(--card);
   border: 1px solid var(--line);
-  border-radius: 8px;
+  border-radius: 0;
 }
 /* 不用 display: contents：部分瀏覽器會讓 fieldset 從無障礙樹消失，失去分組語意 */
 .map-filters fieldset { display: flex; flex-wrap: wrap; gap: inherit; min-width: 0; border: 0; margin: 0; padding: 0; }
 .map-count { margin: 0; flex: 1 1 100%; font-size: 0.85em; color: var(--muted); }
-.map-filters label { font-size: 0.9em; white-space: nowrap; }
+.map-filters label { display: inline-flex; align-items: center; gap: 6px; min-height: 44px; font-size: 0.9em; white-space: nowrap; }
 
-/* 階段跳轉膠囊：水平捲動，不撐寬整頁 */
+/* 階段跳轉：換行排開，13 個階段一次看得到，不靠水平捲動 */
 .map-pills {
   display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  padding: 8px 0;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 0 8px;
 }
 .map-pills a {
-  flex: none;
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
   padding: 0 12px;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--fg); /* --accent 在 --accent-soft 上對比不足 4.5:1 */
+  background: var(--card);
+  color: var(--fg);
   text-decoration: none;
   font-size: 0.9em;
+  transition: background-color 160ms var(--ease-out);
 }
+.map-pills a:hover { background: var(--accent-soft); }
 
 .map-stage { scroll-margin-top: var(--map-sticky-offset); }
 .map-stage[hidden] { display: none; }
-.map-stage h2 { font-size: 1.3rem; margin: 1.6em 0 0.4em; }
+.map-stage h2 { font-size: var(--step-lead); margin: 2em 0 0.4em; letter-spacing: -0.02em; }
 .map-stage h2 small { color: var(--muted); font-size: 0.65em; font-weight: 400; }
 
 .map-row {
   display: grid;
   grid-template-columns: 2.5rem minmax(0, 1fr) auto;
   gap: 0 12px;
-  padding: 10px 8px;
-  border-bottom: 1px solid var(--line);
+  padding: 12px 8px;
+  margin-inline: -8px;
   scroll-margin-top: var(--map-sticky-offset);
+  transition: background-color 160ms var(--ease-out);
 }
+.map-row:hover { background: var(--card); }
 .map-row[hidden] { display: none; }
 .map-row:target { background: var(--accent-soft); }
 .map-no { color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }

@@ -32,11 +32,11 @@ test.describe("<Misconception>", () => {
       await expect(wrong(page)).toContainText("看到很長的式子，就把整頁調寬");
       await expect(right(page)).toContainText("頁面寬度維持不變");
       const bar = (locator: import("@playwright/test").Locator) => locator.evaluate((el) => getComputedStyle(el).borderLeftColor);
-      expect(await bar(wrong(page))).toBe("rgb(194, 65, 12)");
-      expect(await bar(right(page))).toBe("rgb(21, 128, 61)");
+      expect(await bar(wrong(page))).toBe("rgb(155, 58, 28)");
+      expect(await bar(right(page))).toBe("rgb(41, 96, 74)");
       await page.emulateMedia({ colorScheme: "dark" });
-      expect(await bar(wrong(page))).toBe("rgb(251, 146, 60)");
-      expect(await bar(right(page))).toBe("rgb(74, 222, 128)");
+      expect(await bar(wrong(page))).toBe("rgb(240, 138, 93)");
+      expect(await bar(right(page))).toBe("rgb(124, 197, 159)");
     });
   });
 

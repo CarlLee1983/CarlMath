@@ -121,6 +121,12 @@ importers:
       '@astrojs/sitemap':
         specifier: ^3.7.4
         version: 3.7.4
+      '@fontsource-variable/hanken-grotesk':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/noto-sans-tc':
+        specifier: ^5.3.1
+        version: 5.3.1
       astro:
         specifier: 7.3.8
         version: 7.3.8(@astrojs/markdown-remark@7.3.2(supports-color@10.2.2))(@types/node@24.19.2)(yaml@2.9.1)
@@ -138,10 +144,10 @@ importers:
         version: 6.0.0(supports-color@10.2.2)
       remark-mdx:
         specifier: ^3.1.1
-        version: 3.1.1
+        version: 3.1.1(supports-color@10.2.2)
       remark-parse:
         specifier: ^11.0.0
-        version: 11.0.0
+        version: 11.0.0(supports-color@10.2.2)
       unified:
         specifier: ^11.0.5
         version: 11.0.5
@@ -624,6 +630,12 @@ packages:
     engines: {node: '>=18'}
     cpu: [x64]
     os: [win32]
+
+  '@fontsource-variable/hanken-grotesk@5.3.0':
+    resolution: {integrity: sha512-DOd0FqL+3cH2dfNy0JtSq9tUfxBz5mLmHMjTU0DOr3E9Zo6wxuatCl53DIPNrSPgCsnuKyM739BTIG5glCLirw==}
+
+  '@fontsource-variable/noto-sans-tc@5.3.1':
+    resolution: {integrity: sha512-gueh+AySNkihE+HvizXLHltxt5/xVFSvw6ISnKTlpb/lG5QQm6u/KwuempTJ/jDYMST3xwiERYTTyseoJ/Kxew==}
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -2874,6 +2886,10 @@ snapshots:
 
   '@esbuild/win32-x64@0.28.2':
     optional: true
+
+  '@fontsource-variable/hanken-grotesk@5.3.0': {}
+
+  '@fontsource-variable/noto-sans-tc@5.3.1': {}
 
   '@img/colour@1.1.0': {}
 

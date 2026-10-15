@@ -11,7 +11,8 @@ const outDir = process.env.ASTRO_OUT_DIR ?? "dist-e2e";
 export default defineConfig({
   testDir: "./tests",
   testMatch: "*.spec.ts",
-  use: { baseURL, trace: "retain-on-failure" },
+  // 首頁有進場淡入；測試一律看動態結束後的最終狀態（內容、結構與對比），不取樣過渡中的畫面
+  use: { baseURL, trace: "retain-on-failure", reducedMotion: "reduce" },
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"], viewport: { width: 1280, height: 800 } } },
     {
