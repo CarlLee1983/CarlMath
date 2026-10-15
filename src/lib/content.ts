@@ -1,60 +1,58 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
-import { parseFrontmatter } from "@astrojs/markdown-remark";
 import { checkCourseMap, createCourseIndex } from "./course-map.ts";
-import type { CourseIndex, CourseMap, Issue } from "./course-map.ts";
+import type { CourseIndex, CourseMap, Issue, Unit } from "./course-map.ts";
+import { allUnits } from "./course-map-model.ts";
+import { figureIssues, type FigureSource } from "./figure-rules.ts";
+import { lessonIssue } from "./lesson-issue.ts";
+import { parseLesson, type ParsedLesson } from "./lesson-parse.ts";
+import { lessonRuleIssues } from "./lesson-rules.ts";
 
 /** `ok` 為 true 表示沒有 error 等級的 issue（可能仍有 warning），此時課程地圖與查詢物件一定可用。 */
 export type LoadedContent =
   | { ok: true; courseMap: CourseMap; index: CourseIndex; issues: Issue[] }
   | { ok: false; issues: Issue[] };
 
-interface LessonFile {
-  /** 相對於內容根目錄的路徑，用於訊息 */
-  path: string;
-  unit: string | undefined;
-}
-
-/** 掃描 `<root>/lessons/**\/*.mdx`，讀出各檔 frontmatter 的 `unit`。frontmatter 無法解析時帶檔案路徑重拋。 */
-function scanLessons(root: string): LessonFile[] {
-  const lessonsDir = join(root, "lessons");
-  if (!existsSync(lessonsDir)) return [];
-  const files = readdirSync(lessonsDir, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile() && entry.name.endsWith(".mdx"))
+/** 目錄下（遞迴）檔名以 `suffix` 結尾的檔案，已排序；目錄不存在時回傳空陣列。 */
+function listFiles(dir: string, suffix: string): string[] {
+  if (!existsSync(dir)) return [];
+  return readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && entry.name.endsWith(suffix))
     .map((entry) => join(entry.parentPath, entry.name))
     .sort();
-  return files.map((file) => {
-    const path = relative(root, file);
-    try {
-      const { unit } = parseFrontmatter(readFileSync(file, "utf8")).frontmatter;
-      return { path, unit: typeof unit === "string" ? unit : undefined };
-    } catch (e) {
-      throw new Error(`教材 ${path} 的 frontmatter 無法解析：${(e as Error).message}`, { cause: e });
-    }
-  });
 }
 
-/** 教材與課程地圖的最小對應檢查：每篇教材要有 unit、unit 要在地圖上、同一個 unit 只能有一篇。 */
-function lessonIssues(lessons: LessonFile[], mapUnitIds: Set<string>): Issue[] {
+/** 掃描並解析 `<root>/lessons/**\/*.mdx`。教材無法解析時帶檔案路徑丟出例外。 */
+function scanLessons(root: string): ParsedLesson[] {
+  return listFiles(join(root, "lessons"), ".mdx").map((file) => parseLesson(relative(root, file), file, readFileSync(file, "utf8")));
+}
+
+/** 讀入教材目錄中所有 `*Figure.astro` 教具檔。 */
+function scanFigures(root: string): FigureSource[] {
+  return listFiles(join(root, "lessons"), "Figure.astro").map((file) => ({
+    path: relative(root, file),
+    file,
+    text: readFileSync(file, "utf8"),
+  }));
+}
+
+/** 教材與課程地圖的對應檢查（每篇教材要有 unit、unit 要在地圖上、同一個 unit 只能有一篇），再加上單篇教材的規則。 */
+function lessonIssues(lessons: ParsedLesson[], unitsById: Map<string, Unit>): Issue[] {
   const issues: Issue[] = [];
   const firstPathOf = new Map<string, string>();
   for (const { path, unit } of lessons) {
     if (unit === undefined) {
-      issues.push({ level: "error", code: "lesson-unit-missing", message: `教材 ${path} 的 frontmatter 沒有 unit` });
-    } else if (!mapUnitIds.has(unit)) {
-      issues.push({ level: "error", code: "lesson-unit-unknown", message: `教材 ${path} 的 unit「${unit}」不在課程地圖上`, unitId: unit });
+      issues.push(lessonIssue("lesson-unit-missing", `教材 ${path} 的 frontmatter 沒有 unit`));
+    } else if (!unitsById.has(unit)) {
+      issues.push(lessonIssue("lesson-unit-unknown", `教材 ${path} 的 unit「${unit}」不在課程地圖上`, unit));
     } else if (firstPathOf.has(unit)) {
-      issues.push({
-        level: "error",
-        code: "lesson-unit-duplicate",
-        message: `單元「${unit}」有兩篇教材：${firstPathOf.get(unit)}、${path}`,
-        unitId: unit,
-      });
+      issues.push(lessonIssue("lesson-unit-duplicate", `單元「${unit}」有兩篇教材：${firstPathOf.get(unit)}、${path}`, unit));
     } else {
       firstPathOf.set(unit, path);
     }
   }
-  return issues;
+  // 對應問題排在前面，單篇教材規則（frontmatter、結構、元件、篇幅）接在後面。
+  return [...issues, ...lessons.flatMap((lesson) => lessonRuleIssues(lesson, lesson.unit ? unitsById.get(lesson.unit) : undefined))];
 }
 
 /**
@@ -74,8 +72,8 @@ export function loadContent(root: string): LoadedContent {
   if (!courseMap) return { ok: false, issues };
 
   const lessons = scanLessons(root);
-  const mapUnitIds = new Set(courseMap.stages.flatMap((stage) => stage.units.map((unit) => unit.id)));
-  const allIssues = [...issues, ...lessonIssues(lessons, mapUnitIds)];
+  const unitsById = new Map(allUnits(courseMap).map((unit) => [unit.id, unit]));
+  const allIssues = [...issues, ...lessonIssues(lessons, unitsById), ...figureIssues(scanFigures(root), lessons)];
   if (allIssues.some((issue) => issue.level === "error")) return { ok: false, issues: allIssues };
 
   const index = createCourseIndex(courseMap, lessons.flatMap((lesson) => (lesson.unit ? [lesson.unit] : [])));

@@ -1,0 +1,61 @@
+# 教材規則 fixture：structure-general
+stages:
+- id: stage-a
+  title: 階段甲
+  units:
+  - id: sg-base
+    title: sg-base 標題
+    coreQuestion: sg-base 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: sg-warmup-bad
+    title: sg-warmup-bad 標題
+    coreQuestion: sg-warmup-bad 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: sg-dep-ok
+    title: sg-dep-ok 標題
+    coreQuestion: sg-dep-ok 的核心問題？
+    prerequisites: [sg-base]
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: sg-dep-warmup
+    title: sg-dep-warmup 標題
+    coreQuestion: sg-dep-warmup 的核心問題？
+    prerequisites: [sg-base]
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: sg-missing
+    title: sg-missing 標題
+    coreQuestion: sg-missing 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: sg-order
+    title: sg-order 標題
+    coreQuestion: sg-order 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: sg-extra
+    title: sg-extra 標題
+    coreQuestion: sg-extra 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]

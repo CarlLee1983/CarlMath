@@ -1,0 +1,37 @@
+# 教材規則 fixture：structure-family
+stages:
+- id: stage-a
+  title: 階段甲
+  units:
+  - id: sf-ok
+    title: sf-ok 標題
+    coreQuestion: sf-ok 的核心問題？
+    prerequisites: []
+    family: true
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: sf-missing
+    title: sf-missing 標題
+    coreQuestion: sf-missing 的核心問題？
+    prerequisites: []
+    family: true
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: sf-general-body
+    title: sf-general-body 標題
+    coreQuestion: sf-general-body 的核心問題？
+    prerequisites: []
+    family: true
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: sf-family-body-on-general
+    title: sf-family-body-on-general 標題
+    coreQuestion: sf-family-body-on-general 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]

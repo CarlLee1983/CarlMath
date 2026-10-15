@@ -1,0 +1,22 @@
+---
+// 合格的教具：有 title 與 desc，顏色只用 currentColor、CSS 變數與 id 參照。
+---
+<svg viewBox="0 0 100 20" role="img">
+  <title>數線</title>
+  <desc>從 0 到 10 的數線，標出 3 的位置。</desc>
+  <defs>
+    <linearGradient id="abc">
+      <stop offset="0" stop-color="var(--accent)" />
+      <stop offset="1" stop-color="currentColor" />
+    </linearGradient>
+  </defs>
+  <line x1="0" y1="10" x2="100" y2="10" stroke="currentColor" />
+  <rect width="100" height="4" fill="url(#abc)" />
+  <circle cx="30" cy="10" r="3" fill="var(--accent)" stroke="url(#abc)" style="fill: var(--accent); stroke: url(#abc)" />
+</svg>
+<style>
+  #abc { opacity: 1; }
+  #add { opacity: 1; }
+  line { stroke: currentColor; }
+  circle { fill: var(--accent); stroke: url(#abc); }
+</style>

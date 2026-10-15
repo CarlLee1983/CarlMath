@@ -1,5 +1,5 @@
 // 內容驗證 CLI：讀內容根目錄的課程地圖，印出違規清單；有 error 時 exit 1。
-// 教材只做最小對應檢查（unit 存在、在地圖上、不重複）；其餘教材驗證（結構、元件）屬於票「05 教材驗證與內容撰寫規範」。
+// 教材規則（frontmatter、9 段 H2、元件白名單、教具、篇幅）都由 loadContent 套用。
 import { contentRoot } from "../src/content/content-dir.ts";
 import { formatIssue, loadContent, type LoadedContent } from "../src/lib/content.ts";
 

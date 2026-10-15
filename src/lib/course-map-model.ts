@@ -13,7 +13,18 @@ export type IssueCode =
   | "empty-content-without-note"
   | "lesson-unit-missing"
   | "lesson-unit-unknown"
-  | "lesson-unit-duplicate";
+  | "lesson-unit-duplicate"
+  | "lesson-frontmatter-extra"
+  | "lesson-frontmatter-invalid"
+  | "lesson-structure"
+  | "lesson-component-forbidden"
+  | "lesson-import-forbidden"
+  | "lesson-export-forbidden"
+  | "lesson-skipcheck-in-family"
+  | "figure-title-missing"
+  | "figure-desc-missing"
+  | "figure-color-not-token"
+  | "lesson-length-out-of-range";
 
 export interface Issue {
   level: "error" | "warning";

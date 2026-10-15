@@ -1,0 +1,77 @@
+# 教材規則 fixture：components
+stages:
+- id: stage-a
+  title: 階段甲
+  units:
+  - id: cm-ok
+    title: cm-ok 標題
+    coreQuestion: cm-ok 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: cm-family-ok
+    title: cm-family-ok 標題
+    coreQuestion: cm-family-ok 的核心問題？
+    prerequisites: []
+    family: true
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: cm-unlisted
+    title: cm-unlisted 標題
+    coreQuestion: cm-unlisted 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: cm-html
+    title: cm-html 標題
+    coreQuestion: cm-html 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: cm-bad-import
+    title: cm-bad-import 標題
+    coreQuestion: cm-bad-import 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: cm-figure-elsewhere
+    title: cm-figure-elsewhere 標題
+    coreQuestion: cm-figure-elsewhere 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: cm-export
+    title: cm-export 標題
+    coreQuestion: cm-export 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: cm-skipcheck-family
+    title: cm-skipcheck-family 標題
+    coreQuestion: cm-skipcheck-family 的核心問題？
+    prerequisites: []
+    family: true
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: cm-site-bad
+    title: cm-site-bad 標題
+    coreQuestion: cm-site-bad 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]

@@ -45,3 +45,24 @@ test("只有 warning 時 exit 0 且仍印出該提醒", () => {
   assert.equal(status, 0);
   assert.match(stdout, /warning\s+empty-content-without-note\s+u-one/);
 });
+
+// 直接以教材 fixture 根目錄執行 CLI。
+function validateRoot(dir) {
+  const result = spawnSync("pnpm", ["--silent", "validate:content"], {
+    env: { ...process.env, CARLMATH_CONTENT_DIR: dir },
+    encoding: "utf8",
+  });
+  return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+}
+
+test("教材違反規則時 exit 1 並印出違規代碼與單元 id", () => {
+  const { status, stdout } = validateRoot("tests/fixtures/lessons/frontmatter");
+  assert.equal(status, 1);
+  assert.match(stdout, /error\s+lesson-frontmatter-extra\s+fm-extra/);
+});
+
+test("教材只有篇幅 warning 時 exit 0 並印出提醒", () => {
+  const { status, stdout } = validateRoot("tests/fixtures/lessons/length");
+  assert.equal(status, 0);
+  assert.match(stdout, /warning\s+lesson-length-out-of-range\s+ln-short/);
+});

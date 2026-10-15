@@ -1,0 +1,10 @@
+<svg viewBox="0 0 10 10">
+  <title>style 區塊寫死顏色</title>
+  <desc>style 區塊裡的顏色宣告寫死 hex。</desc>
+  <circle class="dot" cx="5" cy="5" r="3" />
+</svg>
+<style>
+  .dot { fill: #e63946; stroke: url(#ring); }
+  /* 註解裡的 #000 不算 */
+  .ring { stroke: var(--accent, #333); }
+</style>

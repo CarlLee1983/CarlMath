@@ -21,7 +21,9 @@ function withContent(lessons, run) {
   }
 }
 
-const lesson = (unit) => `---\nunit: ${unit}\n---\n\n內文\n`;
+// 這些測試用的單元（u-one、u-two、u-three）在 valid.yaml 都是親子共學單元，教材要符合親子篇的 9 段 H2，才不會被教材規則擋下。
+const familyHeadings = ["給家長的話", "情境開場", "開始前", "大人先懂", "常見迷思", "親子活動", "練習與解析", "隔天再問", "下一步"];
+const lesson = (unit) => `---\nunit: ${unit}\n---\n\n${familyHeadings.map((h) => `## ${h}\n\n內文\n`).join("\n")}`;
 const errorCodes = (loaded) => loaded.issues.filter((i) => i.level === "error").map((i) => i.code);
 
 test("巢狀目錄的教材依 frontmatter unit 判定為已撰寫", () => {
