@@ -1,0 +1,99 @@
+---
+import Document from "./Document.astro";
+import SiteNav from "../components/SiteNav.astro";
+import SuggestedReading from "../components/SuggestedReading.astro";
+import UnitPager from "../components/UnitPager.astro";
+import NextStep from "../components/lesson/NextStep.astro";
+import { BEFORE_START_HEADING, FAMILY_HEADINGS, WITH_CHILD_HEADINGS } from "../lib/lesson-structure.ts";
+import type { ReadingProps } from "./reading-props";
+import "../styles/lesson.css";
+import "../styles/family.css";
+
+// 親子篇（family: true）的閱讀版面：分段步進，一次顯示一張段落卡。slot 放教材內文。
+type Props = ReadingProps;
+const { title, description, unit, stageTitle, suggested, previous, next, nextStep } = Astro.props;
+
+// 把教材渲染結果依 H2 切成 9 張卡。這個做法依賴兩個不變式：
+// 1. 教材 HTML 裡只有 9 個段落標題會輸出 <h2>：MDX 元件（Answer、Activity、Misconception…）都不輸出 h2，
+//    教材驗證（lesson-structure）也保證 H2 恰為 FAMILY_HEADINGS；
+// 2. 因此切出來的卡數與標題必須和 FAMILY_HEADINGS 一致，下面在 build 時驗證，不一致就丟錯，不悄悄上線。
+// H2 的 id 由 Astro 依標題文字產生（中文照留），進度點與網址 hash 都用它。
+const html = await Astro.slots.render("default");
+const cards = html.split(/(?=<h2[\s>])/).map((section) => {
+  const heading = /^<h2\b[^>]*?\sid="([^"]*)"[^>]*>([\s\S]*?)<\/h2>/.exec(section);
+  if (!heading) throw new Error(`親子篇教材在第一個 H2 之前有內容：${section.slice(0, 40)}`);
+  return { html: section, id: heading[1]!, title: heading[2]!.replace(/<[^>]*>/g, "").trim() };
+});
+const titles = cards.map((card) => card.title);
+if (titles.join("、") !== FAMILY_HEADINGS.join("、")) {
+  throw new Error(`親子篇教材的 H2 必須依序是 ${FAMILY_HEADINGS.join("、")}，目前是：${titles.join("、")}`);
+}
+const withChild = (card: { title: string }) => WITH_CHILD_HEADINGS.includes(card.title);
+const lastCard = cards[cards.length - 1]!;
+---
+
+<Document title={title} description={description}>
+  <div class="family-reading" data-unit={unit.id}>
+    <header class="site-header">
+      <div class="site-header-inner">
+        <SiteNav />
+      </div>
+    </header>
+    <main>
+      <header class="chapter">
+        <nav aria-label="麵包屑" class="crumbs">
+          <ol>
+            <li><a href="/map/">課程地圖</a></li>
+            <li>{stageTitle}</li>
+            <li aria-current="page">{unit.title}</li>
+          </ol>
+        </nav>
+        <h1>{unit.title}</h1>
+        <p class="core">{unit.coreQuestion}</p>
+        <nav aria-label="段落進度" class="steps">
+          {
+            cards.map((card, i) => (
+              <a
+                href={`#${card.id}`}
+                class:list={{ cur: i === 0, family: withChild(card) }}
+                aria-label={`第 ${i + 1} 段：${card.title}${withChild(card) ? "（和孩子一起）" : ""}`}
+                aria-current={i === 0 ? "step" : undefined}
+              />
+            ))
+          }
+        </nav>
+      </header>
+      <div class="stage">
+        {
+          cards.map((card, i) => (
+            <section class:list={["card", { cur: i === 0, family: withChild(card) }]} aria-labelledby={card.id}>
+              <p class="step-no">
+                <span>
+                  {i + 1} / {cards.length}
+                </span>
+                {withChild(card) && <span class="with-child">和孩子一起</span>}
+              </p>
+              <Fragment set:html={card.html} />
+              {card.title === BEFORE_START_HEADING && <SuggestedReading suggested={suggested} />}
+              {card === lastCard && (
+                <>
+                  <NextStep kind={nextStep.kind} units={nextStep.units} />
+                  <UnitPager previous={previous} next={next} />
+                </>
+              )}
+            </section>
+          ))
+        }
+      </div>
+    </main>
+    <!-- 腳本啟用分段（root 加上 stepping）後才顯示；否則 9 段連續顯示，用進度點錨點跳段 -->
+    <div class="stepnav" role="group" aria-label="上一段與下一段">
+      <button type="button" id="step-prev" hidden>上一段</button>
+      <button type="button" id="step-next" class="primary">下一段：{cards[1]!.title}</button>
+    </div>
+  </div>
+  <script>
+    import "../scripts/reading-page.ts";
+    import "../scripts/family-reading.ts";
+  </script>
+</Document>

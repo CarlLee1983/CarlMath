@@ -1,0 +1,18 @@
+---
+interface Props {
+  /** 圖下方的說明文字（必填） */
+  caption: string;
+  /** 「情境→圖→符號」的對應說明：寬螢幕在右側邊註，其他寬度併回正文 */
+  note?: string;
+}
+const { caption, note } = Astro.props;
+if (typeof caption !== "string" || caption.trim() === "") throw new Error("<Figure> 必須有 caption 說明文字");
+---
+
+<div class="fig-wrap">
+  <figure class="fig">
+    <slot />
+    <figcaption>{caption}</figcaption>
+  </figure>
+  {note && <div class="margin-note" role="note">{note}</div>}
+</div>

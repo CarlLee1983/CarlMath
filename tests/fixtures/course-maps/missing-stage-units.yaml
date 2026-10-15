@@ -1,0 +1,3 @@
+stages:
+- id: stage-a
+  title: 階段

@@ -1,0 +1,18 @@
+---
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+const cells = Array.from({ length: 11 }, (_, i) => i);
+---
+
+<PrintLayout title="線性數字盤面 0–10" description="列印 0 到 10 的線性數字盤面，數線的擲骰走格子活動使用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料是數線的「線性數字盤面走格子」親子活動使用的盤面，每格 17mm，孩子擲骰後用小物在盤面上從 0 往前走。
+    </p>
+  </Fragment>
+  <div class="print-card print-board">
+    <div class="print-board-row">
+      {cells.map((n) => <div class="print-board-cell">{n}</div>)}
+    </div>
+  </div>
+</PrintLayout>

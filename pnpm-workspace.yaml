@@ -1,0 +1,5 @@
+# 原生建置工具安裝時需驗證平台二進位檔。
+allowBuilds:
+  esbuild@0.28.2: true
+  workerd@1.20261006.1: true
+  fsevents@2.3.3: false

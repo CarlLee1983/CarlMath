@@ -1,0 +1,14 @@
+<svg viewBox="0 0 10 10">
+  <title>巢狀 CSS</title>
+  <desc>巢狀規則與 @media 內的顏色宣告。</desc>
+  <circle class="a" cx="5" cy="5" r="3" />
+</svg>
+<style>
+  .a {
+    stroke: var(--accent);
+    & .b { fill: red; }
+  }
+  @media (min-width: 1px) {
+    .c { stroke: rgb(1, 2, 3); }
+  }
+</style>

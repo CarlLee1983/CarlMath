@@ -1,0 +1,26 @@
+---
+export interface UnitLink {
+  id: string;
+  title: string;
+  written: boolean;
+}
+
+interface Props {
+  units: UnitLink[];
+  /** 有順序的清單（建議先讀）用 ol，其餘用 ul */
+  ordered?: boolean;
+}
+const { units, ordered = false } = Astro.props;
+const Tag = ordered ? "ol" : "ul";
+---
+
+<Tag class="unit-links">
+  {
+    units.map((unit) => (
+      <li>
+        <a href={`/units/${unit.id}/`}>{unit.title}</a>
+        {!unit.written && <span class="unit-tag">尚未撰寫</span>}
+      </li>
+    ))
+  }
+</Tag>

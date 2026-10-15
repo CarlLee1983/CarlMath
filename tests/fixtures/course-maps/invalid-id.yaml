@@ -1,0 +1,20 @@
+stages:
+- id: stage-a
+  title: stage-a 階段
+  units:
+  - id: u-one
+    title: u-one 標題
+    coreQuestion: u-one 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [1]
+      content: [N-1-1]
+  - id: U_Two
+    title: U_Two 標題
+    coreQuestion: U_Two 的核心問題？
+    prerequisites: [u-one]
+    family: false
+    curriculum108:
+      grades: [1]
+      content: [N-1-1]

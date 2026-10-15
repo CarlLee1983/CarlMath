@@ -1,0 +1,30 @@
+---
+import Counters from "../../components/figures/Counters.astro";
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+// [上排, 下排]：上排實心、下排空心，下排從左對齊，上排多出來的就是「多幾個」
+const pairs = [[3, 2], [4, 3], [5, 3], [6, 4], [5, 2], [7, 5], [8, 6], [6, 6]] as const;
+---
+
+<PrintLayout title="兩排圓點卡" description="列印兩排圓點卡，比多少的兩堆配對活動使用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料是比多少的「兩堆配對後找出多幾個」親子活動使用的圓點卡，上排是實心、下排是空心，請孩子一顆對一顆配對，再數出上排多出幾個。
+    </p>
+  </Fragment>
+  {
+    pairs.map(([a, b]) => (
+      <div class="print-card print-card-wide">
+        <Counters
+          count={a + b}
+          layout="grid"
+          columns={a}
+          marked={a}
+          title={`上 ${a} 下 ${b}`}
+          desc={`${a + b} 個圓點，上排 ${a} 個實心、下排 ${b} 個空心，下排從左邊對齊。`}
+        />
+      </div>
+    ))
+  }
+</PrintLayout>
+

@@ -1,0 +1,33 @@
+---
+import type { UnitLink } from "./UnitLinks.astro";
+
+interface Props {
+  previous: UnitLink | null;
+  next: UnitLink | null;
+}
+const { previous, next } = Astro.props;
+---
+
+<!-- 上一個／下一個單元，依建議閱讀順序；兩種閱讀版面共用。 -->
+<nav class="pager" aria-label="上一個與下一個單元">
+  {
+    previous ? (
+      <a class="prev" href={`/units/${previous.id}/`}>
+        <small>← 上一個單元</small>
+        {previous.title}
+      </a>
+    ) : (
+      <span />
+    )
+  }
+  {
+    next ? (
+      <a class="next" href={`/units/${next.id}/`}>
+        <small>下一個單元 →</small>
+        {next.title}
+      </a>
+    ) : (
+      <span />
+    )
+  }
+</nav>

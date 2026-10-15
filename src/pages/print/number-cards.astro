@@ -1,0 +1,37 @@
+---
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+const numbers = Array.from({ length: 21 }, (_, i) => i);
+---
+
+<PrintLayout title="數字卡 0–20" description="列印 0 到 20 的數字卡，數數、比多少、數線三篇的親子活動共用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料是數數、比多少、數線三篇的親子活動共用的數字卡，家長剪好後放在孩子伸手可及的地方。
+    </p>
+  </Fragment>
+  {
+    numbers.map((n) => (
+      <div class="print-card number-card">
+        <span class:list={{ "turn-mark": n === 6 || n === 9 }}>{n}</span>
+      </div>
+    ))
+  }
+</PrintLayout>
+
+<style>
+  /* 60 × 80mm，A4 一頁 3 × 3；數字高 40mm */
+  .number-card {
+    width: 60mm;
+    height: 80mm;
+    font-size: 40mm;
+    font-weight: 700;
+    line-height: 1;
+  }
+  /* 6 和 9 剪下來分不出上下，用底線標出正向 */
+  .turn-mark {
+    text-decoration: underline;
+    text-decoration-thickness: 2mm;
+    text-underline-offset: 3mm;
+  }
+</style>

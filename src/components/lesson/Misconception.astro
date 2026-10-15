@@ -1,0 +1,19 @@
+---
+// 子內容以一條分隔線（---）分成兩半：前半是錯誤範例，後半是正確範例。
+// 教材驗證保證恰有一條分隔線（lesson-misconception-shape）；這裡再擋一次，避免壞掉的版面悄悄上線。
+const html = await Astro.slots.render("default");
+const parts = html.split(/<hr\s*\/?>/);
+if (parts.length !== 2) throw new Error(`<Misconception> 內必須恰有一條分隔線（---），目前有 ${parts.length - 1} 條`);
+const [wrong, right] = parts as [string, string];
+---
+
+<div class="misconception">
+  <div class="wrong" role="group" aria-label="錯誤範例">
+    <b aria-hidden="true">錯誤範例</b>
+    <Fragment set:html={wrong} />
+  </div>
+  <div class="right" role="group" aria-label="正確範例">
+    <b aria-hidden="true">正確範例</b>
+    <Fragment set:html={right} />
+  </div>
+</div>

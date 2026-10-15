@@ -1,0 +1,8 @@
+{
+  "extends": "astro/tsconfigs/strict",
+  "compilerOptions": {
+    "paths": { "@figures/*": ["./src/components/figures/*"] }
+  },
+  "include": [".astro/types.d.ts", "**/*"],
+  "exclude": ["dist", "dist-*", "node_modules", "test-results", "playwright-report"]
+}

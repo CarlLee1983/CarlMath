@@ -1,0 +1,77 @@
+# 教材規則 fixture：length
+stages:
+- id: stage-a
+  title: 階段甲
+  units:
+  - id: ln-ok
+    title: ln-ok 標題
+    coreQuestion: ln-ok 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: ln-short
+    title: ln-short 標題
+    coreQuestion: ln-short 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: ln-long
+    title: ln-long 標題
+    coreQuestion: ln-long 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: ln-answer-not-counted
+    title: ln-answer-not-counted 標題
+    coreQuestion: ln-answer-not-counted 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: ln-answer-not-padding
+    title: ln-answer-not-padding 標題
+    coreQuestion: ln-answer-not-padding 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: ln-count
+    title: ln-count 標題
+    coreQuestion: ln-count 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: ln-family-ok
+    title: ln-family-ok 標題
+    coreQuestion: ln-family-ok 的核心問題？
+    prerequisites: []
+    family: true
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: ln-family-short
+    title: ln-family-short 標題
+    coreQuestion: ln-family-short 的核心問題？
+    prerequisites: []
+    family: true
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: ln-family-long
+    title: ln-family-long 標題
+    coreQuestion: ln-family-long 的核心問題？
+    prerequisites: []
+    family: true
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]

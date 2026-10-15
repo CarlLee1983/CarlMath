@@ -1,0 +1,45 @@
+# 教材規則 fixture：frontmatter
+stages:
+- id: stage-a
+  title: 階段甲
+  units:
+  - id: fm-ok
+    title: fm-ok 標題
+    coreQuestion: fm-ok 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fm-extra
+    title: fm-extra 標題
+    coreQuestion: fm-extra 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fm-bad-date
+    title: fm-bad-date 標題
+    coreQuestion: fm-bad-date 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fm-bad-date-text
+    title: fm-bad-date-text 標題
+    coreQuestion: fm-bad-date-text 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fm-bad-description
+    title: fm-bad-description 標題
+    coreQuestion: fm-bad-description 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]

@@ -1,0 +1,35 @@
+---
+import SiteNav from "../components/SiteNav.astro";
+import Document from "./Document.astro";
+import "../styles/print.css";
+
+// 可列印材料頁的版面：螢幕上有站頭、標題、使用說明與「列印」按鈕；列印時只留 slot 裡的卡片（見 print.css）。
+interface Props {
+  title: string;
+  description: string;
+}
+const { title, description } = Astro.props;
+---
+
+<Document title={`${title}｜CarlMath`} description={description}>
+  <header class="site-header">
+    <div class="site-header-inner">
+      <SiteNav />
+    </div>
+  </header>
+  <main class="page print-page">
+    <h1>{title}</h1>
+    <div class="print-intro">
+      <p>請用 A4 直式、比例 100% 列印（不要選「縮放至頁面大小」），沿虛線剪下，黑白印表機即可。</p>
+      <slot name="intro" />
+      <button type="button" id="print-button">列印</button>
+    </div>
+    <div class="print-sheet">
+      <slot />
+    </div>
+  </main>
+</Document>
+
+<script>
+  document.getElementById("print-button")?.addEventListener("click", () => window.print());
+</script>

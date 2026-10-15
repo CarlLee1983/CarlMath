@@ -1,0 +1,90 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { contentRoot } from "../content/content-dir";
+import { loadValidContent } from "../lib/content";
+import { firstFamilyUnit } from "../lib/course-map-index";
+import { ACTIVITY_HEADING, FAMILY_HEADINGS, WITH_CHILD_HEADINGS } from "../lib/lesson-structure";
+import "../styles/guide.css";
+
+// 親子共學怎麼用：四步流程與三方分工；對應的段落名稱取自親子篇 H2 常數，不手打。
+const { index } = loadValidContent(contentRoot());
+const firstFamily = firstFamilyUnit(index);
+const steps = [
+  {
+    name: "讀懂",
+    when: "前一晚 · 你自己",
+    time: "10–15 分鐘",
+    text: "讀前五段，重點是「大人先懂」和「常見迷思」，知道孩子可能怎麼想錯。",
+    uses: FAMILY_HEADINGS.slice(0, 5),
+    together: false,
+  },
+  {
+    name: "準備",
+    when: "開始前 · 你自己",
+    time: "3 分鐘",
+    text: "照活動卡上的「材料」備好小物，必要時印好活動連到的可列印材料。",
+    uses: [`${ACTIVITY_HEADING}的「材料」`],
+    together: false,
+  },
+  {
+    name: "動手",
+    when: "和孩子一起",
+    time: "5–15 分鐘",
+    text: "照步驟帶活動，用「家長引導語」提問；卡關時看「卡關時」。再做幾題練習。",
+    uses: WITH_CHILD_HEADINGS.slice(0, 2),
+    together: true,
+  },
+  {
+    name: "再問",
+    when: "隔天 · 隨口問",
+    time: "2 分鐘",
+    text: "孩子不看網頁；你照「隔天再問」的題目問，不給提示。答不出來的就是下次要回頭的地方。讀完再看「下一步」決定接著讀什麼。",
+    uses: WITH_CHILD_HEADINGS.slice(2),
+    together: true,
+  },
+];
+const roles = [
+  { name: "家長負責", text: "安排時間、準備材料、提問與等待。" },
+  { name: "孩子負責", text: "動手、說出自己的想法。不讀網頁。" },
+  { name: "網頁負責", text: "告訴你數學是什麼、孩子會怎麼想錯、怎麼追問。" },
+];
+---
+
+<BaseLayout title="親子共學怎麼用｜CarlMath" description="親子共學篇是寫給家長讀的：你先讀懂，再帶孩子動手，隔天隨口再問一次。">
+  <h1>親子共學怎麼用</h1>
+  <p class="guide-intro">你先懂，再帶孩子動手。一個單元大約這樣走：</p>
+
+  <div class="guide-steps">
+    {
+      steps.map((step) => (
+        <section class={step.together ? "guide-step guide-step-together" : "guide-step"}>
+          <p class="guide-when">{step.when}</p>
+          <h2>{step.name}</h2>
+          <p class="guide-time">{step.time}</p>
+          <p>{step.text}</p>
+          <ul class="guide-uses">{step.uses.map((use) => <li class="chip">{use}</li>)}</ul>
+        </section>
+      ))
+    }
+  </div>
+
+  <h2>三方分工</h2>
+  <div class="guide-roles">
+    {
+      roles.map((role) => (
+        <div class="guide-role">
+          <h3>{role.name}</h3>
+          <p>{role.text}</p>
+        </div>
+      ))
+    }
+  </div>
+
+  <h2>共用材料</h2>
+  <div class="guide-kit">
+    <p>前三個單元共用：一盒約 30 個小物（鈕扣、積木或豆子）＋數字卡 0–20。準備一次就好。</p>
+    <a href="/print/number-cards/">列印數字卡 0–20</a>
+  </div>
+
+  {firstFamily && <p class="guide-start"><a href={`/units/${firstFamily.id}/`}>從「{firstFamily.title}」開始</a></p>}
+</BaseLayout>

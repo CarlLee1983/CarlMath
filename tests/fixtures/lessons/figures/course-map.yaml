@@ -1,0 +1,69 @@
+# 教材規則 fixture：figures
+stages:
+- id: stage-a
+  title: 階段甲
+  units:
+  - id: fg-ok
+    title: fg-ok 標題
+    coreQuestion: fg-ok 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fg-no-title
+    title: fg-no-title 標題
+    coreQuestion: fg-no-title 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fg-no-desc
+    title: fg-no-desc 標題
+    coreQuestion: fg-no-desc 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fg-hex-attr
+    title: fg-hex-attr 標題
+    coreQuestion: fg-hex-attr 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fg-hex-style
+    title: fg-hex-style 標題
+    coreQuestion: fg-hex-style 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fg-nested
+    title: fg-nested 標題
+    coreQuestion: fg-nested 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fg-names
+    title: fg-names 標題
+    coreQuestion: fg-names 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+  - id: fg-script
+    title: fg-script 標題
+    coreQuestion: fg-script 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]

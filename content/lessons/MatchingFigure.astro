@@ -1,0 +1,135 @@
+---
+// 比多少的一次性教具：兩排圓點一個配一個連線，沒配到的用 --accent 標出，並可加括號與「多 N 個」標籤。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+  /** 上排顆數 */
+  top: number;
+  /** 下排顆數 */
+  bottom: number;
+  /** 把上排拉開到整張圖的寬度，用來對照「排得長不代表比較多」 */
+  stretchTop?: boolean;
+  /** 在沒配到的圓點外側畫括號與「多 N 個」標籤，預設 true；練習題設 false，不洩漏答案 */
+  labelled?: boolean;
+}
+const props = Astro.props;
+const { title, desc, top, bottom, stretchTop = false, labelled = true } = props;
+
+assertAltText("MatchingFigure", title, desc);
+for (const [name, n] of [["top", top], ["bottom", bottom]] as const) {
+  if (!Number.isInteger(n) || n < 1 || n > 10) throw new Error(`<MatchingFigure> 的 ${name} 必須是 1 到 10 的整數：${n}`);
+}
+
+const prefix = figureIdPrefix("mt", props);
+
+const WIDTH = 480;
+const R = 17;
+const PITCH = 2 * R + 10;
+const PAD = R + 8;
+const ROW_GAP = 110; // 兩排圓心的垂直距離，中間放連線
+const BRACKET = 44; // 括號與標籤佔的高度
+const LABEL_HALF_WIDTH = 40; // 「多 N 個」標籤寬度的一半，標籤置中時不超出畫布
+
+const pairs = Math.min(top, bottom);
+const extra = Math.abs(top - bottom);
+const extraOnTop = labelled && top > bottom;
+const extraOnBottom = labelled && bottom > top;
+
+const topY = PAD + (extraOnTop ? BRACKET : 0);
+const bottomY = topY + ROW_GAP;
+const height = bottomY + PAD + (extraOnBottom ? BRACKET : 0);
+
+// 兩排從同一個左端對齊；不拉開時整組置中，拉開時上排佔滿全寬，所以從左緣開始
+const left = stretchTop ? PAD : (WIDTH - (Math.max(top, bottom) - 1) * PITCH) / 2;
+const rowX = (count: number, stretch: boolean) => {
+  const spacing = stretch && count > 1 ? (WIDTH - 2 * PAD) / (count - 1) : PITCH;
+  return Array.from({ length: count }, (_, i) => left + i * spacing);
+};
+const rows = [
+  { xs: rowX(top, stretchTop), y: topY, dir: -1 },
+  { xs: rowX(bottom, false), y: bottomY, dir: 1 },
+] as const;
+
+const round = (n: number) => Math.round(n * 100) / 100;
+
+/** 連線從上排圓的下緣畫到下排圓的上緣，沿著兩個圓心的方向退一個半徑 */
+const links = Array.from({ length: pairs }, (_, i) => {
+  const [x1, y1, x2, y2] = [rows[0].xs[i]!, topY, rows[1].xs[i]!, bottomY];
+  const len = Math.hypot(x2 - x1, y2 - y1);
+  const [ux, uy] = [(x2 - x1) / len, (y2 - y1) / len];
+  const inset = R + 4;
+  return [x1 + ux * inset, y1 + uy * inset, x2 - ux * inset, y2 - uy * inset].map(round);
+});
+
+/** 沒配到的那幾顆外側的括號與標籤：上排畫在上方，下排畫在下方 */
+function makeBracket({ xs, y, dir }: (typeof rows)[number]) {
+  const extras = xs.slice(pairs);
+  const [from, to] = [extras[0]! - R, extras[extras.length - 1]! + R];
+  const base = y + dir * (R + 8);
+  const tip = base + dir * 10;
+  const mid = (from + to) / 2;
+  return {
+    path: `M ${round(from)} ${base} V ${tip} H ${round(to)} V ${base}`,
+    labelX: round(Math.min(Math.max(mid, PAD + LABEL_HALF_WIDTH), WIDTH - PAD - LABEL_HALF_WIDTH)),
+    labelY: dir === -1 ? tip - 8 : tip + 22,
+  };
+}
+const bracket = extraOnTop ? makeBracket(rows[0]) : extraOnBottom ? makeBracket(rows[1]) : undefined;
+---
+
+<svg class="mt-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {links.map(([x1, y1, x2, y2]) => <line class="mt-link" x1={x1} y1={y1} x2={x2} y2={y2} />)}
+  {rows.map(({ xs, y }) => xs.map((x, i) => <circle class={i < pairs ? "mt-counter" : "mt-counter mt-extra"} cx={round(x)} cy={y} r={R} />))}
+  {
+    bracket && (
+      <>
+        <path class="mt-bracket" d={bracket.path} />
+        <text class="mt-label" x={bracket.labelX} y={bracket.labelY}>{`多 ${extra} 個`}</text>
+      </>
+    )
+  }
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.mt-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .mt-counter {
+    fill: var(--fg);
+    stroke: var(--fg);
+    stroke-width: 3px;
+  }
+  /* 沒配到的除了 --accent，還有「沒有連線」（與括號標籤），顏色不是唯一訊息 */
+  .mt-extra {
+    fill: var(--accent);
+    stroke: var(--accent);
+  }
+  .mt-link {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  .mt-bracket {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .mt-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+</style>

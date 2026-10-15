@@ -1,0 +1,21 @@
+# 先修排在後面：課程地圖有 error，build 必須失敗。
+stages:
+- id: stage-a
+  title: 階段甲
+  units:
+  - id: fx-one
+    title: 第一個
+    coreQuestion: 第一個的核心問題？
+    prerequisites: [fx-two]
+    family: false
+    curriculum108:
+      grades: [1]
+      content: [N-1-1]
+  - id: fx-two
+    title: 第二個
+    coreQuestion: 第二個的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [1]
+      content: [N-1-1]
