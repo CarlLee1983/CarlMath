@@ -4,6 +4,7 @@ import BaseLayout from "../../layouts/BaseLayout.astro";
 import { contentRoot } from "../../content/content-dir";
 import { loadValidContent } from "../../lib/content";
 import UnitLinks, { type UnitLink } from "../../components/UnitLinks.astro";
+import { shareImageMeta, unitShareCard } from "../../lib/share-cards";
 import { gradeLabel } from "../../lib/grade-label";
 import { lessonComponents } from "../../components/lesson";
 import FamilyReadingLayout from "../../layouts/FamilyReadingLayout.astro";
@@ -54,6 +55,8 @@ const rendered = written && entry ? await render(entry) : null;
 const Content = rendered?.Content ?? null;
 const description = entry?.data.description ?? unit.coreQuestion;
 const title = `${unit.title}｜CarlMath`;
+// 已撰寫單元用自己的分享圖；未撰寫的沿用文件外殼的預設圖
+const image = shareImageMeta(unitShareCard(unit, stageTitle), Astro.site!);
 ---
 
 {
@@ -63,6 +66,7 @@ const title = `${unit.title}｜CarlMath`;
         title={title}
         description={description}
         modifiedTime={entry?.data.updated}
+        image={image}
         unit={unit}
         stageTitle={stageTitle}
         suggested={suggested}
@@ -77,6 +81,7 @@ const title = `${unit.title}｜CarlMath`;
         title={title}
         description={description}
         modifiedTime={entry?.data.updated}
+        image={image}
         unit={unit}
         stageTitle={stageTitle}
         stageUnits={stageUnits}

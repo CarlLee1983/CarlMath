@@ -6,13 +6,13 @@ const SITE = "https://math.gravito.dev";
 
 const meta = (page: Page, key: string) => page.locator(`meta[property="${key}"], meta[name="${key}"]`);
 
-const pages: { name: string; path: string; type: "website" | "article"; modified?: string }[] = [
+const pages: { name: string; path: string; type: "website" | "article"; modified?: string; unitImage?: boolean }[] = [
   { name: "首頁", path: "/", type: "website" },
   { name: "導讀", path: "/guide/", type: "website" },
   { name: "課程地圖", path: "/map/", type: "website" },
   { name: "可列印材料", path: "/print/number-board/", type: "website" },
-  { name: "已撰寫親子篇", path: "/units/fx-count/", type: "article", modified: "2026-10-01" },
-  { name: "已撰寫一般篇", path: "/units/math-demo/", type: "article", modified: "2026-09-20" },
+  { name: "已撰寫親子篇", path: "/units/fx-count/", type: "article", modified: "2026-10-01", unitImage: true },
+  { name: "已撰寫一般篇", path: "/units/math-demo/", type: "article", modified: "2026-09-20", unitImage: true },
   { name: "未撰寫單元", path: "/units/fx-fraction/", type: "website" },
   { name: "404", path: "/404/", type: "website" },
 ];
@@ -63,7 +63,8 @@ for (const item of pages) {
   test(`${item.name}：og:image 可取得、是 PNG，寬高與 meta 一致`, async ({ page, request }) => {
     await page.goto(item.path);
     const url = await meta(page, "og:image").getAttribute("content");
-    expect(url).toMatch(new RegExp(`^${SITE}/og/default-[0-9a-f]{10}\\.png$`));
+    // 已撰寫單元用自己的圖（見下方），其餘頁面用預設圖
+    if (!item.unitImage) expect(url).toMatch(new RegExp(`^${SITE}/og/default-[0-9a-f]{10}\\.png$`));
     const width = Number(await meta(page, "og:image:width").getAttribute("content"));
     const height = Number(await meta(page, "og:image:height").getAttribute("content"));
     expect([width, height]).toEqual([1200, 630]);
@@ -79,3 +80,36 @@ for (const item of pages) {
     expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([width, height]);
   });
 }
+
+// 已撰寫單元各有自己的分享圖：/og/<單元 id>-<hash>.png，alt 為「<標題>：<核心問題>」。
+const unitImages = [
+  { path: "/units/fx-count/", id: "fx-count", alt: "數一數：怎麼知道有幾個？" },
+  { path: "/units/math-demo/", id: "math-demo", alt: "數學式示範：數學式怎麼在頁面上正確呈現？" },
+];
+
+for (const item of unitImages) {
+  test(`${item.path} 的 og:image 是單元專屬圖，可取得、1200×630、alt 正確`, async ({ page, request }) => {
+    await page.goto(item.path);
+    const url = (await meta(page, "og:image").getAttribute("content"))!;
+    expect(url).toMatch(new RegExp(`^${SITE}/og/${item.id}-[0-9a-f]{10}\\.png$`));
+    await page.goto("/");
+    expect(url).not.toBe(await meta(page, "og:image").getAttribute("content"));
+    await expect(meta(page, "og:image:width")).toHaveAttribute("content", "1200");
+
+    const response = await request.get(new URL(url).pathname);
+    expect(response.ok()).toBe(true);
+    expect(response.headers()["content-type"]).toContain("image/png");
+    const bytes = await response.body();
+    expect(bytes.subarray(1, 4).toString("latin1")).toBe("PNG");
+    expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([1200, 630]);
+
+    await page.goto(item.path);
+    await expect(meta(page, "og:image:alt")).toHaveAttribute("content", item.alt);
+  });
+}
+
+test("未撰寫單元頁使用預設圖，也不產它的單元圖", async ({ page, request }) => {
+  await page.goto("/units/fx-fraction/");
+  await expect(meta(page, "og:image")).toHaveAttribute("content", new RegExp(`^${SITE}/og/default-[0-9a-f]{10}\\.png$`));
+  expect((await request.get("/og/fx-fraction-0000000000.png", { failOnStatusCode: false })).status()).toBe(404);
+});

@@ -111,7 +111,9 @@ function numberLine(): Node {
 
 function layout(card: ShareCard): Node {
   const isUnit = Boolean(card.stage);
-  const titleSize = isUnit ? 84 : 148;
+  // 單元標題與核心問題過長時縮字級，兩者最多各換成兩行也不會蓋到下方的數線
+  const titleSize = isUnit ? (card.title.length > 14 ? 64 : 84) : 148;
+  const questionSize = card.question.length > 32 ? 36 : 44;
   return h(
     "div",
     {
@@ -130,7 +132,7 @@ function layout(card: ShareCard): Node {
       h("div", { fontSize: 34, color: COLORS.moss, height: 44 }, card.stage ?? ""),
       h("div", { flexDirection: "column" }, [
         h("div", { fontSize: titleSize, lineHeight: 1.15 }, card.title),
-        h("div", { fontSize: 44, lineHeight: 1.4, marginTop: 20 }, card.question),
+        h("div", { fontSize: questionSize, lineHeight: 1.4, marginTop: 20 }, card.question),
       ]),
       h("div", { flexDirection: "column", gap: 28 }, [
         numberLine(),

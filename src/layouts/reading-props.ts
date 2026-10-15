@@ -6,6 +6,8 @@ export interface ReadingProps {
   description: string;
   /** 教材 frontmatter 的 updated（YYYY-MM-DD），作為 article:modified_time */
   modifiedTime?: string;
+  /** 單元專屬分享圖，交給文件外殼 */
+  image: { url: string; width: number; height: number; alt: string };
   unit: { id: string; title: string; coreQuestion: string };
   stageTitle: string;
   /** 全部遞移先修，依建議閱讀順序 */
