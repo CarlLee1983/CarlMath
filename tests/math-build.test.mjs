@@ -1,23 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { mkdtempSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
-
-// 以 fixture 內容執行 astro build，回傳 exit code 與輸出。
-function buildWith(contentDir) {
-  const outDir = mkdtempSync(join(tmpdir(), "carlmath-build-"));
-  try {
-    const result = spawnSync("pnpm", ["exec", "astro", "build"], {
-      env: { ...process.env, CARLMATH_CONTENT_DIR: contentDir, ASTRO_OUT_DIR: outDir },
-      encoding: "utf8",
-    });
-    return { status: result.status, output: `${result.stdout}\n${result.stderr}` };
-  } finally {
-    rmSync(outDir, { recursive: true, force: true });
-  }
-}
+import { resolve } from "node:path";
+import { buildWith } from "./helpers/build.mjs";
 
 test("未定義的 KaTeX 指令讓 build 以非零狀態結束", () => {
   const { status, output } = buildWith("tests/fixtures/broken-math");

@@ -1,0 +1,58 @@
+# e2e 用的小型課程地圖：math-demo 是唯一已撰寫的單元。
+# fx-fraction 的直接先修是 math-demo 與 fx-compare，遞移先修另含 fx-count、fx-add（已撰寫與未撰寫混合）。
+stages:
+- id: stage-a
+  title: 階段甲
+  units:
+  - id: fx-count
+    title: 數一數
+    coreQuestion: 怎麼知道有幾個？
+    prerequisites: []
+    family: true
+    curriculum108:
+      grades: [1]
+      content: [N-1-1]
+  - id: fx-add
+    title: 合起來
+    coreQuestion: 兩堆合在一起有多少？
+    prerequisites: [fx-count]
+    family: false
+    curriculum108:
+      grades: [1, 2]
+      content: [N-1-2]
+  - id: math-demo
+    title: 數學式示範
+    coreQuestion: 數學式怎麼在頁面上正確呈現？
+    prerequisites: [fx-add]
+    family: false
+    curriculum108:
+      grades: [3]
+      content: [N-3-1]
+- id: stage-b
+  title: 階段乙
+  units:
+  - id: fx-compare
+    title: 比大小
+    coreQuestion: 兩個數哪個比較大？
+    prerequisites: [fx-count]
+    family: false
+    curriculum108:
+      grades: [4]
+      content: [N-4-1]
+  - id: fx-fraction
+    title: 分數
+    coreQuestion: 一個東西平分以後，每份怎麼記？
+    prerequisites: [math-demo, fx-compare]
+    family: false
+    curriculum108:
+      grades: [7, 8]
+      content: []
+      note: 超出課綱範圍
+  - id: fx-ratio
+    title: 比例
+    coreQuestion: 兩個量一起變大時，關係怎麼看？
+    prerequisites: [math-demo]
+    family: false
+    curriculum108:
+      grades: [5]
+      content: [N-5-1]

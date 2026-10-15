@@ -52,3 +52,36 @@ h1, h2, h3 { line-height: 1.35; }
 .page { max-width: 40rem; margin: 0 auto; padding: 16px; }
 
 .katex-display { overflow: auto hidden; padding: 4px 0; }
+
+/* 未撰寫的單元頁 */
+.unit-status {
+  display: inline-block;
+  margin: 0;
+  padding: 0 12px;
+  border: 1px solid var(--warn);
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-weight: 700;
+}
+.unit-facts { margin: 16px 0; }
+.unit-facts dt { color: var(--muted); font-size: 0.8em; }
+.unit-facts dd { margin: 0 0 8px; overflow-wrap: anywhere; }
+.unit-family {
+  display: inline-block;
+  padding: 0 10px;
+  border-radius: 999px;
+  background: var(--family-soft);
+  color: var(--family);
+}
+.unit-links { padding-left: 1.5em; }
+.unit-links a { overflow-wrap: anywhere; }
+.unit-tag {
+  margin-left: 8px;
+  padding: 0 8px;
+  border-radius: 999px;
+  background: var(--warn-soft);
+  color: var(--warn);
+  font-size: 0.8em;
+  white-space: nowrap;
+}

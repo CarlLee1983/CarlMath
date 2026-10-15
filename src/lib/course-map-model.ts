@@ -10,7 +10,10 @@ export type IssueCode =
   | "prerequisite-missing"
   | "prerequisite-after"
   | "family-grade-out-of-range"
-  | "empty-content-without-note";
+  | "empty-content-without-note"
+  | "lesson-unit-missing"
+  | "lesson-unit-unknown"
+  | "lesson-unit-duplicate";
 
 export interface Issue {
   level: "error" | "warning";
