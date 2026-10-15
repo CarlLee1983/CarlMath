@@ -1,0 +1,17 @@
+---
+import { getCollection, render } from "astro:content";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+
+export async function getStaticPaths() {
+  const lessons = await getCollection("lessons");
+  return lessons.map((entry) => ({ params: { unit: entry.data.unit }, props: { entry } }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+---
+
+<BaseLayout title={`${entry.data.unit} | CarlMath`} description={entry.data.description}>
+  <h1>{entry.data.unit}</h1>
+  <Content />
+</BaseLayout>
