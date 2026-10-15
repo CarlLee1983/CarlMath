@@ -20,7 +20,7 @@ for (const { id, title } of MATERIALS) {
 
     test("螢幕上有站頭、標題、使用說明與「列印」按鈕", async ({ page }) => {
       await page.goto(path);
-      await expect(page).toHaveTitle(`${title} | CarlMath`);
+      await expect(page).toHaveTitle(`${title}｜CarlMath`);
       await expect(page.getByRole("heading", { level: 1 })).toHaveText(title);
       await expect(page.locator(".site-header")).toBeVisible();
       await expect(page.locator(".print-intro")).toBeVisible();
