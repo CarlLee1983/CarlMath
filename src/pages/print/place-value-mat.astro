@@ -1,0 +1,95 @@
+---
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+const places = ["百", "十", "個"];
+// 0–9 各三張：33、111 這種同一個數字出現好幾次的數也擺得出來
+const digits = [0, 1, 2].flatMap(() => Array.from({ length: 10 }, (_, i) => i));
+---
+
+<PrintLayout title="位值板與數字卡" description="列印百、十、個三欄的位值板與 0–9 數字卡，位值的綁捆與擺數字親子活動使用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料是位值的「綁一捆」「位值板擺擺看」「搶先綁到 50」親子活動使用的位值板與數字卡。第一張是位值板：上方的大格放吸管或冰棒棍，一根一根的放「個」、綁成一捆的放「十」、十捆綁成一大捆的放「百」；下方的小框放數字卡，寫出那一欄有幾個。後面是 0–9 的數字卡，每個數字三張，沿虛線剪下。
+    </p>
+  </Fragment>
+  <div class="print-card pv-mat">
+    {places.map((p) => <div class="pv-head">{p}</div>)}
+    {places.map(() => <div class="pv-area" />)}
+    {
+      places.map(() => (
+        <div class="pv-slot-cell">
+          <div class="pv-slot" />
+        </div>
+      ))
+    }
+  </div>
+  {
+    digits.map((n) => (
+      <div class="print-card pv-digit">
+        <span class:list={{ "turn-mark": n === 6 || n === 9 }}>{n}</span>
+      </div>
+    ))
+  }
+</PrintLayout>
+
+<style>
+  /* 位值板 188 × 160mm（加上虛線外框仍在 190mm 可印寬內）：標題列 20mm、放吸管的大格 88mm、其餘是放數字卡的小框列（約 52mm）。
+     欄寬用 minmax(0, 1fr)，窄螢幕上三欄才能跟著卡片縮到容器寬 */
+  .pv-mat {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-rows: 20mm 88mm 1fr;
+    width: 188mm;
+    height: 160mm;
+    align-items: stretch;
+  }
+  .pv-head,
+  .pv-area,
+  .pv-slot-cell {
+    border-right: 1px solid var(--fg);
+  }
+  .pv-head:nth-child(3n),
+  .pv-area:nth-child(3n),
+  .pv-slot-cell:nth-child(3n) {
+    border-right: 0;
+  }
+  .pv-head {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-bottom: 1px solid var(--fg);
+    font-size: 12mm;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .pv-area {
+    border-bottom: 1px solid var(--fg);
+  }
+  .pv-slot-cell {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  /* 數字卡 34 × 40mm，框留 3mm 餘裕 */
+  .pv-slot {
+    width: 40mm;
+    max-width: 90%;
+    height: 46mm;
+    border: 2px solid var(--fg);
+    border-radius: 2mm;
+  }
+  /* 數字卡 34 × 40mm，一列 5 張（5 × 34 + 4 × 4 = 186mm）；數字高 28mm */
+  .pv-digit {
+    width: 34mm;
+    height: 40mm;
+    font-size: 28mm;
+    font-weight: 700;
+    line-height: 1;
+  }
+  /* 6 和 9 剪下來分不出上下，用底線標出正向 */
+  .turn-mark {
+    text-decoration: underline;
+    text-decoration-thickness: 1.5mm;
+    text-underline-offset: 2mm;
+  }
+</style>
