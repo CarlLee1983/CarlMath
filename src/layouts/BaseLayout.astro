@@ -1,5 +1,6 @@
 ---
 import SiteNav from "../components/SiteNav.astro";
+import type { ShareImage } from "../lib/share-cards.ts";
 import type { JsonLd } from "../lib/structured-data.ts";
 import Document from "./Document.astro";
 
@@ -8,22 +9,24 @@ interface Props {
   description?: string;
   /** 不讓搜尋引擎收錄（未撰寫的單元頁） */
   noindex?: boolean;
+  /** 不輸出 canonical 與 og:url（404：Cloudflare 對所有不存在的網址都回這一頁） */
+  noCanonical?: boolean;
   /** 滿版頁面（首頁）：main 不套 .page 的置中窄欄，版面由頁面自己決定 */
   fullBleed?: boolean;
   /** 分享資訊，原樣交給文件外殼 */
   ogType?: "website" | "article";
   modifiedTime?: string;
-  image?: { url: string; width: number; height: number; alt: string };
+  image?: ShareImage;
   jsonLd?: JsonLd;
 }
-const { title, description, noindex, fullBleed = false, ogType, modifiedTime, image, jsonLd } = Astro.props;
+const { title, description, noindex, noCanonical = false, fullBleed = false, ogType, modifiedTime, image, jsonLd } = Astro.props;
 ---
 
 <Document
   title={title}
   description={description}
   noindex={noindex}
-  path={Astro.url.pathname}
+  path={noCanonical ? undefined : Astro.url.pathname}
   ogType={ogType}
   modifiedTime={modifiedTime}
   image={image}

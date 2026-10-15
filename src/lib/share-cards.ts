@@ -23,7 +23,14 @@ export function shareImagePath(card: ShareCard): string {
 }
 
 /** 文件外殼的 `image` prop：絕對網址、寬高與替代文字。 */
-export function shareImageMeta(card: ShareCard, site: URL | string) {
+export interface ShareImage {
+  url: string;
+  width: number;
+  height: number;
+  alt: string;
+}
+
+export function shareImageMeta(card: ShareCard, site: URL | string): ShareImage {
   return {
     url: new URL(shareImagePath(card), site).href,
     width: SHARE_IMAGE_WIDTH,

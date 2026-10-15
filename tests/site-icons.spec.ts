@@ -1,9 +1,7 @@
 import { test, expect } from "@playwright/test";
 
 // robots.txt、favicon、apple-touch-icon 與 theme-color。
-// theme-color 的值對應 src/styles/global.css 的 --bg（light-dark(亮色, 暗色)）。
-const LIGHT_BG = "#ddd6c6";
-const DARK_BG = "#1c1d19";
+// theme-color 要與頁面實際的底色一致：不寫死色票，直接讀頁面 computed 的 background-color。
 
 test("robots.txt 全部開放並指向 sitemap，不寫個別爬蟲", async ({ request }) => {
   const response = await request.get("/robots.txt");
@@ -38,11 +36,26 @@ test("文件外殼指向 SVG favicon 與 apple-touch-icon，且都能取得", as
   expect([bytes.readUInt32BE(16), bytes.readUInt32BE(20)]).toEqual([180, 180]);
 });
 
-test("亮色與暗色各有一個 theme-color，值取自頁面底色", async ({ page }) => {
+const toHex = (rgb: string) => {
+  const [r, g, b] = rgb.match(/\d+(\.\d+)?/g)!.map(Number);
+  return `#${[r, g, b].map((n) => Math.round(n).toString(16).padStart(2, "0")).join("")}`;
+};
+
+test("亮色與暗色各有一個 theme-color，值等於該主題下的頁面底色", async ({ page }, testInfo) => {
+  // light／dark 由 project 的 colorScheme 決定；narrow project 沿用預設的 light
+  const scheme = testInfo.project.name === "desktop-dark" ? "dark" : "light";
   for (const path of ["/", "/units/fx-count/", "/404/"]) {
     await page.goto(path);
     await expect(page.locator('meta[name="theme-color"]'), path).toHaveCount(2);
-    await expect(page.locator('meta[name="theme-color"][media="(prefers-color-scheme: light)"]')).toHaveAttribute("content", LIGHT_BG);
-    await expect(page.locator('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]')).toHaveAttribute("content", DARK_BG);
+    const bg = await page.evaluate(() => {
+      // 頁面底色畫在 html 或 body，取第一個不透明的
+      for (const el of [document.documentElement, document.body]) {
+        const color = getComputedStyle(el).backgroundColor;
+        if (color !== "rgba(0, 0, 0, 0)" && color !== "transparent") return color;
+      }
+      return "";
+    });
+    expect(bg, path).not.toBe("");
+    await expect(page.locator(`meta[name="theme-color"][media="(prefers-color-scheme: ${scheme})"]`), path).toHaveAttribute("content", toHex(bg));
   }
 });

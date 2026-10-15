@@ -161,6 +161,9 @@ importers:
       '@axe-core/playwright':
         specifier: ^4.13.0
         version: 4.13.0(playwright-core@1.64.0)
+      '@fontsource/noto-sans':
+        specifier: 5.3.0
+        version: 5.3.0
       '@fontsource/noto-sans-tc':
         specifier: ^5.3.1
         version: 5.3.1
@@ -648,6 +651,9 @@ packages:
 
   '@fontsource/noto-sans-tc@5.3.1':
     resolution: {integrity: sha512-kiOTKRnkEV4dsMqfmIuH3TnkYp5Rqq2f4LgAArx0Y5eVzCebU2TgWup5TWCWWSk28nBf4mgunLTyQP+xQ74gcQ==}
+
+  '@fontsource/noto-sans@5.3.0':
+    resolution: {integrity: sha512-fBCog2PY7DiVVTEEqtI/Qdinx/knobHYfoGpjFXdfBX5RoJaBp1Prw2G75p0OIsdlMZg3cLo0c+YbIUYOxnQJw==}
 
   '@img/colour@1.1.0':
     resolution: {integrity: sha512-Td76q7j57o/tLVdgS746cYARfSyxk8iEfRxewL9h4OMzYhbW4TAcppl0mT4eyqXddh6L/jwoM75mo7ixa/pCeQ==}
@@ -3055,6 +3061,8 @@ snapshots:
   '@fontsource-variable/noto-sans-tc@5.3.1': {}
 
   '@fontsource/noto-sans-tc@5.3.1': {}
+
+  '@fontsource/noto-sans@5.3.0': {}
 
   '@img/colour@1.1.0': {}
 

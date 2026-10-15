@@ -6,7 +6,7 @@ const SITE = "https://math.gravito.dev";
 
 const meta = (page: Page, key: string) => page.locator(`meta[property="${key}"], meta[name="${key}"]`);
 
-const pages: { name: string; path: string; type: "website" | "article"; modified?: string; unitImage?: boolean }[] = [
+const pages: { name: string; path: string; type: "website" | "article"; modified?: string; unitImage?: boolean; noCanonical?: true }[] = [
   { name: "首頁", path: "/", type: "website" },
   { name: "導讀", path: "/guide/", type: "website" },
   { name: "課程地圖", path: "/map/", type: "website" },
@@ -14,19 +14,25 @@ const pages: { name: string; path: string; type: "website" | "article"; modified
   { name: "已撰寫親子篇", path: "/units/fx-count/", type: "article", modified: "2026-10-01", unitImage: true },
   { name: "已撰寫一般篇", path: "/units/math-demo/", type: "article", modified: "2026-09-20", unitImage: true },
   { name: "未撰寫單元", path: "/units/fx-fraction/", type: "website" },
-  { name: "404", path: "/404/", type: "website" },
+  { name: "404", path: "/404/", type: "website", noCanonical: true },
 ];
 
 for (const item of pages) {
   test(`${item.name}：canonical 與 Open Graph、Twitter Card`, async ({ page }) => {
     await page.goto(item.path);
     const canonical = `${SITE}${item.path}`;
-    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", canonical);
-    await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
+    // 404 是所有不存在網址共用的頁面，`/404/` 本身不是實際網址，不宣告 canonical 與 og:url
+    if (item.noCanonical) {
+      await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
+      await expect(meta(page, "og:url")).toHaveCount(0);
+    } else {
+      await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", canonical);
+      await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
+      await expect(meta(page, "og:url")).toHaveAttribute("content", canonical);
+    }
 
     const title = await page.title();
     await expect(meta(page, "og:title")).toHaveAttribute("content", title);
-    await expect(meta(page, "og:url")).toHaveAttribute("content", canonical);
     await expect(meta(page, "og:type")).toHaveAttribute("content", item.type);
     await expect(meta(page, "og:locale")).toHaveAttribute("content", "zh_TW");
     await expect(meta(page, "og:site_name")).toHaveAttribute("content", "CarlMath");
@@ -108,10 +114,9 @@ for (const item of unitImages) {
   });
 }
 
-test("未撰寫單元頁使用預設圖，也不產它的單元圖", async ({ page, request }) => {
+test("未撰寫單元頁使用預設圖", async ({ page }) => {
   await page.goto("/units/fx-fraction/");
   await expect(meta(page, "og:image")).toHaveAttribute("content", new RegExp(`^${SITE}/og/default-[0-9a-f]{10}\\.png$`));
-  expect((await request.get("/og/fx-fraction-0000000000.png", { failOnStatusCode: false })).status()).toBe(404);
 });
 
 // 結構化資料：只有首頁（WebSite）與已撰寫單元頁（BreadcrumbList）有 JSON-LD

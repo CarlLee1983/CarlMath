@@ -1,3 +1,4 @@
+import type { ShareImage } from "../lib/share-cards.ts";
 import type { JsonLd } from "../lib/structured-data.ts";
 import type { UnitLink } from "../components/UnitLinks.astro";
 
@@ -8,7 +9,7 @@ export interface ReadingProps {
   /** 教材 frontmatter 的 updated（YYYY-MM-DD），作為 article:modified_time */
   modifiedTime?: string;
   /** 單元專屬分享圖，交給文件外殼 */
-  image: { url: string; width: number; height: number; alt: string };
+  image: ShareImage;
   /** 麵包屑結構化資料，交給文件外殼 */
   jsonLd: JsonLd;
   unit: { id: string; title: string; coreQuestion: string };

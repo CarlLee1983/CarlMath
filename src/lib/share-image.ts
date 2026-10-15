@@ -1,6 +1,7 @@
 import { createHash } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { resolve } from "node:path";
+import { createRequire } from "node:module";
+import { dirname, resolve } from "node:path";
 import { Resvg } from "@resvg/resvg-js";
 import satori from "satori";
 
@@ -47,19 +48,24 @@ export function shareImageFileName(card: ShareCard, templateVersion: number = TE
 }
 
 // ── 字型 ──────────────────────────────────────────────────────────────────
-// @fontsource/noto-sans-tc 的 700 字重把字切成多個 woff2，由 unicode-range 標示涵蓋範圍。
-// 只載入涵蓋圖上用字的切片；satori 對同名的多個字型會逐字往後找字。
+// 字型套件把 700 字重切成多個 woff2，由 700.css 的 unicode-range 標示涵蓋範圍。
+// 只載入涵蓋圖上用字的切片。每個切片必須用不同的 name：同名的多個字型 satori 只認其中一個。
+// 先找 Noto Sans TC；TC 沒有的字（希臘字母、數學符號等）再找 Noto Sans；兩邊都沒有才丟錯。
 
-const FONT_DIR = () => resolve("node_modules/@fontsource/noto-sans-tc");
+const require = createRequire(import.meta.url);
 
 interface FontSlice {
+  /** 切片 woff2 的絕對路徑 */
   file: string;
   ranges: [number, number][];
 }
 
-function parseSlices(css: string): FontSlice[] {
+/** 解析一個字型套件的 700.css；結果與切片字型內容都在模組層快取，不會每張圖重讀。 */
+function loadSource(pkg: string): FontSlice[] {
+  const cssPath = require.resolve(`${pkg}/700.css`);
+  const css = readFileSync(cssPath, "utf8");
   return [...css.matchAll(/src:\s*url\(\.\/(files\/[^)]+?\.woff2)\)[^}]*?unicode-range:\s*([^;]+);/g)].map((m) => ({
-    file: m[1],
+    file: resolve(dirname(cssPath), m[1]),
     ranges: m[2].split(",").map((part) => {
       const [from, to = from] = part.trim().replace(/^U\+/i, "").split("-");
       return [parseInt(from, 16), parseInt(to.replace(/^U\+/i, ""), 16)] as [number, number];
@@ -67,23 +73,36 @@ function parseSlices(css: string): FontSlice[] {
   }));
 }
 
-function loadFonts(texts: string[]) {
-  const dir = FONT_DIR();
-  const slices = parseSlices(readFileSync(resolve(dir, "700.css"), "utf8"));
-  const chars = new Set([...texts.join("")].filter((ch) => !/\s/.test(ch)));
-  const used = new Map<string, FontSlice>();
-  for (const ch of chars) {
-    const code = ch.codePointAt(0)!;
+/** 依優先順序排列的字型來源。 */
+const SOURCES = ["@fontsource/noto-sans-tc", "@fontsource/noto-sans"].map(loadSource);
+const fontBuffers = new Map<string, Buffer>();
+
+function findSlice(code: number): FontSlice | undefined {
+  for (const slices of SOURCES) {
     const slice = slices.find((s) => s.ranges.some(([from, to]) => code >= from && code <= to));
-    if (!slice) throw new Error(`分享圖字型缺字：「${ch}」(U+${code.toString(16)}) 不在 Noto Sans TC 700 的任何切片內`);
+    if (slice) return slice;
+  }
+  return undefined;
+}
+
+/** 字型切片都找不到的字（去重）；供 build 前檢查課程地圖與測試使用。 */
+export function uncoveredChars(texts: string[]): string[] {
+  const chars = new Set([...texts.join("")].filter((ch) => !/\s/.test(ch)));
+  return [...chars].filter((ch) => !findSlice(ch.codePointAt(0)!));
+}
+
+function loadFonts(card: ShareCard) {
+  const used = new Map<string, FontSlice>();
+  for (const ch of new Set([...visibleTexts(card).join("")].filter((c) => !/\s/.test(c)))) {
+    const code = ch.codePointAt(0)!;
+    const slice = findSlice(code);
+    if (!slice) throw new Error(`分享圖字型缺字（${card.id}）：「${ch}」(U+${code.toString(16)}) 不在 Noto Sans TC 與 Noto Sans 700 的任何切片內`);
     used.set(slice.file, slice);
   }
-  return [...used.keys()].map((file) => ({
-    name: `Noto Sans TC ${file}`,
-    data: readFileSync(resolve(dir, file)),
-    weight: 700 as const,
-    style: "normal" as const,
-  }));
+  return [...used.values()].map(({ file }) => {
+    if (!fontBuffers.has(file)) fontBuffers.set(file, readFileSync(file));
+    return { name: `Noto Sans ${file}`, data: fontBuffers.get(file)!, weight: 700 as const, style: "normal" as const };
+  });
 }
 
 // ── 版面 ──────────────────────────────────────────────────────────────────
@@ -151,7 +170,7 @@ export async function renderShareImage(card: ShareCard): Promise<{ fileName: str
   const svg = await satori(layout(card) as never, {
     width: SHARE_IMAGE_WIDTH,
     height: SHARE_IMAGE_HEIGHT,
-    fonts: loadFonts(visibleTexts(card)),
+    fonts: loadFonts(card),
   });
   const png = new Resvg(svg, { fitTo: { mode: "width", value: SHARE_IMAGE_WIDTH } }).render().asPng();
   return { fileName: shareImageFileName(card), png };

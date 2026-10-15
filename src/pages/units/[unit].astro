@@ -57,9 +57,9 @@ const rendered = written && entry ? await render(entry) : null;
 const Content = rendered?.Content ?? null;
 const description = entry?.data.description ?? unit.coreQuestion;
 const title = `${unit.title}｜CarlMath`;
-// 已撰寫單元用自己的分享圖；未撰寫的沿用文件外殼的預設圖
-const image = shareImageMeta(unitShareCard(unit, stageTitle), Astro.site!);
-const jsonLd = unitBreadcrumbJsonLd(Astro.site!, { id: stageId, title: stageTitle }, unit);
+// 已撰寫單元用自己的分享圖與麵包屑（閱讀版面只在已撰寫時渲染，傳入處以 ! 斷言）；未撰寫的沿用文件外殼的預設圖，也不輸出 JSON-LD
+const image = written ? shareImageMeta(unitShareCard(unit, stageTitle), Astro.site!) : undefined;
+const jsonLd = written ? unitBreadcrumbJsonLd(Astro.site!, { id: stageId, title: stageTitle }, unit) : undefined;
 ---
 
 {
@@ -69,8 +69,8 @@ const jsonLd = unitBreadcrumbJsonLd(Astro.site!, { id: stageId, title: stageTitl
         title={title}
         description={description}
         modifiedTime={entry?.data.updated}
-        image={image}
-        jsonLd={jsonLd}
+        image={image!}
+        jsonLd={jsonLd!}
         unit={unit}
         stageTitle={stageTitle}
         suggested={suggested}
@@ -85,8 +85,8 @@ const jsonLd = unitBreadcrumbJsonLd(Astro.site!, { id: stageId, title: stageTitl
         title={title}
         description={description}
         modifiedTime={entry?.data.updated}
-        image={image}
-        jsonLd={jsonLd}
+        image={image!}
+        jsonLd={jsonLd!}
         unit={unit}
         stageTitle={stageTitle}
         stageUnits={stageUnits}
