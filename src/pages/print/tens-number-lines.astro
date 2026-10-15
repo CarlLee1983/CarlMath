@@ -1,0 +1,44 @@
+---
+import NumberLine from "../../components/figures/NumberLine.astro";
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+// 每條都是 10 段：0–100 每 10 一格，以及 0–10 到 90–100 十條整十之間的數線
+const decades = Array.from({ length: 10 }, (_, i) => i * 10);
+---
+
+<PrintLayout title="整十數線 0–100" description="列印 0 到 100 每 10 一格的數線，以及 0–10 到 90–100 共十條整十之間的數線，估算與四捨五入的找最近整十活動使用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料是估算與四捨五入的「找最近的整十」親子活動使用的數線，第一條是 0 到 100、每 10 一格，其餘十條各是兩個整十之間的一段，例如 30 到 40、每 1 一格。每條數線實際長 16 公分；孩子把小物放在要估的數上，數一數往左、往右各要走幾步才到整十。
+    </p>
+  </Fragment>
+  <div class="print-card tens-line-card">
+    <NumberLine from={0} to={100} step={10} title="0 到 100" desc="0 到 100 的數線，每一格是 10，刻度依序標著 0、10、20 一直到 100。" />
+  </div>
+  {
+    decades.map((start) => (
+      <div class="print-card tens-line-card">
+        <NumberLine
+          from={start}
+          to={start + 10}
+          title={`${start} 到 ${start + 10}`}
+          desc={`${start} 到 ${start + 10} 的數線，每一格是 1，刻度依序標著 ${start} 到 ${start + 10} 的每一個數。`}
+        />
+      </div>
+    ))
+  }
+</PrintLayout>
+
+<style>
+  /* 190 × 32mm，A4 一頁放 7 條，共 11 條、兩頁 */
+  .tens-line-card {
+    width: 190mm;
+    height: 32mm;
+    padding: 3mm;
+  }
+  /* NumberLine 的 viewBox 寬 480、左右各留 28，主線佔 424；讓每條主線印出來正好 160mm（10 段、每段 16mm）。螢幕上仍不超過容器 */
+  .tens-line-card :global(svg.nl-fig[role="img"]) {
+    width: calc(160mm * 480 / 424);
+    max-width: 100%;
+  }
+</style>
