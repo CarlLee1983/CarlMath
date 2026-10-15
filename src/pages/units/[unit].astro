@@ -62,6 +62,7 @@ const title = `${unit.title}｜CarlMath`;
       <FamilyReadingLayout
         title={title}
         description={description}
+        modifiedTime={entry?.data.updated}
         unit={unit}
         stageTitle={stageTitle}
         suggested={suggested}
@@ -75,6 +76,7 @@ const title = `${unit.title}｜CarlMath`;
       <SidebarReadingLayout
         title={title}
         description={description}
+        modifiedTime={entry?.data.updated}
         unit={unit}
         stageTitle={stageTitle}
         stageUnits={stageUnits}

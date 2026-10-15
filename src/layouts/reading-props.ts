@@ -4,6 +4,8 @@ import type { UnitLink } from "../components/UnitLinks.astro";
 export interface ReadingProps {
   title: string;
   description: string;
+  /** 教材 frontmatter 的 updated（YYYY-MM-DD），作為 article:modified_time */
+  modifiedTime?: string;
   unit: { id: string; title: string; coreQuestion: string };
   stageTitle: string;
   /** 全部遞移先修，依建議閱讀順序 */

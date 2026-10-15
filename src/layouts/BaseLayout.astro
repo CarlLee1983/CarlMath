@@ -9,11 +9,23 @@ interface Props {
   noindex?: boolean;
   /** 滿版頁面（首頁）：main 不套 .page 的置中窄欄，版面由頁面自己決定 */
   fullBleed?: boolean;
+  /** 分享資訊，原樣交給文件外殼 */
+  ogType?: "website" | "article";
+  modifiedTime?: string;
+  image?: { url: string; width: number; height: number; alt: string };
 }
-const { title, description, noindex, fullBleed = false } = Astro.props;
+const { title, description, noindex, fullBleed = false, ogType, modifiedTime, image } = Astro.props;
 ---
 
-<Document title={title} description={description} noindex={noindex}>
+<Document
+  title={title}
+  description={description}
+  noindex={noindex}
+  path={Astro.url.pathname}
+  ogType={ogType}
+  modifiedTime={modifiedTime}
+  image={image}
+>
   <header class="site-header">
     <div class="site-header-inner">
       <SiteNav />

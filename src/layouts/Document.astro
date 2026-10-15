@@ -5,13 +5,23 @@ import "katex/dist/katex.min.css";
 import "../styles/global.css";
 
 // 文件外殼：只有 <html>／<head>／<body>，頁首與 main 由各版面自己組。
+// canonical、Open Graph、Twitter Card 一律在這裡輸出，各版面只傳「分享資訊」的值。
 interface Props {
   title: string;
   description?: string;
-  /** 不讓搜尋引擎收錄（未撰寫的單元頁） */
+  /** 不讓搜尋引擎收錄（未撰寫的單元頁、404） */
   noindex?: boolean;
+  /** 頁面路徑（帶尾斜線），與 `site` 組成 canonical；與 sitemap 一致 */
+  path: string;
+  /** og:type；已撰寫的單元頁用 article，預設 website */
+  ogType?: "website" | "article";
+  /** 最後實質修訂日（YYYY-MM-DD），只在 article 輸出 article:modified_time */
+  modifiedTime?: string;
+  /** 分享圖；網址須為絕對網址 */
+  image?: { url: string; width: number; height: number; alt: string };
 }
-const { title, description, noindex } = Astro.props;
+const { title, description, noindex, path, ogType = "website", modifiedTime, image } = Astro.props;
+const canonical = new URL(path, Astro.site).href;
 ---
 
 <!doctype html>
@@ -22,6 +32,25 @@ const { title, description, noindex } = Astro.props;
     <title>{title}</title>
     {noindex && <meta name="robots" content="noindex" />}
     {description && <meta name="description" content={description} />}
+    <link rel="canonical" href={canonical} />
+    <meta property="og:title" content={title} />
+    {description && <meta property="og:description" content={description} />}
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content={ogType} />
+    <meta property="og:locale" content="zh_TW" />
+    <meta property="og:site_name" content="CarlMath" />
+    {ogType === "article" && modifiedTime && <meta property="article:modified_time" content={modifiedTime} />}
+    {
+      image && (
+        <>
+          <meta property="og:image" content={image.url} />
+          <meta property="og:image:width" content={String(image.width)} />
+          <meta property="og:image:height" content={String(image.height)} />
+          <meta property="og:image:alt" content={image.alt} />
+        </>
+      )
+    }
+    <meta name="twitter:card" content="summary_large_image" />
   </head>
   <body>
     <slot />

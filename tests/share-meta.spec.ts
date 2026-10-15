@@ -1,0 +1,60 @@
+import { test, expect, type Page } from "@playwright/test";
+
+// 分享資訊（canonical、Open Graph、Twitter Card）：依 tests/fixtures/site，
+// fx-count 為已撰寫的親子篇，math-demo 為已撰寫的一般篇，fx-fraction 為未撰寫單元。
+const SITE = "https://math.gravito.dev";
+
+const meta = (page: Page, key: string) => page.locator(`meta[property="${key}"], meta[name="${key}"]`);
+
+const pages: { name: string; path: string; type: "website" | "article"; modified?: string }[] = [
+  { name: "首頁", path: "/", type: "website" },
+  { name: "導讀", path: "/guide/", type: "website" },
+  { name: "課程地圖", path: "/map/", type: "website" },
+  { name: "可列印材料", path: "/print/number-board/", type: "website" },
+  { name: "已撰寫親子篇", path: "/units/fx-count/", type: "article", modified: "2026-10-01" },
+  { name: "已撰寫一般篇", path: "/units/math-demo/", type: "article", modified: "2026-09-20" },
+  { name: "未撰寫單元", path: "/units/fx-fraction/", type: "website" },
+  { name: "404", path: "/404/", type: "website" },
+];
+
+for (const item of pages) {
+  test(`${item.name}：canonical 與 Open Graph、Twitter Card`, async ({ page }) => {
+    await page.goto(item.path);
+    const canonical = `${SITE}${item.path}`;
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", canonical);
+    await expect(page.locator('link[rel="canonical"]')).toHaveCount(1);
+
+    const title = await page.title();
+    await expect(meta(page, "og:title")).toHaveAttribute("content", title);
+    await expect(meta(page, "og:url")).toHaveAttribute("content", canonical);
+    await expect(meta(page, "og:type")).toHaveAttribute("content", item.type);
+    await expect(meta(page, "og:locale")).toHaveAttribute("content", "zh_TW");
+    await expect(meta(page, "og:site_name")).toHaveAttribute("content", "CarlMath");
+    await expect(meta(page, "twitter:card")).toHaveAttribute("content", "summary_large_image");
+    await expect(meta(page, "twitter:site")).toHaveCount(0);
+
+    const description = page.locator('meta[name="description"]');
+    if (await description.count()) {
+      await expect(meta(page, "og:description")).toHaveAttribute("content", (await description.getAttribute("content"))!);
+    } else {
+      await expect(meta(page, "og:description")).toHaveCount(0);
+    }
+
+    if (item.modified) {
+      await expect(meta(page, "article:modified_time")).toHaveAttribute("content", item.modified);
+    } else {
+      await expect(meta(page, "article:modified_time")).toHaveCount(0);
+    }
+  });
+}
+
+test("404 與未撰寫單元頁有 noindex，其餘公開頁沒有", async ({ page }) => {
+  for (const path of ["/404/", "/units/fx-fraction/"]) {
+    await page.goto(path);
+    await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", "noindex");
+  }
+  for (const path of ["/", "/guide/", "/map/", "/print/number-board/", "/units/fx-count/", "/units/math-demo/"]) {
+    await page.goto(path);
+    await expect(page.locator('meta[name="robots"]')).toHaveCount(0);
+  }
+});
