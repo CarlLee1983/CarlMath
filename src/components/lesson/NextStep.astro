@@ -1,0 +1,26 @@
+---
+import UnitLinks, { type UnitLink } from "../UnitLinks.astro";
+import { REVIEW_ADVICE } from "../../lib/review-advice";
+
+interface Props {
+  /** `next`：下一個單元依賴本單元；`dependents`：下一個單元不依賴本單元，列出反向依賴 */
+  kind: "next" | "dependents";
+  units: UnitLink[];
+}
+const { kind, units } = Astro.props;
+const heading = kind === "next" ? "下一個單元" : "這個單元會在這些地方用上";
+---
+
+<!-- 接在教材「下一步」段（最後一段）的鉤子之後：單元清單來自課程地圖，複習建議是全站固定文字。 -->
+<div class="next-step">
+  {
+    units.length > 0 && (
+      <>
+        <h3>{heading}</h3>
+        <UnitLinks units={units} />
+      </>
+    )
+  }
+  <h3>複習建議</h3>
+  <p class="review-tip">{REVIEW_ADVICE}</p>
+</div>

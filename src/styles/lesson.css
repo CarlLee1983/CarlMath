@@ -1,0 +1,52 @@
+/* 教材 MDX 元件的外觀（Answer、Figure、Misconception、SkipCheck）；數值取自閱讀頁原型的共用元件樣式 */
+details.answer {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin: 12px 0;
+  background: var(--card);
+}
+details.answer > summary {
+  cursor: pointer;
+  padding: 8px 14px;
+  color: var(--accent);
+  font-weight: 600;
+  list-style: none;
+}
+details.answer > summary::-webkit-details-marker { display: none; }
+details.answer > summary::before { content: "▸ "; }
+details.answer[open] > summary::before { content: "▾ "; }
+.answer-body { padding: 0 14px 10px; }
+.answer-body > :first-child { margin-top: 0; }
+
+.fig-wrap { position: relative; }
+figure.fig { margin: 20px 0; text-align: center; }
+figure.fig svg { max-width: 100%; height: auto; color: var(--fg); }
+figure.fig figcaption { font-size: 0.85em; color: var(--muted); margin-top: 4px; }
+.margin-note {
+  margin: 8px 0;
+  font-size: 0.82em;
+  color: var(--muted);
+  border-left: 2px solid var(--line);
+  padding-left: 10px;
+}
+
+.misconception { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 16px 0; }
+.misconception > div { border-radius: 8px; padding: 10px 14px; min-width: 0; }
+.misconception .wrong { background: var(--warn-soft); border-left: 4px solid var(--warn); }
+.misconception .right { background: var(--ok-soft); border-left: 4px solid var(--ok); }
+.misconception b { display: block; font-size: 0.85em; }
+.misconception > div > :nth-child(2) { margin-top: 0; }
+.misconception > div > :last-child { margin-bottom: 0; }
+@media (max-width: 600px) {
+  .misconception { grid-template-columns: 1fr; }
+}
+
+.skipcheck {
+  display: inline-block;
+  font-size: 0.85em;
+  border: 1px dashed var(--accent);
+  border-radius: 999px;
+  padding: 2px 12px;
+  text-decoration: none;
+  margin: 4px 0;
+}

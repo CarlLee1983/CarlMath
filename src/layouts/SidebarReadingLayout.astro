@@ -1,0 +1,125 @@
+---
+import Document from "./Document.astro";
+import SiteNav from "../components/SiteNav.astro";
+import UnitLinks, { type UnitLink } from "../components/UnitLinks.astro";
+import NextStep from "../components/lesson/NextStep.astro";
+import "../styles/lesson.css";
+import "../styles/reading.css";
+
+// 一般篇（family: false）的閱讀版面：頂端固定列、左側 9 段目錄、右側邊註。slot 放教材內文。
+interface Props {
+  title: string;
+  description: string;
+  unit: { id: string; title: string; coreQuestion: string };
+  stageTitle: string;
+  stageUnits: UnitLink[];
+  grades: string;
+  prerequisites: UnitLink[];
+  suggested: UnitLink[];
+  previous: UnitLink | null;
+  next: UnitLink | null;
+  nextStep: { kind: "next" | "dependents"; units: UnitLink[] };
+  /** 教材的 H2（Astro 依標題文字產生 slug，中文照留） */
+  sections: { slug: string; text: string }[];
+}
+const { title, description, unit, stageTitle, stageUnits, grades, prerequisites, suggested, previous, next, nextStep, sections } =
+  Astro.props;
+---
+
+<Document title={title} description={description}>
+  <script is:inline>
+    document.documentElement.classList.add("js");
+  </script>
+  <div class="reading" data-unit={unit.id}>
+    <header class="reading-top">
+      <SiteNav />
+      <span class="ttl">{stageTitle} ／ {unit.title}</span>
+      <button type="button" id="toc-button" aria-expanded="false" aria-controls="reading-toc">目錄</button>
+    </header>
+    <div class="reading-grid">
+      <aside class="toc" id="reading-toc">
+        <nav aria-label="本篇目錄">
+          <p class="toc-title">本篇</p>
+          <ol>
+            {sections.map((section) => <li><a class="toc-link" href={`#${section.slug}`}>{section.text}</a></li>)}
+          </ol>
+        </nav>
+        <nav aria-label="同階段單元" class="stage-nav">
+          <p class="toc-title">{stageTitle}</p>
+          <ul>
+            {
+              stageUnits.map((stageUnit) => (
+                <li>
+                  {stageUnit.id === unit.id ? (
+                    <a href={`/units/${stageUnit.id}/`} aria-current="page">
+                      <span aria-hidden="true">● </span>
+                      {stageUnit.title}
+                    </a>
+                  ) : (
+                    <a href={`/units/${stageUnit.id}/`}>{stageUnit.title}</a>
+                  )}
+                  {!stageUnit.written && <span class="unit-tag">尚未撰寫</span>}
+                </li>
+              ))
+            }
+          </ul>
+        </nav>
+      </aside>
+      <main>
+        <h1>{unit.title}</h1>
+        <p class="core">{unit.coreQuestion}</p>
+        <div class="meta">
+          <p>建議年級：{grades}</p>
+          <p>
+            先修：
+            {
+              prerequisites.length > 0 ? (
+                prerequisites.map((prerequisite) => (
+                  <>
+                    <a class="chip" href={`/units/${prerequisite.id}/`} data-unit-id={prerequisite.id}>
+                      {prerequisite.title}
+                    </a>
+                    {!prerequisite.written && <span class="unit-tag">尚未撰寫</span>}
+                  </>
+                ))
+              ) : (
+                "無"
+              )
+            }
+          </p>
+        </div>
+        <nav class="suggested" aria-label="建議先讀">
+          <p class="meta-label">建議先讀</p>
+          {suggested.length > 0 ? <UnitLinks units={suggested} ordered /> : <p>不需要先讀其他單元。</p>}
+        </nav>
+        <slot />
+        <NextStep kind={nextStep.kind} units={nextStep.units} />
+        <nav class="pager" aria-label="上一個與下一個單元">
+          {
+            previous ? (
+              <a class="prev" href={`/units/${previous.id}/`}>
+                <small>← 上一個單元</small>
+                {previous.title}
+              </a>
+            ) : (
+              <span />
+            )
+          }
+          {
+            next ? (
+              <a class="next" href={`/units/${next.id}/`}>
+                <small>下一個單元 →</small>
+                {next.title}
+              </a>
+            ) : (
+              <span />
+            )
+          }
+        </nav>
+      </main>
+    </div>
+  </div>
+  <script>
+    import "../scripts/reading-page.ts";
+  </script>
+</Document>

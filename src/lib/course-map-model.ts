@@ -21,6 +21,7 @@ export type IssueCode =
   | "lesson-import-forbidden"
   | "lesson-export-forbidden"
   | "lesson-skipcheck-in-family"
+  | "lesson-misconception-shape"
   | "figure-title-missing"
   | "figure-desc-missing"
   | "figure-color-not-token"

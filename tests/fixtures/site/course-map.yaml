@@ -1,5 +1,7 @@
-# e2e 用的小型課程地圖：math-demo 是唯一已撰寫的單元。
-# fx-fraction 的直接先修是 math-demo 與 fx-compare，遞移先修另含 fx-count、fx-add（已撰寫與未撰寫混合）。
+# e2e 用的小型課程地圖：已撰寫的單元是 sum-demo 與 math-demo（都是一般篇），其餘未撰寫。
+# math-demo 的直接先修是 fx-add（未撰寫）與 sum-demo（已撰寫）；它的下一個單元 fx-compare 不依賴它，所以「下一步」列出反向依賴（fx-fraction、fx-ratio）。
+# sum-demo 的下一個單元 math-demo 依賴它，所以「下一步」只預告下一個單元。
+# fx-fraction 的直接先修是 math-demo 與 fx-compare，遞移先修另含 fx-count、fx-add、sum-demo（已撰寫與未撰寫混合）。
 stages:
 - id: stage-a
   title: 階段甲
@@ -20,10 +22,18 @@ stages:
     curriculum108:
       grades: [1, 2]
       content: [N-1-2]
+  - id: sum-demo
+    title: 和的示範
+    coreQuestion: 兩個量合起來，怎麼用算式說清楚？
+    prerequisites: [fx-add]
+    family: false
+    curriculum108:
+      grades: [2]
+      content: [N-2-1]
   - id: math-demo
     title: 數學式示範
     coreQuestion: 數學式怎麼在頁面上正確呈現？
-    prerequisites: [fx-add]
+    prerequisites: [fx-add, sum-demo]
     family: false
     curriculum108:
       grades: [3]

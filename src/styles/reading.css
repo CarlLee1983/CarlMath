@@ -1,0 +1,132 @@
+/* 側欄目錄閱讀頁（原型 Variant B）。斷點取自原型：1180px 以下邊註併回正文、820px 以下目錄收進按鈕。 */
+.reading { font-size: 17px; }
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.reading-top {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  height: 44px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+  font-size: 0.85em;
+}
+.reading-top .site-name { margin-right: 0; }
+.reading-top .site-nav { gap: 0 12px; }
+.reading-top .ttl { font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.reading-top button {
+  display: none;
+  border: 1px solid var(--line);
+  background: var(--card);
+  color: var(--fg);
+  border-radius: 6px;
+  padding: 4px 10px;
+  font: inherit;
+  cursor: pointer;
+}
+
+.reading-grid {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 40rem) 14rem;
+  gap: 2rem;
+  justify-content: center;
+  padding: 0 16px 120px;
+}
+
+.toc {
+  position: sticky;
+  top: 44px;
+  align-self: start;
+  max-height: calc(100vh - 44px);
+  overflow: auto;
+  font-size: 0.85em;
+  padding-top: 24px;
+}
+.toc ol, .toc ul { list-style: none; padding: 0; margin: 0 0 20px; }
+.toc li a { display: block; padding: 4px 10px; border-left: 2px solid var(--line); color: var(--muted); text-decoration: none; line-height: 1.6; }
+.toc li a[aria-current] { border-left-color: var(--accent); color: var(--fg); font-weight: 700; }
+.toc-title { margin: 16px 0 6px; font-size: 0.8em; color: var(--muted); letter-spacing: 0.05em; line-height: 1.6; }
+.toc .unit-tag { margin-left: 10px; }
+
+.reading main { padding-top: 24px; min-width: 0; }
+.reading h1 { font-size: 1.8rem; margin: 0 0 0.2em; }
+.reading .core { color: var(--muted); margin: 0 0 1.2em; }
+.reading main h2 { font-size: 1.3rem; margin: 2em 0 0.5em; scroll-margin-top: 60px; }
+.reading .meta { color: var(--muted); font-size: 0.85em; }
+.reading .meta p { margin: 0; }
+.reading .meta-label { margin: 8px 0 0; color: var(--muted); font-size: 0.85em; }
+.reading .suggested { font-size: 0.85em; }
+.reading .suggested .unit-links { margin: 0; }
+.chip {
+  display: inline-block;
+  font-size: 0.9em;
+  line-height: 1.6;
+  padding: 1px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--fg); /* --accent 在 --accent-soft 上對比不足 4.5:1 */
+  text-decoration: none;
+  margin: 2px 4px 2px 0;
+}
+.chip.done { background: var(--ok-soft); }
+.chip .read-mark { color: var(--ok); font-weight: 700; }
+
+/* 寬螢幕：邊註放在正文右側的欄位 */
+.fig-wrap .margin-note { position: absolute; top: 20px; right: -16rem; width: 14rem; margin: 0; }
+
+.next-step h3 { font-size: 1.05rem; margin: 1.4em 0 0.3em; }
+.review-tip { font-size: 0.9em; color: var(--muted); border-top: 1px solid var(--line); padding-top: 8px; margin-top: 8px; }
+
+.pager { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 48px; }
+.pager a {
+  display: block;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px 14px;
+  text-decoration: none;
+  color: var(--fg);
+  background: var(--card);
+  overflow-wrap: anywhere;
+}
+.pager a small { display: block; color: var(--muted); }
+.pager a.next { text-align: right; grid-column: 2; }
+
+@media (max-width: 1180px) {
+  .reading-grid { grid-template-columns: 14rem minmax(0, 40rem); }
+  .fig-wrap .margin-note { position: static; width: auto; margin: 8px 0; }
+}
+@media (max-width: 600px) {
+  .reading-top { gap: 8px; padding: 0 12px; }
+  .reading-top .site-name { display: none; }
+}
+@media (max-width: 820px) {
+  .reading-grid { grid-template-columns: minmax(0, 40rem); }
+  .js .reading-top button { display: inline-block; }
+  .toc { position: static; max-height: none; overflow: visible; }
+  .js .toc {
+    display: none;
+    position: fixed;
+    top: 44px;
+    left: 0;
+    right: 0;
+    max-height: calc(100vh - 44px);
+    overflow: auto;
+    background: var(--card);
+    border-bottom: 1px solid var(--line);
+    padding: 12px 16px;
+    z-index: 39;
+    box-shadow: 0 8px 20px var(--shadow);
+  }
+  .js .toc.open { display: block; }
+}

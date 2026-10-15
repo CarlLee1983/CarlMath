@@ -1,0 +1,13 @@
+---
+interface Props {
+  /** 摘要文字，預設「看解析」 */
+  label?: string;
+}
+const { label = "看解析" } = Astro.props;
+---
+
+<!-- 預設收合，一題一題翻開；刻意不提供「全部展開」。 -->
+<details class="answer">
+  <summary>{label}</summary>
+  <div class="answer-body"><slot /></div>
+</details>

@@ -1,0 +1,12 @@
+---
+// e2e 用的示範教具：一條線段與兩端的點，只用色票 token 與 currentColor。
+---
+<svg viewBox="0 0 200 60" role="img">
+  <title>線段示意圖</title>
+  <desc>一條水平線段，左端點標為 a，右端點標為 b，線段長度是 b 減 a。</desc>
+  <line x1="20" y1="30" x2="180" y2="30" stroke="currentColor" stroke-width="2" />
+  <circle cx="20" cy="30" r="5" fill="var(--accent)" />
+  <circle cx="180" cy="30" r="5" fill="var(--warn)" />
+  <text x="20" y="52" text-anchor="middle" fill="currentColor" font-size="12">a</text>
+  <text x="180" y="52" text-anchor="middle" fill="currentColor" font-size="12">b</text>
+</svg>

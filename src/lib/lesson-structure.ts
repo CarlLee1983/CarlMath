@@ -2,7 +2,9 @@ import type { Issue, Unit } from "./course-map-model.ts";
 import { lessonIssue } from "./lesson-issue.ts";
 import type { ParsedLesson } from "./lesson-parse.ts";
 
-const GENERAL_HEADINGS = ["情境開場", "先修回顧", "直覺", "推理", "範例", "常見迷思", "練習", "提取題", "下一步"];
+/** 一般篇第 7 段的標題；`<SkipCheck>` 的錨點用它（Astro 以標題文字當 id）。 */
+export const PRACTICE_HEADING = "練習";
+const GENERAL_HEADINGS = ["情境開場", "先修回顧", "直覺", "推理", "範例", "常見迷思", PRACTICE_HEADING, "提取題", "下一步"];
 const FAMILY_HEADINGS = ["給家長的話", "情境開場", "開始前", "大人先懂", "常見迷思", "親子活動", "練習與解析", "隔天再問", "下一步"];
 const WARMUP = "暖身";
 const REVIEW = "先修回顧";

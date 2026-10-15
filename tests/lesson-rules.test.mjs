@@ -113,7 +113,7 @@ test("一般單元寫成親子篇結構違規", () => {
 
 // ---- 規則 3：MDX 元件白名單與 import ----
 
-const componentIssues = (unit) => issuesOf("components", unit).filter((i) => /^lesson-(component|import|export|skipcheck)/.test(i.code));
+const componentIssues = (unit) => issuesOf("components", unit).filter((i) => /^lesson-(component|import|export|skipcheck|misconception)/.test(i.code));
 const messagesOf = (issues) => issues.map((i) => i.message).join("\n");
 
 test("白名單元件與合法的教具 import（同目錄、站內 figures）合格", () => {
@@ -187,6 +187,31 @@ test("親子篇使用 <SkipCheck> 回報 lesson-skipcheck-in-family；一般篇�
   assert.equal(issue.code, "lesson-skipcheck-in-family");
   assert.equal(issue.level, "error");
   assert.deepEqual(componentIssues("cm-ok").filter((i) => i.code === "lesson-skipcheck-in-family"), []);
+});
+
+test("<Misconception> 內沒有分隔線回報 lesson-misconception-shape", () => {
+  const [issue, ...rest] = componentIssues("cm-mis-none");
+  assert.equal(rest.length, 0);
+  assert.equal(issue.code, "lesson-misconception-shape");
+  assert.equal(issue.level, "error");
+  assert.match(issue.message, /恰有一條分隔線/);
+  assert.match(issue.message, /misconception-none\.mdx/);
+});
+
+test("<Misconception> 內有兩條分隔線回報 lesson-misconception-shape；恰有一條合格", () => {
+  const [issue, ...rest] = componentIssues("cm-mis-two");
+  assert.equal(rest.length, 0);
+  assert.equal(issue.code, "lesson-misconception-shape");
+  assert.match(issue.message, /2 條/);
+  assert.deepEqual(componentIssues("cm-ok").filter((i) => i.code === "lesson-misconception-shape"), []);
+});
+
+test("<Misconception> 內巢狀的分隔線（例如引用裡的 ---）回報 lesson-misconception-shape", () => {
+  const [issue, ...rest] = componentIssues("cm-mis-nested");
+  assert.equal(rest.length, 0);
+  assert.equal(issue.code, "lesson-misconception-shape");
+  assert.equal(issue.level, "error");
+  assert.match(issue.message, /巢狀/);
 });
 
 // ---- 規則 4：教具檔 ----

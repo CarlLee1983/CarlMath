@@ -20,6 +20,8 @@ export interface ParsedLesson {
   /** 每個 JSX 元素的名稱，依出現順序（`<>` fragment 為空字串，`<A.B>` 為 "A.B"） */
   jsxNames: string[];
   imports: ImportStatement[];
+  /** 每個 `<Misconception>` 的分隔線（`---`）數量，依出現順序：`direct` 是直接子層，`nested` 是更深層（如引用、清單裡） */
+  misconceptionBreaks: { direct: number; nested: number }[];
   /** `export` 語句的數量（教材不允許） */
   exportCount: number;
   /** 計算篇幅用的文字片段：文字節點與行內程式碼，不含 `<Answer>` 內的解析、數學式與 import */
@@ -57,6 +59,12 @@ function childrenOf(node: AnyNode): AnyNode[] {
 function* walk(node: AnyNode): Generator<AnyNode> {
   yield node;
   for (const child of childrenOf(node)) yield* walk(child);
+}
+
+function countBreaks(element: JsxElement): { direct: number; nested: number } {
+  const direct = element.children.filter((child) => child.type === "thematicBreak").length;
+  const total = [...walk(element)].filter((node) => node.type === "thematicBreak").length;
+  return { direct, nested: total - direct };
 }
 
 /** 正文的文字片段（文字節點與行內程式碼），略過 `<Answer>` 整棵子樹；數學式與 ESM 本來就不是文字節點。 */
@@ -98,8 +106,11 @@ export function parseLesson(path: string, file: string, text: string): ParsedLes
   const jsxNames = nodes.flatMap((node) => (isJsxElement(node) ? [node.name ?? ""] : []));
   const statements = nodes.flatMap((node) => (node.type === "mdxjsEsm" ? ((node.data?.estree?.body ?? []) as EstreeStatement[]) : []));
   const imports = statements.flatMap((st) => (st.type === "ImportDeclaration" ? [toImport(st)] : []));
+  const misconceptionBreaks = nodes.flatMap((node) =>
+    isJsxElement(node) && node.name === "Misconception" ? [countBreaks(node)] : [],
+  );
   const exportCount = statements.filter((st) => st.type.startsWith("Export")).length;
-  return { path, file, unit: typeof frontmatter.unit === "string" ? frontmatter.unit : undefined, frontmatter, h2, jsxNames, imports, exportCount, prose: proseOf(tree) };
+  return { path, file, unit: typeof frontmatter.unit === "string" ? frontmatter.unit : undefined, frontmatter, h2, jsxNames, imports, misconceptionBreaks, exportCount, prose: proseOf(tree) };
 }
 
 const SPECIFIER_KIND = { ImportDefaultSpecifier: "default", ImportNamespaceSpecifier: "namespace" } as const;

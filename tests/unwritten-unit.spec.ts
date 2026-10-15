@@ -1,7 +1,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { test, expect } from "@playwright/test";
 
-// 依 tests/fixtures/site/course-map.yaml：只有 math-demo 已撰寫。
+// 依 tests/fixtures/site/course-map.yaml：只有 sum-demo 與 math-demo 已撰寫。
 const link = (page: import("@playwright/test").Page, name: string) => page.getByRole("link", { name, exact: true });
 
 test("未撰寫單元頁列出狀態、階段、核心問題、建議年級", async ({ page }) => {
@@ -50,11 +50,12 @@ test("直接先修與學完可接連到對應單元頁", async ({ page }) => {
 test("建議先讀依建議閱讀順序列出全部遞移先修並標示撰寫狀態", async ({ page }) => {
   await page.goto("/units/fx-fraction/");
   const items = page.getByRole("region", { name: "建議先讀" }).getByRole("listitem");
-  await expect(items).toHaveText(["數一數尚未撰寫", "合起來尚未撰寫", "數學式示範", "比大小尚未撰寫"].map((s) => new RegExp(`^\\s*${s}\\s*$`)));
+  await expect(items).toHaveText(["數一數尚未撰寫", "合起來尚未撰寫", "和的示範", "數學式示範", "比大小尚未撰寫"].map((s) => new RegExp(`^\\s*${s}\\s*$`)));
   const links = page.getByRole("region", { name: "建議先讀" }).getByRole("link");
   expect(await links.evaluateAll((els) => els.map((el) => el.getAttribute("href")))).toEqual([
     "/units/fx-count/",
     "/units/fx-add/",
+    "/units/sum-demo/",
     "/units/math-demo/",
     "/units/fx-compare/",
   ]);

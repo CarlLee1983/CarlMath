@@ -32,7 +32,7 @@ export function importedFigureFiles(lesson: ParsedLesson): string[] {
   return lesson.imports.filter((st) => isFigureImport(lesson, st)).map((st) => resolve(dirname(lesson.file), st.source));
 }
 
-/** MDX 元件白名單、教具 import 規則，以及親子篇不得使用 `<SkipCheck>`。 */
+/** MDX 元件白名單、教具 import 規則、`<Misconception>` 的分隔線數量，以及親子篇不得使用 `<SkipCheck>`。 */
 export function componentIssues(lesson: ParsedLesson, unit: Unit | undefined): Issue[] {
   const { path, unit: unitId } = lesson;
   const issues: Issue[] = [];
@@ -63,6 +63,18 @@ export function componentIssues(lesson: ParsedLesson, unit: Unit | undefined): I
   }
   if (unit?.family && lesson.jsxNames.includes("SkipCheck")) {
     issues.push(lessonIssue("lesson-skipcheck-in-family", `親子篇教材 ${path} 不得使用 <SkipCheck>`, unitId));
+  }
+  // 元件渲染時以渲染後的 <hr> 切成兩半，所以分隔線必須恰好一條、位在直接子層，不得巢狀。
+  for (const { direct, nested } of lesson.misconceptionBreaks) {
+    if (direct === 1 && nested === 0) continue;
+    const detail = nested > 0 ? `直接子層有 ${direct} 條，另有 ${nested} 條巢狀在引用或清單裡（不得巢狀）` : `目前有 ${direct} 條`;
+    issues.push(
+      lessonIssue(
+        "lesson-misconception-shape",
+        `教材 ${path} 的 <Misconception> 內必須恰有一條分隔線（---）分開錯誤範例與正確範例，${detail}`,
+        unitId,
+      ),
+    );
   }
   return issues;
 }
