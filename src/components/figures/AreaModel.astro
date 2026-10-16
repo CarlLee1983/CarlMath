@@ -17,33 +17,20 @@ const model = resolveAreaModel(props);
 assertSchematicDesc(model, desc);
 
 const prefix = figureIdPrefix("am", props);
+
+// 邊長與面積文字依序畫：橫邊、縱邊、格內；字母片段在同一處轉成斜體 tspan
+const labels = [
+  ...model.cols.map((s) => ({ cls: "am-dim", x: s.labelX, y: s.labelY, text: s.label })),
+  ...model.rows.map((s) => ({ cls: "am-dim am-dim-left", x: s.labelX, y: s.labelY, text: s.label })),
+  ...model.cells.map((c) => ({ cls: "am-area", x: c.textX, y: c.textY, text: c.area })),
+].map((label) => ({ ...label, runs: textRuns(label.text) }));
 ---
 
 <svg class="am-fig" viewBox={`0 0 ${model.width} ${model.height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
   <title id={`${prefix}-title`}>{title}</title>
   <desc id={`${prefix}-desc`}>{desc}</desc>
   {model.cells.map((c) => <rect class={c.highlighted ? "am-block am-hi" : "am-block"} x={c.x} y={c.y} width={c.w} height={c.h} />)}
-  {
-    model.cols.map((s) => (
-      <text class="am-dim" x={s.start + s.size / 2} y={model.colLabelY}>
-        {textRuns(s.label).map((r) => (r.italic ? <tspan class="am-var">{r.text}</tspan> : r.text))}
-      </text>
-    ))
-  }
-  {
-    model.rows.map((s) => (
-      <text class="am-dim am-dim-left" x={model.rowLabelX} y={s.start + s.size / 2 + 7}>
-        {textRuns(s.label).map((r) => (r.italic ? <tspan class="am-var">{r.text}</tspan> : r.text))}
-      </text>
-    ))
-  }
-  {
-    model.cells.map((c) => (
-      <text class="am-area" x={c.x + c.w / 2} y={c.y + c.h / 2 + 7}>
-        {textRuns(c.area).map((r) => (r.italic ? <tspan class="am-var">{r.text}</tspan> : r.text))}
-      </text>
-    ))
-  }
+  {labels.map((l) => <text class={l.cls} x={l.x} y={l.y}>{l.runs.map((r) => (r.italic ? <tspan class="am-var">{r.text}</tspan> : r.text))}</text>)}
 </svg>
 
 <style>

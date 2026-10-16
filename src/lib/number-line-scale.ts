@@ -46,7 +46,7 @@ export interface NumberLineScale {
 const SUBJECT = "<NumberLine>";
 
 /** 有限小數的寫法；分母含 2、5 以外的質因數時寫不出來，回傳 undefined。小數位數上限 15（10 ** 15 以內仍是精確整數），再多視為寫不出來 */
-function decimalText(v: Rational): string | undefined {
+export function decimalText(v: Rational): string | undefined {
   let k = 0;
   while (k < 15 && 10 ** k % v.d !== 0) k++;
   if (10 ** k % v.d !== 0) return undefined;

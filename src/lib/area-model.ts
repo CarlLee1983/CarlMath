@@ -1,5 +1,7 @@
 /** 面積模型教具的參數驗證與版面計算。純函式，不依賴 Astro；元件只負責把結果畫成 SVG。 */
-import { mul, parseRational, toNumber } from "./rational.ts";
+import { decimalText } from "./number-line-scale.ts";
+import { mul, parseRational } from "./rational.ts";
+import { textWidthAt } from "./stacked-fraction.ts";
 
 /** 一段邊長：正數（整數或小數）依比例畫；字母式字串（如 "x"、"2a"）用固定的示意長度畫 */
 export type AreaSegmentInput = number | string;
@@ -9,8 +11,10 @@ export interface AreaModelInput {
   cols: AreaSegmentInput[];
   /** 縱邊拆成的幾段，1 到 3 段，由上往下 */
   rows: AreaSegmentInput[];
-  /** 格內的面積字串，areas[列][行]；含字母的格必須給，兩邊都是數字的格不給（null）就自動算乘積 */
+  /** 含字母的格的面積字串，areas[列][行]；含字母的格必須給，兩邊都是數字的格一律寫 null（由元件算，不能覆寫） */
   areas?: (string | null | undefined)[][];
+  /** 兩邊都是數字的格寫什麼：`"product"`（預設）是乘積，`"expression"` 是「橫邊 × 縱邊」的算式，兩者都由元件產生 */
+  cellText?: "product" | "expression";
   /** 要強調的那一列（0 起算）：這一列的格加粗框並淡淡塗色 */
   highlightRow?: number;
 }
@@ -23,6 +27,9 @@ export interface AreaModelSegment {
   start: number;
   /** 這一段的長度（viewBox 單位） */
   size: number;
+  /** 邊上文字的錨點（橫邊水平置中、縱邊靠右，對齊由元件的樣式決定） */
+  labelX: number;
+  labelY: number;
 }
 
 export interface AreaModelCell {
@@ -34,10 +41,13 @@ export interface AreaModelCell {
   h: number;
   /** 格內的面積文字 */
   area: string;
+  /** 面積文字的錨點（水平置中） */
+  textX: number;
+  textY: number;
   highlighted: boolean;
 }
 
-export interface AreaModel {
+export interface AreaModelLayout {
   /** viewBox 寬高 */
   width: number;
   height: number;
@@ -47,9 +57,6 @@ export interface AreaModel {
   cells: AreaModelCell[];
   /** 有任何字母段時為 true：字母段的長度只是示意，<desc> 必須寫明不按比例 */
   schematic: boolean;
-  /** 橫邊數字的基線 y 與縱邊數字靠右的 x */
-  colLabelY: number;
-  rowLabelX: number;
 }
 
 export interface TextRun {
@@ -68,16 +75,26 @@ const LEFT = 56;
 const TOP = 36;
 const GRID_W = 400;
 const BOTTOM = 12;
+/** 縱邊全是數字段時的格高；有字母段的縱邊用實際段長加總 */
 const GRID_H = { 1: 110, 2: 190, 3: 240 } as const;
 const MIN_W = 56;
 const MIN_H = 48;
 /** 字母段不依比例，一律用固定的示意長度 */
 const LETTER_W = 120;
 const LETTER_H = 70;
+/** 邊長文字離格子的距離：橫邊文字的基線在格子上緣之上，縱邊文字靠右停在格子左緣之左 */
+const LABEL_GAP = 10;
+/** 22px 的數字基線之上約 15、之下約 0；基線往下移這麼多，文字的視覺中心才落在格子的垂直中心 */
+const BASELINE_SHIFT = 7;
+/** 格內文字左右各留的空隙，免得字貼著格線 */
+const TEXT_PAD = 4;
+const TEXT_FONT = 22;
 
 const LETTER_SEGMENT = /^(?:\d+(?:\.\d+)?)?[a-z]+$/;
 
-function parseSegments(name: "cols" | "rows", raw: unknown): { label: string; kind: "number" | "letter"; value: number }[] {
+type ParsedSegment = { label: string; kind: "number" | "letter"; value: number };
+
+function parseSegments(name: "cols" | "rows", raw: unknown): ParsedSegment[] {
   if (!Array.isArray(raw) || raw.length < 1 || raw.length > MAX_SEGMENTS) {
     const count = Array.isArray(raw) ? `目前有 ${raw.length} 段` : `目前是 ${JSON.stringify(raw)}`;
     throw new Error(`${SUBJECT} 的 ${name} 必須是 1 到 ${MAX_SEGMENTS} 段的陣列，${count}`);
@@ -86,7 +103,9 @@ function parseSegments(name: "cols" | "rows", raw: unknown): { label: string; ki
     const where = `${SUBJECT} 的 ${name}[${i}]`;
     if (typeof seg === "number") {
       if (!Number.isFinite(seg) || seg <= 0) throw new Error(`${where} 的長度必須是正數，不接受零或負數，目前是 ${seg}`);
-      return { label: String(seg), kind: "number" as const, value: seg };
+      const label = decimalText(parseRational(seg, where));
+      if (label === undefined) throw new Error(`${where} 的位數太多，無法寫成小數，目前是 ${seg}`);
+      return { label, kind: "number" as const, value: seg };
     }
     if (typeof seg === "string") {
       const text = seg.trim();
@@ -98,16 +117,18 @@ function parseSegments(name: "cols" | "rows", raw: unknown): { label: string; ki
   });
 }
 
+const sum = (xs: number[]) => xs.reduce((a, b) => a + b, 0);
+
 /** 依比例切開 avail，太窄的段先固定在下限，剩下的再按比例分 */
 function split(values: number[], avail: number, min: number): number[] {
   const sizes = values.map(() => 0);
   let free = values.map((_, i) => i);
   let left = avail;
   for (;;) {
-    const sum = free.reduce((s, i) => s + values[i]!, 0);
-    const small = free.filter((i) => (values[i]! / sum) * left < min);
+    const total = free.reduce((s, i) => s + values[i]!, 0);
+    const small = free.filter((i) => (values[i]! / total) * left < min);
     if (small.length === 0) {
-      free.forEach((i) => (sizes[i] = (values[i]! / sum) * left));
+      free.forEach((i) => (sizes[i] = (values[i]! / total) * left));
       return sizes;
     }
     small.forEach((i) => (sizes[i] = min));
@@ -117,16 +138,12 @@ function split(values: number[], avail: number, min: number): number[] {
   }
 }
 
-/** 字母段取固定的示意長度，數字段依比例分剩下的長度 */
-function layoutEdge(segs: { kind: "number" | "letter"; value: number }[], avail: number, letterSize: number, min: number): number[] {
+/** 字母段取固定的示意長度，數字段依比例分剩下的長度；全是字母段時總長就是各段示意長度的和，不填滿 avail */
+function layoutEdge(segs: ParsedSegment[], avail: number, letterSize: number, min: number): number[] {
   const numeric = segs.map((_, i) => i).filter((i) => segs[i]!.kind === "number");
   const rest = avail - (segs.length - numeric.length) * letterSize;
   const shares = numeric.length > 0 ? split(numeric.map((i) => segs[i]!.value), rest, min) : [];
   return segs.map((s, i) => (s.kind === "letter" ? letterSize : shares[numeric.indexOf(i)]!));
-}
-
-function withStarts(label: { label: string; kind: "number" | "letter" }[], sizes: number[], origin: number): AreaModelSegment[] {
-  return label.map((s, i) => ({ label: s.label, kind: s.kind, size: sizes[i]!, start: origin + sizes.slice(0, i).reduce((a, b) => a + b, 0) }));
 }
 
 function checkAreas(raw: unknown, rowCount: number, colCount: number): (string | null)[][] {
@@ -150,12 +167,14 @@ function checkAreas(raw: unknown, rowCount: number, colCount: number): (string |
 }
 
 /** 兩個數字邊長的乘積，走精確有理數，0.1 × 0.2 是 0.02 而不是 0.020000000000000004 */
-function productText(a: number, b: number): string {
-  return String(toNumber(mul(parseRational(a, SUBJECT), parseRational(b, SUBJECT))));
+function productText(a: number, b: number, where: string): string {
+  const text = decimalText(mul(parseRational(a, SUBJECT), parseRational(b, SUBJECT)));
+  if (text === undefined) throw new Error(`${where}的面積位數太多，無法寫成小數，請改用較短的邊長`);
+  return text;
 }
 
 /** 驗證面積模型的參數並算出版面；任何不合規則的參數都丟出中文錯誤。 */
-export function resolveAreaModel(input: AreaModelInput): AreaModel {
+export function resolveAreaModel(input: AreaModelInput): AreaModelLayout {
   const colSegs = parseSegments("cols", input.cols);
   const rowSegs = parseSegments("rows", input.rows);
   const cellCount = colSegs.length * rowSegs.length;
@@ -166,41 +185,80 @@ export function resolveAreaModel(input: AreaModelInput): AreaModel {
   if (highlightRow !== undefined && !(Number.isInteger(highlightRow) && highlightRow >= 0 && highlightRow < rowSegs.length)) {
     throw new Error(`${SUBJECT} 的 highlightRow 必須是 0 到 ${rowSegs.length - 1} 的整數（rows 有 ${rowSegs.length} 段），目前是 ${JSON.stringify(highlightRow)}`);
   }
+  const cellText = input.cellText ?? "product";
+  if (cellText !== "product" && cellText !== "expression") {
+    throw new Error(`${SUBJECT} 的 cellText 必須是 "product" 或 "expression"，目前是 ${JSON.stringify(cellText)}`);
+  }
   const areas = checkAreas(input.areas, rowSegs.length, colSegs.length);
 
-  const gridH = GRID_H[rowSegs.length as 1 | 2 | 3];
-  const cols = withStarts(colSegs, layoutEdge(colSegs, GRID_W, LETTER_W, MIN_W), LEFT);
-  const rows = withStarts(rowSegs, layoutEdge(rowSegs, gridH, LETTER_H, MIN_H), TOP);
+  // 橫邊：有數字段時填滿 GRID_W；全是字母段時總長較短，置中在版面裡
+  const colSizes = layoutEdge(colSegs, GRID_W, LETTER_W, MIN_W);
+  const gridLeft = LEFT + (GRID_W - sum(colSizes)) / 2;
+  // 縱邊：全是字母段時高度是各段示意長度的和，圖高跟著變，不留空白；其餘用固定格高
+  const allLetterRows = rowSegs.every((s) => s.kind === "letter");
+  const rowSizes = layoutEdge(rowSegs, allLetterRows ? rowSegs.length * LETTER_H : GRID_H[rowSegs.length as 1 | 2 | 3], LETTER_H, MIN_H);
+
+  let x = gridLeft;
+  const cols: AreaModelSegment[] = colSegs.map((s, i) => {
+    const seg = { label: s.label, kind: s.kind, start: x, size: colSizes[i]!, labelX: x + colSizes[i]! / 2, labelY: TOP - LABEL_GAP };
+    x += colSizes[i]!;
+    return seg;
+  });
+  let y = TOP;
+  const rows: AreaModelSegment[] = rowSegs.map((s, i) => {
+    const seg = { label: s.label, kind: s.kind, start: y, size: rowSizes[i]!, labelX: gridLeft - LABEL_GAP, labelY: y + rowSizes[i]! / 2 + BASELINE_SHIFT };
+    y += rowSizes[i]!;
+    return seg;
+  });
 
   const cells = rowSegs.flatMap((rs, r) =>
     colSegs.map((cs, c): AreaModelCell => {
-      let area = areas[r]![c];
-      if (area === null) {
-        if (rs.kind === "letter" || cs.kind === "letter") {
-          throw new Error(`${SUBJECT} 第 ${r + 1} 列第 ${c + 1} 行的格含字母，必須在 areas[${r}][${c}] 給面積字串（如 "3x"）`);
+      const where = `${SUBJECT} 第 ${r + 1} 列第 ${c + 1} 行`;
+      const given = areas[r]![c]!;
+      let area: string;
+      if (rs.kind === "number" && cs.kind === "number") {
+        if (given !== null) {
+          throw new Error(`${where}的格兩邊都是數字，面積由元件自動算，不能在 areas[${r}][${c}] 給字串（要寫成算式請用 cellText="expression"）`);
         }
-        area = productText(rs.value, cs.value);
+        area = cellText === "expression" ? `${cs.label} × ${rs.label}` : productText(rs.value, cs.value, where);
+      } else {
+        if (given === null) throw new Error(`${where}的格含字母，必須在 areas[${r}][${c}] 給面積字串（如 "3x"）`);
+        area = given;
       }
       const col = cols[c]!;
       const row = rows[r]!;
-      return { row: r, col: c, x: col.start, y: row.start, w: col.size, h: row.size, area, highlighted: r === highlightRow };
+      const usable = col.size - 2 * TEXT_PAD;
+      const width = textWidthAt(area, TEXT_FONT);
+      if (width > usable) {
+        throw new Error(`${where}的面積文字「${area}」太寬，估計寬 ${Math.round(width)}，超過格內可用寬度 ${Math.round(usable)}，請縮短文字或把圖拆開`);
+      }
+      return {
+        row: r,
+        col: c,
+        x: col.start,
+        y: row.start,
+        w: col.size,
+        h: row.size,
+        area,
+        textX: col.start + col.size / 2,
+        textY: row.start + row.size / 2 + BASELINE_SHIFT,
+        highlighted: r === highlightRow,
+      };
     }),
   );
 
   return {
     width: WIDTH,
-    height: TOP + gridH + BOTTOM,
+    height: TOP + sum(rowSizes) + BOTTOM,
     cols,
     rows,
     cells,
     schematic: [...colSegs, ...rowSegs].some((s) => s.kind === "letter"),
-    colLabelY: TOP - 10,
-    rowLabelX: LEFT - 10,
   };
 }
 
 /** 有字母段時，<desc> 必須寫明不按比例，否則丟中文錯誤。 */
-export function assertSchematicDesc(model: AreaModel, desc: string): void {
+export function assertSchematicDesc(model: AreaModelLayout, desc: string): void {
   if (model.schematic && !desc.includes("不按比例")) {
     throw new Error(`${SUBJECT} 含字母段，字母段的長度只是示意，desc 必須寫明「不按比例」`);
   }

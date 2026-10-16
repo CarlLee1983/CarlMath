@@ -248,3 +248,7 @@ import AreaModel from "@figures/AreaModel.astro";
 <Figure caption="x 加 3 乘 x 加 2 拆成四塊，下排加粗">
   <AreaModel title="字母面積四格" desc="一個長方形，橫邊拆成 x 和 2，縱邊拆成 x 和 3，分成四塊，字母 x 的長度只是示意，不按比例。上排兩塊是 x 的平方與 2x，下排兩塊是 3x 與 6，下排加粗塗色。" cols={["x", 2]} rows={["x", 3]} areas={[["x²", "2x"], ["3x", null]]} highlightRow={1} />
 </Figure>
+
+<Figure caption="全是字母的邊：橫邊置中，圖高只留到格子底">
+  <AreaModel title="字母面積置中" desc="一個長方形，橫邊拆成 x 和 y，縱邊只有 x，字母的長度只是示意，不按比例。左格面積是 x 的平方，右格面積是 xy。" cols={["x", "y"]} rows={["x"]} areas={[["x²", "xy"]]} />
+</Figure>

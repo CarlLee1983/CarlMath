@@ -44,7 +44,7 @@ test("小數邊長的面積沒有浮點誤差", () => {
 
 test("含字母的格沒給面積丟錯，指出是哪一格", () => {
   rejects({ cols: ["x", 2], rows: [3] }, '<AreaModel> 第 1 列第 1 行的格含字母，必須在 areas[0][0] 給面積字串（如 "3x"）');
-  rejects({ cols: [2, "x"], rows: [3], areas: [["6", null]] }, '<AreaModel> 第 1 列第 2 行的格含字母，必須在 areas[0][1] 給面積字串（如 "3x"）');
+  rejects({ cols: [2, "x"], rows: [3], areas: [[null, null]] }, '<AreaModel> 第 1 列第 2 行的格含字母，必須在 areas[0][1] 給面積字串（如 "3x"）');
 });
 
 test("含字母的格由作者給面積，兩邊都是數字的格仍自動算", () => {
@@ -53,8 +53,64 @@ test("含字母的格由作者給面積，兩邊都是數字的格仍自動算",
   assert.equal(model.schematic, true);
 });
 
-test("數字格也可以用 areas 覆寫成算式（如 10 × 4）", () => {
-  assert.deepEqual(areasOf(resolveAreaModel({ cols: [10, 3], rows: [4], areas: [["10 × 4", "3 × 4"]] })), ["10 × 4", "3 × 4"]);
+test("兩邊都是數字的格不能用 areas 覆寫，數字一律由元件算", () => {
+  rejects(
+    { cols: [10, 3], rows: [4], areas: [["40", null]] },
+    "<AreaModel> 第 1 列第 1 行的格兩邊都是數字，面積由元件自動算，不能在 areas[0][0] 給字串（要寫成算式請用 cellText=\"expression\"）",
+  );
+  // 混合時，只有含字母的格需要 areas，數字格留 null
+  assert.deepEqual(areasOf(resolveAreaModel({ cols: ["x", 2], rows: [3], areas: [["3x", null]] })), ["3x", "6"]);
+});
+
+test('cellText 預設是 "product"；"expression" 讓數字格寫成「橫邊 × 縱邊」的算式，含字母的格仍用 areas', () => {
+  assert.deepEqual(areasOf(resolveAreaModel({ cols: [10, 3], rows: [4], cellText: "product" })), ["40", "12"]);
+  assert.deepEqual(areasOf(resolveAreaModel({ cols: [10, 3], rows: [4], cellText: "expression" })), ["10 × 4", "3 × 4"]);
+  assert.deepEqual(areasOf(resolveAreaModel({ cols: [5, 20], rows: [3, 4], cellText: "expression" })), ["5 × 3", "20 × 3", "5 × 4", "20 × 4"]);
+  assert.deepEqual(areasOf(resolveAreaModel({ cols: ["x", 2], rows: [3], cellText: "expression", areas: [["3x", null]] })), ["3x", "2 × 3"]);
+  rejects({ cols: [1], rows: [1], cellText: "sum" }, '<AreaModel> 的 cellText 必須是 "product" 或 "expression"，目前是 "sum"');
+});
+
+test("邊長與面積用精確十進位字串：不出現科學記號與浮點誤差", () => {
+  const model = resolveAreaModel({ cols: [0.0000001], rows: [3] });
+  assert.deepEqual(model.cols.map((s) => s.label), ["0.0000001"]);
+  assert.deepEqual(areasOf(model), ["0.0000003"]);
+  assert.deepEqual(areasOf(resolveAreaModel({ cols: [1.1], rows: [1.1] })), ["1.21"]);
+});
+
+test("面積位數太多寫不出來時丟中文錯誤", () => {
+  assert.throws(() => resolveAreaModel({ cols: [0.00000001], rows: [0.00000001] }), (e) => e instanceof Error && e.message.startsWith("<AreaModel> 第 1 列第 1 行的面積"));
+});
+
+test("格內文字比格子寬時丟中文錯誤，指出是哪一格", () => {
+  // 最窄的格 56，6 個字元的 "10 × 4" 寬約 78，放不下
+  rejects(
+    { cols: [10, 1], rows: [4], cellText: "expression" },
+    "<AreaModel> 第 1 列第 2 行的面積文字「1 × 4」太寬，估計寬 65，超過格內可用寬度 48，請縮短文字或把圖拆開",
+  );
+  assert.throws(() => resolveAreaModel({ cols: ["x"], rows: [3], areas: [["很長很長很長的面積文字"]] }), (e) => e instanceof Error && /太寬/.test(e.message));
+  assert.doesNotThrow(() => resolveAreaModel({ cols: [10, 3], rows: [4], cellText: "expression" }));
+});
+
+test("全是字母段的邊：橫向置中，縱向高度依實際段長，不留空白", () => {
+  const one = resolveAreaModel({ cols: ["x"], rows: ["x"], areas: [["x²"]] });
+  // 橫邊一段 120，置中在 56 到 456 之間
+  assert.equal(one.cols[0].size, 120);
+  assert.equal(one.cols[0].start + one.cols[0].size / 2, 256);
+  // 縱邊一段 70，高度 = 上緣 36 + 70 + 下緣 12
+  assert.equal(one.height, 36 + 70 + 12);
+  const two = resolveAreaModel({ cols: ["x", "y"], rows: ["x", "y"], areas: [["x²", "xy"], ["xy", "y²"]] });
+  assert.equal(two.height, 36 + 140 + 12);
+  const total = two.cols.reduce((a, c) => a + c.size, 0);
+  assert.equal(two.cols[0].start + total / 2, 256);
+  // 縱邊數字靠格子左緣，不再固定在 x = 46
+  assert.equal(two.rows[0].labelX, two.cols[0].start - 10);
+});
+
+test("含數字段的邊仍然填滿：橫邊總寬 400、縱邊依段數", () => {
+  const m = resolveAreaModel({ cols: ["x", 2], rows: [3], areas: [["3x", null]] });
+  assert.equal(m.cols[0].start, 56);
+  assert.equal(m.cols[0].size + m.cols[1].size, 400);
+  assert.equal(m.height, 36 + 110 + 12);
 });
 
 test("areas 的形狀要對得上列數與行數，內容是非空字串或 null", () => {
