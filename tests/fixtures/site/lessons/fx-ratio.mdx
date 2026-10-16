@@ -155,6 +155,26 @@ import AreaModel from "@figures/AreaModel.astro";
   />
 </Figure>
 
+<Figure caption="空心圓不含端點：x 大於 2">
+  <NumberLine
+    title="x 大於 2"
+    desc="負三到 5 的數線，每一格是 1。2 的位置是空心圓，不含 2，從 2 往右畫一條粗線到數線右端，端點有箭頭。"
+    from={-3}
+    to={5}
+    rays={[{ from: 2, direction: "right", open: true }]}
+  />
+</Figure>
+
+<Figure caption="實心圓含端點：x ≦ −1">
+  <NumberLine
+    title="x 小於等於負一"
+    desc="負三到 5 的數線，每一格是 1。負一的位置是實心圓，含負一，從負一往左畫一條粗線到數線左端，端點有箭頭。"
+    from={-3}
+    to={5}
+    rays={[{ from: -1, direction: "left", open: false }]}
+  />
+</Figure>
+
 <Figure caption="一條平分成 3 份，塗 2 份">
   <FractionBar title="單條分數條" desc="一條長條平分成三份，從左邊塗滿兩份，是三分之二。" bars={[{ parts: 3, shaded: 2 }]} />
 </Figure>

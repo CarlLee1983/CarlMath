@@ -16,6 +16,13 @@ export interface NumberLineMove<T = Position> {
   label?: string;
 }
 
+/** 單邊射線：從 from 往 direction 延伸到數線的那一端；open 為真是空心端點（不含），否則實心（含） */
+export interface NumberLineRay<T = Position> {
+  from: T;
+  direction: "left" | "right";
+  open: boolean;
+}
+
 export interface NumberLineInput {
   from: Position;
   to: Position;
@@ -26,6 +33,7 @@ export interface NumberLineInput {
   points?: { at: Position; label?: string }[];
   jumps?: NumberLineMove[];
   spans?: NumberLineMove[];
+  rays?: NumberLineRay[];
 }
 
 /** 刻度上的標籤：整數與小數是純文字，分數與帶分數要疊排 */
@@ -39,6 +47,8 @@ export interface NumberLineScale {
   points: { at: number; label?: string }[];
   jumps: NumberLineMove<number>[];
   spans: NumberLineMove<number>[];
+  /** 射線：at 是端點，end 是延伸到的數線那一端（0 是左端、1 是右端），都是占整條線的比例 */
+  rays: { at: number; end: 0 | 1; direction: "left" | "right"; open: boolean }[];
   /** 數線兩端離 viewBox 邊緣的距離：至少 MIN_MARGIN，端點標籤比較寬時（例如 −1000、−10½）依標籤寬度加大，免得被裁切 */
   margin: { left: number; right: number };
   /** 是否有疊排標籤（分數或帶分數）；有的話，數線下方要依疊排高度留空間 */
@@ -84,7 +94,7 @@ function parseLowestTerms(raw: Position, name: string): Rational {
 
 /** 驗證參數並算出刻度；任何不合規則的參數都丟出中文錯誤。 */
 export function resolveNumberLine(input: NumberLineInput): NumberLineScale {
-  const { points = [], jumps = [], spans = [], mixed = false } = input;
+  const { points = [], jumps = [], spans = [], rays = [], mixed = false } = input;
   const from = parseRational(input.from, `${SUBJECT} 的 from`);
   const to = parseRational(input.to, `${SUBJECT} 的 to`);
   const step = parseLowestTerms(input.step, "step");
@@ -117,6 +127,18 @@ export function resolveNumberLine(input: NumberLineInput): NumberLineScale {
     list.map((m, i) => ({ from: onTick(m.from, `${name}[${i}].from`), to: onTick(m.to, `${name}[${i}].to`), label: m.label }));
   const jumpValues = moves("jumps", jumps);
   const spanValues = moves("spans", spans);
+  // 射線不帶標籤，只驗證端點、方向與空心實心
+  const rayValues = rays.map((r, i) => {
+    const where = `rays[${i}]`;
+    const v = onTick(r.from, `${where}.from`);
+    if (r.direction !== "left" && r.direction !== "right") {
+      throw new Error(`${SUBJECT} 的 ${where}.direction（${JSON.stringify(r.direction)}）只能是 "left" 或 "right"`);
+    }
+    if (typeof r.open !== "boolean") throw new Error(`${SUBJECT} 的 ${where}.open 必須是 true 或 false`);
+    const atEnd = compare(v, r.direction === "left" ? from : to) === 0;
+    if (atEnd) throw new Error(`${SUBJECT} 的 ${where} 從數線的${r.direction === "left" ? "左" : "右"}端點往${r.direction === "left" ? "左" : "右"}，沒有可延伸的長度`);
+    return v;
+  });
   // 作者寫在標籤裡的負數也要用數學減號，不自動轉換，讓作者看見並改掉
   const assertMinusSign = (name: string, list: NumberLineMove[] | { label?: string }[]) =>
     list.forEach((m, i) => {
@@ -172,6 +194,7 @@ export function resolveNumberLine(input: NumberLineInput): NumberLineScale {
     points: points.map((p, i) => ({ at: at(pointValues[i]!), label: p.label })),
     jumps: jumpValues.map((m) => ({ from: at(m.from), to: at(m.to), label: m.label })),
     spans: spanValues.map((m) => ({ from: at(m.from), to: at(m.to), label: m.label })),
+    rays: rays.map((r, i) => ({ at: at(rayValues[i]!), end: r.direction === "left" ? 0 : 1, direction: r.direction, open: r.open })),
     hasStacked: numbers.some((n) => isStacked(n.label)),
   };
 }
