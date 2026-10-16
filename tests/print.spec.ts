@@ -13,6 +13,7 @@ const MATERIALS = [
   { id: "tens-number-lines", title: "整十數線 0–100" },
   { id: "dot-arrays", title: "點陣卡" },
   { id: "times-table", title: "九九乘法表" },
+  { id: "grid-paper", title: "方格紙" },
 ] as const;
 
 const MM = 96 / 25.4; // CSS 1mm 的 px 數
@@ -158,6 +159,32 @@ test("空白 0–20 數線：每條只標 0 與 20，沒有中間刻度（Number
   // 0 到 20 實際長 160mm（每 1 是 8mm），先估再量時好量
   const axis = await cards.first().locator(".nl-axis").evaluate((el) => el.getBoundingClientRect().width);
   expect(axis / MM).toBeCloseTo(160, 0);
+});
+
+test("方格紙：一張卡、18 × 26 格，格線用 token 色，A4 一頁放得下", async ({ page }) => {
+  const cards = await openPrintCards(page, "grid-paper");
+  expect(await cards.count()).toBe(1);
+  const card = cards.first();
+  // 縱橫格線：19 條直線、27 條橫線（18 × 26 格）
+  expect(await card.locator("line.gp-v").count()).toBe(19);
+  expect(await card.locator("line.gp-h").count()).toBe(27);
+  // 目標每格 10mm，整張不超過可印範圍 190 × 277mm
+  const box = await card.evaluate((el) => el.getBoundingClientRect());
+  expect(box.width / MM).toBeLessThanOrEqual(190 + 0.5);
+  expect(box.height / MM).toBeLessThanOrEqual(277);
+  expect(await card.locator("svg").evaluate((el) => el.getBoundingClientRect().width / (96 / 25.4))).toBeCloseTo(180, 0);
+  // 格線只用 token（列印時 --fg 為黑），不寫死色碼
+  const stroke = await card.locator("line.gp-v").first().evaluate((el) => getComputedStyle(el).stroke);
+  expect(stroke).toBe("rgb(0, 0, 0)");
+  expect(await card.locator("svg").getAttribute("viewBox")).not.toBeNull();
+});
+
+test("方格紙：說明印出的格子不一定剛好 1 公分，一格就叫一個單位", async ({ page }) => {
+  await page.goto("/print/grid-paper/");
+  const intro = page.locator(".print-intro");
+  await expect(intro).toContainText("不一定剛好 1 公分");
+  await expect(intro).toContainText("一個單位");
+  await expect(intro).toContainText("不要拿尺量");
 });
 
 test("親子篇活動材料欄的數字卡連結通到可列印材料頁", async ({ page }) => {

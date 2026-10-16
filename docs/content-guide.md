@@ -227,6 +227,7 @@ props 兩個都必填：`title` 是活動名稱；`minutes` 是字串，寫 5–
 | `/print/tens-number-lines/` | 整十數線 0–100 | 估算與四捨五入的找最近整十 |
 | `/print/dot-arrays/` | 點陣卡 | 乘法、除法、餘數 |
 | `/print/times-table/` | 九九乘法表 | 九九乘法的規律 |
+| `/print/grid-paper/` | 方格紙 | 面積與周長、體積的畫形狀、數格子（格子目標 1 公分，印出不一定剛好；活動裡一格叫「一個單位」） |
 
 新增材料時，在 `src/pages/print/<材料 id>.astro` 建一頁，套用 `PrintLayout`，並遵守下列要求：
 
