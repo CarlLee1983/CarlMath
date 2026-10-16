@@ -45,6 +45,9 @@ export interface NumberLineScale {
 
 const SUBJECT = "<NumberLine>";
 
+/** 連字號（後面可隔空格）接數字、分數字元（\p{No}）、小寫字母或左括號，看起來是負號或減號；大寫字母之間的連字號（點的名稱 A-B）不算 */
+const HYPHEN_AS_MINUS = /-[ ]*[\d\p{No}a-z(]/u;
+
 /** 有限小數的寫法；分母含 2、5 以外的質因數時寫不出來，回傳 undefined。小數位數上限 15（10 ** 15 以內仍是精確整數），再多視為寫不出來 */
 export function decimalText(v: Rational): string | undefined {
   let k = 0;
@@ -104,8 +107,10 @@ export function resolveNumberLine(input: NumberLineInput): NumberLineScale {
   // 作者寫在標籤裡的負數也要用數學減號，不自動轉換，讓作者看見並改掉
   const assertMinusSign = (name: string, list: NumberLineMove[] | { label?: string }[]) =>
     list.forEach((m, i) => {
-      if (m.label && /-\d/.test(m.label)) {
-        throw new Error(`${SUBJECT} 的 ${name}[${i}].label（"${m.label}"）裡的負號要用數學減號「${MINUS}」（U+2212），不要用連字號「-」`);
+      if (m.label && HYPHEN_AS_MINUS.test(m.label)) {
+        throw new Error(
+          `${SUBJECT} 的 ${name}[${i}].label（"${m.label}"）裡的負號或減號要用數學減號「${MINUS}」（U+2212），不要用連字號「-」（連字號後面接數字、分數字元、小寫字母或左括號時，會被當成減號）`,
+        );
       }
     });
   assertMinusSign("points", points);
