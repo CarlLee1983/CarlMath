@@ -1,0 +1,111 @@
+---
+// 多邊形面積的一次性教具：方格上數三角形面積。底 6、高 3 的等腰三角形，頂點與底邊兩端都在格線交點，
+// 兩條斜邊斜 45°，所以被斜邊切到的格子都剛好切成一半：整格 6 個，半格 6 個（拼成 3 個整格），面積 9。
+// 整格塗實心，半格塗半透明，灰階下靠形狀（正方形與三角形）和濃淡分得出來。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("TriangleGridFigure", title, desc);
+
+const prefix = figureIdPrefix("tg", props);
+
+const COLS = 6;
+const ROWS = 3;
+const CELL = 60;
+const LEFT = (480 - COLS * CELL) / 2;
+const TOP = 16;
+const GROUND = TOP + ROWS * CELL;
+const height = GROUND + 44;
+
+// 格子座標：x 向右、y 向上（0 在底邊）；轉成畫面座標
+const px = (x: number) => LEFT + x * CELL;
+const py = (y: number) => GROUND - y * CELL;
+
+// 三角形 (0,0)、(6,0)、(3,3)：左斜邊 y = x，右斜邊 y = 6 - x
+const wholes: { x: number; y: number }[] = [];
+const halves: string[] = [];
+for (let r = 0; r < ROWS; r++) {
+  for (let c = 0; c < COLS; c++) {
+    // 整格：格子的左上角在左斜邊右側（c ≥ r + 1），右上角在右斜邊左側（c + r + 2 ≤ 6）
+    if (c >= r + 1 && c + r + 2 <= COLS) wholes.push({ x: px(c), y: py(r + 1) });
+    if (c === r) halves.push(`${px(c)},${py(r)} ${px(c + 1)},${py(r)} ${px(c + 1)},${py(r + 1)}`);
+    if (c + r === COLS - 1) halves.push(`${px(c)},${py(r)} ${px(c + 1)},${py(r)} ${px(c)},${py(r + 1)}`);
+  }
+}
+const inner = (n: number) => Array.from({ length: n - 1 }, (_, j) => j + 1);
+const BRACKET_X = px(COLS) + 16;
+---
+
+<svg class="tg-fig" viewBox={`0 0 480 ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {wholes.map(({ x, y }) => <rect class="tg-whole" x={x} y={y} width={CELL} height={CELL} />)}
+  {halves.map((points) => <polygon class="tg-half" points={points} />)}
+  {inner(COLS).map((c) => <line class="tg-grid" x1={px(c)} y1={py(0)} x2={px(c)} y2={py(ROWS)} />)}
+  {inner(ROWS).map((r) => <line class="tg-grid" x1={px(0)} y1={py(r)} x2={px(COLS)} y2={py(r)} />)}
+  <rect class="tg-frame" x={px(0)} y={py(ROWS)} width={COLS * CELL} height={ROWS * CELL} />
+  <polygon class="tg-outline" points={`${px(0)},${py(0)} ${px(COLS)},${py(0)} ${px(3)},${py(3)}`} />
+  <line class="tg-bracket" x1={BRACKET_X} y1={py(ROWS)} x2={BRACKET_X} y2={py(0)} />
+  <line class="tg-bracket" x1={BRACKET_X - 6} y1={py(ROWS)} x2={BRACKET_X + 6} y2={py(ROWS)} />
+  <line class="tg-bracket" x1={BRACKET_X - 6} y1={py(0)} x2={BRACKET_X + 6} y2={py(0)} />
+  <text class="tg-num" x={px(3)} y={GROUND + 32}>6</text>
+  <text class="tg-num tg-side" x={BRACKET_X + 12} y={py(1.5) + 8}>3</text>
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.tg-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 整格實心、半格半透明：形狀（正方形與三角形）和濃淡都不同，顏色不是唯一訊息 */
+  .tg-whole {
+    fill: var(--accent);
+  }
+  .tg-half {
+    fill: var(--accent);
+    fill-opacity: 0.35;
+  }
+  .tg-grid {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  /* 方格的外框用輔助線，三角形的外框才是主線 */
+  .tg-frame {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 2px;
+  }
+  .tg-outline {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  /* 右側的括號量出高：3 格 */
+  .tg-bracket {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  .tg-num {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+  .tg-side {
+    text-anchor: start;
+  }
+</style>

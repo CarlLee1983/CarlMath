@@ -1,0 +1,113 @@
+---
+// 圓與圓周率的一次性教具：圓滾一圈攤平。左邊的圓有一個記號點，貼在線上；滾一圈後記號點又碰到線，
+// 圓周就攤成一條直線，長度是直徑的 π 倍（約 3.14 倍）。線下方用括號量出 3 個直徑，剩下不到 1 個直徑。
+// 圓周與直徑的長度比例按 π = 3.14159… 畫。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("CircleRollFigure", title, desc);
+
+const prefix = figureIdPrefix("cr", props);
+
+const D = 100; // 直徑
+const R = D / 2;
+const L = Math.PI * D; // 圓周
+const X0 = (480 - (L + D)) / 2 + R; // 起點：記號點接觸線的位置，也是左圓的圓心 x
+const TOP = 16;
+const GROUND = TOP + D;
+const CY = TOP + R;
+const BRACKET_Y = GROUND + 26;
+const TICK = 7;
+const GAP = 5;
+const height = BRACKET_Y + TICK + 14;
+
+// 三個完整的直徑，加上不到一個直徑的剩餘
+const segments = [0, 1, 2, 3].map((k) => ({
+  x1: X0 + k * D + (k < 3 ? GAP : 2),
+  x2: k < 3 ? X0 + (k + 1) * D - GAP : X0 + L - 2,
+}));
+const midX = X0 + L / 2;
+---
+
+<svg class="cr-fig" viewBox={`0 0 480 ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  <circle class="cr-outline" cx={X0} cy={CY} r={R} />
+  <line class="cr-outline" x1={X0 - R} y1={CY} x2={X0 + R} y2={CY} />
+  <circle class="cr-dot" cx={X0} cy={CY} r="4" />
+  <circle class="cr-ghost" cx={X0 + L} cy={CY} r={R} />
+  <line class="cr-outline" x1={X0} y1={GROUND} x2={X0 + L} y2={GROUND} />
+  <circle class="cr-mark" cx={X0} cy={GROUND} r="7" />
+  <circle class="cr-mark" cx={X0 + L} cy={GROUND} r="7" />
+  <text class="cr-label" x={X0} y={CY - 10}>直徑</text>
+  <text class="cr-label" x={midX} y={GROUND - 38}>滾一圈</text>
+  <polyline class="cr-arrow" points={`${midX - 28},${GROUND - 18} ${midX + 28},${GROUND - 18}`} />
+  <polyline class="cr-arrow" points={`${midX + 20},${GROUND - 26} ${midX + 28},${GROUND - 18} ${midX + 20},${GROUND - 10}`} />
+  {
+    segments.map(({ x1, x2 }) => (
+      <g>
+        <line class="cr-bracket" x1={x1} y1={BRACKET_Y} x2={x2} y2={BRACKET_Y} />
+        <line class="cr-bracket" x1={x1} y1={BRACKET_Y - TICK} x2={x1} y2={BRACKET_Y + TICK} />
+        <line class="cr-bracket" x1={x2} y1={BRACKET_Y - TICK} x2={x2} y2={BRACKET_Y + TICK} />
+      </g>
+    ))
+  }
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.cr-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .cr-outline {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linecap: round;
+  }
+  /* 滾完一圈的位置：虛線圓，與實線的起點圓以線型區分 */
+  .cr-ghost {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-dasharray: 8 6;
+  }
+  .cr-dot {
+    fill: var(--fg);
+  }
+  /* 記號點：實心，起點與終點各一個 */
+  .cr-mark {
+    fill: var(--accent);
+    stroke: var(--fg);
+    stroke-width: 2px;
+  }
+  .cr-bracket {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  .cr-arrow {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .cr-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+</style>
