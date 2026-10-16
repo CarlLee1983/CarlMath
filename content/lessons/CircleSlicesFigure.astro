@@ -2,7 +2,7 @@
 // 圓面積的一次性教具：把圓平分成 8 片或 16 片。
 // layout="circle"：圓與切線，隔一片塗一片；layout="strip"：同樣的扇形一正一倒交錯排成一列，越切越細就越像平行四邊形。
 // 扇形的圓心角 θ = 360° ÷ 片數；相鄰兩片的圓心水平相距 r × sin(θ / 2)，倒放的那片比正放的高 r × cos(θ / 2)，
-// 兩片的直邊剛好疊合。排成一列的寬約是圓周的一半，高約是半徑。
+// 兩片的直邊剛好疊合。排成一列的寬約是周長的一半，高約是半徑。
 import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
 
 interface Props {
@@ -83,7 +83,7 @@ function stripDrawing(): Drawing {
     heightLine: { x: hx, y1: yb - R, y2: yb },
     notes: [
       { x: hx - 8, y: yb - R / 2 + 7, text: "高", end: true },
-      { x: WIDTH / 2, y: yb + (R - c) + 32, text: "底：約是圓周的一半" },
+      { x: WIDTH / 2, y: yb + (R - c) + 32, text: "底：約是周長的一半" },
     ],
   };
 }
@@ -126,12 +126,13 @@ const { height, pieces, notes, heightLine } = layout === "circle" ? circleDrawin
     stroke-dasharray: 8 6;
     stroke-linecap: round;
   }
-  .cs-end {
-    text-anchor: end;
-  }
   .cs-label {
     fill: var(--fg);
     font-size: 20px;
     text-anchor: middle;
+  }
+  /* 放在 .cs-label 之後：同樣的優先權下後寫的贏，「高」才會靠右對齊到虛線左側 */
+  .cs-end {
+    text-anchor: end;
   }
 </style>
