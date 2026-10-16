@@ -1,0 +1,38 @@
+---
+// 疊排分數（SVG 片段，只能放在 <svg> 內）：分子、分數線、分母上下排，帶分數的整數部分並排在左。
+// 數線的刻度標籤與分數條的標籤共用它，兩個教具的分數長得一樣；版面計算在 src/lib/stacked-fraction.ts。
+import { stackedFractionLayout } from "../../lib/stacked-fraction.ts";
+import type { StackedFractionParts } from "../../lib/stacked-fraction.ts";
+
+interface Props extends StackedFractionParts {
+  /** 整體的水平中心 */
+  cx: number;
+  /** 整體的上緣 */
+  top: number;
+}
+const { cx, top, ...parts } = Astro.props;
+const layout = stackedFractionLayout(parts, cx, top);
+---
+
+<g class="nl-frac">
+  {layout.whole && <text class="nl-frac-whole" x={layout.whole.x} y={layout.whole.y}>{layout.whole.text}</text>}
+  <text class="nl-frac-num" x={layout.numerator.x} y={layout.numerator.y}>{layout.numerator.text}</text>
+  <line class="nl-frac-bar" x1={layout.bar.x1} y1={layout.bar.y} x2={layout.bar.x2} y2={layout.bar.y} />
+  <text class="nl-frac-den" x={layout.denominator.x} y={layout.denominator.y}>{layout.denominator.text}</text>
+</g>
+
+<style>
+  .nl-frac-whole,
+  .nl-frac-num,
+  .nl-frac-den {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+  /* 分數線與數線刻度同寬 */
+  .nl-frac-bar {
+    stroke: var(--fg);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+</style>
