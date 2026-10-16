@@ -14,23 +14,23 @@ const { cx, top, ...parts } = Astro.props;
 const layout = stackedFractionLayout(parts, cx, top);
 ---
 
-<g class="nl-frac">
-  {layout.whole && <text class="nl-frac-whole" x={layout.whole.x} y={layout.whole.y}>{layout.whole.text}</text>}
-  <text class="nl-frac-num" x={layout.numerator.x} y={layout.numerator.y}>{layout.numerator.text}</text>
-  <line class="nl-frac-bar" x1={layout.bar.x1} y1={layout.bar.y} x2={layout.bar.x2} y2={layout.bar.y} />
-  <text class="nl-frac-den" x={layout.denominator.x} y={layout.denominator.y}>{layout.denominator.text}</text>
+<g class="sf">
+  {layout.whole && <text class="sf-whole" x={layout.whole.x} y={layout.whole.y}>{layout.whole.text}</text>}
+  <text class="sf-num" x={layout.numerator.x} y={layout.numerator.y}>{layout.numerator.text}</text>
+  <line class="sf-bar" x1={layout.bar.x1} y1={layout.bar.y} x2={layout.bar.x2} y2={layout.bar.y} />
+  <text class="sf-den" x={layout.denominator.x} y={layout.denominator.y}>{layout.denominator.text}</text>
 </g>
 
 <style>
-  .nl-frac-whole,
-  .nl-frac-num,
-  .nl-frac-den {
+  .sf-whole,
+  .sf-num,
+  .sf-den {
     fill: var(--fg);
     font-size: 22px;
     text-anchor: middle;
   }
   /* 分數線與數線刻度同寬 */
-  .nl-frac-bar {
+  .sf-bar {
     stroke: var(--fg);
     stroke-width: 2px;
     stroke-linecap: round;

@@ -5,6 +5,7 @@ updated: 2026-09-01
 ---
 
 import NumberLine from "@figures/NumberLine.astro";
+import FractionBar from "@figures/FractionBar.astro";
 
 ## 情境開場
 
@@ -82,6 +83,31 @@ import NumberLine from "@figures/NumberLine.astro";
     step="1/4"
     labelEvery="1/2"
   />
+</Figure>
+
+<Figure caption="一條平分成 3 份，塗 2 份">
+  <FractionBar title="單條分數條" desc="一條長條平分成三份，從左邊塗滿兩份，是三分之二。" bars={[{ parts: 3, shaded: 2 }]} />
+</Figure>
+
+<Figure caption="三條一樣長，分得不同，塗的一樣多">
+  <FractionBar
+    title="三條一樣長"
+    desc="三條一樣長的長條，分別平分成二份、四份、八份，各塗滿一半，右側依序標著二分之一、四分之二、八分之四。"
+    bars={[
+      { parts: 2, shaded: 1, label: "1/2" },
+      { parts: 4, shaded: 2, label: "2/4" },
+      { parts: 8, shaded: 4, label: "4/8" },
+    ]}
+  />
+</Figure>
+
+<Figure caption="整條都塗滿是 1">
+  <FractionBar title="整條是一" desc="一條長條沒有分割，整條塗滿，右側標著 1。" bars={[{ parts: 1, shaded: 1, label: 1 }]} />
+</Figure>
+
+<Figure caption="分數條放在數線正上方，等分線與刻度對齊">
+  <FractionBar title="對齊的分數條" desc="一條長條平分成四份，塗滿三份，位在 0 到 1 的數線正上方，等分線對準每格四分之一的刻度。" bars={[{ parts: 4, shaded: 3 }]} />
+  <NumberLine title="對齊的數線" desc="0 到 1 的數線，每格是四分之一，在分數條正下方。" from={0} to={1} step="1/4" />
 </Figure>
 
 ## 推理

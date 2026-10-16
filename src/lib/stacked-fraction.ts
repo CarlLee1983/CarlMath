@@ -31,13 +31,20 @@ const NUMERATOR_BASELINE = 17;
 const DENOMINATOR_BASELINE = 43;
 const WHOLE_BASELINE = STACKED_BAR_OFFSET + 8; // 讓 22px 數字的視覺中心落在分數線高度
 
-const textWidth = (text: string) => [...text].length * DIGIT_WIDTH;
+/** 純文字數字（22px）的估計寬度；分數條的整數標籤用它留空間 */
+export const textWidth = (text: string): number => [...text].length * DIGIT_WIDTH;
+
+const barWidthOf = ({ numerator, denominator }: StackedFractionParts) => Math.max(textWidth(numerator), textWidth(denominator)) + BAR_PADDING;
+const wholeWidthOf = ({ whole }: StackedFractionParts) => (whole === undefined ? 0 : textWidth(whole) + WHOLE_GAP);
+
+/** 疊排分數整體的寬度（含帶分數的整數部分）；呼叫端用它替標籤留空間。 */
+export const stackedFractionWidth = (parts: StackedFractionParts): number => wholeWidthOf(parts) + barWidthOf(parts);
 
 /** 以 cx 為水平中心、top 為上緣，算出疊排分數各部分的位置。 */
 export function stackedFractionLayout(parts: StackedFractionParts, cx: number, top: number): StackedFractionLayout {
   const { whole, numerator, denominator } = parts;
-  const barWidth = Math.max(textWidth(numerator), textWidth(denominator)) + BAR_PADDING;
-  const wholeWidth = whole === undefined ? 0 : textWidth(whole) + WHOLE_GAP;
+  const barWidth = barWidthOf(parts);
+  const wholeWidth = wholeWidthOf(parts);
   const left = cx - (wholeWidth + barWidth) / 2;
   const fractionCx = left + wholeWidth + barWidth / 2;
   return {

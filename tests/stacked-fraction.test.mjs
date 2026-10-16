@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { stackedFractionLayout, STACKED_HEIGHT } from "../src/lib/stacked-fraction.ts";
+import { stackedFractionLayout, stackedFractionWidth, textWidth, STACKED_HEIGHT } from "../src/lib/stacked-fraction.ts";
 
 test("分子在分數線上方、分母在下方，三者都置中於 cx", () => {
   const l = stackedFractionLayout({ numerator: "1", denominator: "2" }, 100, 50);
@@ -29,4 +29,12 @@ test("帶分數：整數部分在左，與疊排真分數並排，整體置中�
   const right = l.bar.x2;
   assert.ok(Math.abs(100 - left - (right - 100)) < 1e-9);
   assert.ok(l.whole.y > l.bar.y && l.whole.y < l.denominator.y);
+});
+
+test("整體寬度等於版面左右緣的距離，純文字的寬度用同一個字寬估計", () => {
+  const parts = { whole: "1", numerator: "3", denominator: "16" };
+  const l = stackedFractionWidth(parts);
+  const layout = stackedFractionLayout(parts, 100, 0);
+  assert.equal(layout.bar.x2 - (layout.whole.x - layout.whole.width / 2), l);
+  assert.equal(textWidth("12"), 2 * textWidth("1"));
 });

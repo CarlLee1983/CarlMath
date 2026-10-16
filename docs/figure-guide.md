@@ -1,12 +1,12 @@
 # 教具繪製規範
 
-本文件是繪製 CarlMath 教具的依據，讀者是之後新增教具的站主與 agent。內容涵蓋 SVG 的結構、版面尺寸、色票語意、替代文字、共用元件 `NumberLine` 與 `Counters` 的參數，以及發布前的驗收。教具在教材裡怎麼用（配文字說明、表徵數量、import 寫法）屬於[內容撰寫規範](content-guide.md)，本文件不重述。
+本文件是繪製 CarlMath 教具的依據，讀者是之後新增教具的站主與 agent。內容涵蓋 SVG 的結構、版面尺寸、色票語意、替代文字、共用元件 `NumberLine`、`Counters` 與 `FractionBar` 的參數，以及發布前的驗收。教具在教材裡怎麼用（配文字說明、表徵數量、import 寫法）屬於[內容撰寫規範](content-guide.md)，本文件不重述。
 
 單一版面與封閉色盤是 [ADR 0002：教具採單一版面與封閉色盤](adr/0002-figures-single-layout-closed-palette.md) 的決定：教具是數線、點陣、積木這類幾何規則的圖，等比縮放就能讀，所以只畫一份 SVG；顏色只用閱讀頁的色票 token，讓同一個顏色在全路線意思一致，深色模式也不必逐圖處理。代價是每張圖的文字量與寬度受限，複雜的圖必須拆開。
 
 ## 先用共用元件
 
-數線一律用 `NumberLine`，小物圓點一律用 `Counters`，讓這兩種圖在全路線長得一樣。兩者都放在 `src/components/figures/`，教材以 `@figures/NumberLine.astro`、`@figures/Counters.astro` 匯入。共用元件畫不出來的圖，才做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起，並遵守下面每一條規則。
+數線一律用 `NumberLine`，小物圓點一律用 `Counters`，等分的長條（分數條）一律用 `FractionBar`，讓這三種圖在全路線長得一樣。它們都放在 `src/components/figures/`，教材以 `@figures/NumberLine.astro`、`@figures/Counters.astro`、`@figures/FractionBar.astro` 匯入。數線與分數條的疊排分數共用同一個內部元件 `StackedFraction`，不由教材直接匯入。共用元件畫不出來的圖，才做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起，並遵守下面每一條規則。
 
 教具元件只輸出 `<svg>`。圖名下方的說明文字由 `<Figure caption="…">` 負責，不寫在 SVG 裡。
 
@@ -47,7 +47,7 @@
 
 顏色屬性（`fill`、`stroke`、`stop-color` 等）與 CSS 的顏色宣告，只允許 `currentColor`、`none`、`transparent`、`inherit`、`var(--token)`，以及參照圖內漸層的 `url(#id)`。`var()` 不得帶 fallback 色碼，例如 `var(--accent, #2563eb)` 不合格；hex、色名、`rgb()`、`hsl()` 都不允許，frontmatter 裡的 hex 字串也算。內容驗證掃描內容根目錄 `lessons/` 下的 `*Figure.astro`；共用教具由 `tests/figure-components.test.mjs` 套用同一套規則。
 
-**顏色不能是唯一的訊息來源**：要區分的東西，除了顏色還要有形狀、虛實線或文字標籤的差別。例如數線上的點是實心圓、跳躍弧帶箭頭；`Counters` 被標記的圓點是實心，其餘是空心。色弱讀者把圖看成灰階時，仍要分得出來。
+**顏色不能是唯一的訊息來源**：要區分的東西，除了顏色還要有形狀、虛實線或文字標籤的差別。例如數線上的點是實心圓、跳躍弧帶箭頭；`FractionBar` 塗色的份是實心、沒塗的份只有框線；`Counters` 被標記的圓點是實心，其餘是空心。色弱讀者把圖看成灰階時，仍要分得出來。
 
 ## 替代文字
 
@@ -93,6 +93,32 @@
 - `points`、`jumps`、`spans` 的 `label` 合計最多三個。
 - `<desc>` 裡的分數與小數用中文讀法：「四分之三」「一又二分之一」「零點三」，不寫 `3/4`。
 - 刻度數字最多 4 位數。量更大時改變一格代表的單位，例如一格代表 1 萬或 1000，`from`、`to` 照單位寫成小數字，並在 `desc`、說明或 `spans` 標籤寫明一格代表多少。5 位以上的端點數字可能被裁切，這條規則先擋下，不必逐張確認。
+
+## `FractionBar`
+
+```mdx
+<Figure caption="平分成 4 份，塗 3 份">
+  <FractionBar
+    title="四分之三"
+    desc="一條長條平分成四份，從左邊塗滿三份，右側標著四分之三。"
+    bars={[{ parts: 4, shaded: 3, label: "3/4" }]}
+  />
+</Figure>
+```
+
+| 參數 | 說明 |
+| --- | --- |
+| `title`、`desc` | 必填，見「替代文字」 |
+| `bars` | 1 到 4 條，每條 `{ parts, shaded, label? }`，由上往下排 |
+| `parts` | 等分成幾份，1 到 24 的整數 |
+| `shaded` | 從左邊連續塗滿幾份，0 到 `parts` 的整數 |
+| `label` | 畫在條右側：`"a/b"` 字串畫成疊排分數，整數畫成純文字 |
+
+- 每條代表同一個整體，長度相同；塗色的份以 `--accent` 實心填滿，沒塗的份只有框線，外框是主線（寬 3、`--fg`），等分線是輔助線（寬 2、`--muted`，與數線刻度相同）。
+- `label` 的分數照寫的樣子畫、不約分（`"2/4"` 就畫 2/4），畫法與數線刻度的疊排分數相同，數字字級 22。
+- **對齊條件**：版面寬 480、左右各留 28，與 `NumberLine` 相同。沒有任何一條帶 `label` 時，條的左右端對齊數線上 `from`、`to` 的 x 座標，所以分數條放在 0 到 1 的數線正上方（`step` 與 `parts` 相配，例如 `step="1/4"` 配 `parts={4}`）時，等分線與刻度對齊。只要有一條帶 `label`，所有條都會縮短，為右側標籤騰出空間，此時不保證對齊。
+- 不支援：假分數（`shaded` 大於 `parts`）、從中間或任意位置塗色、二維切割（長方形或圓的切法）。這些要另做一次性教具。
+- `<desc>` 用中文讀法寫出份數與塗色數，例如「平分成四份，塗滿三份」，不寫 `3/4`。
 
 ## `Counters`
 
