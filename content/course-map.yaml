@@ -772,6 +772,7 @@ stages:
     coreQuestion: 面積是 2 的正方形，邊長是多少？
     prerequisites:
     - exponents-intro
+    - area-perimeter
     family: false
     curriculum108:
       grades:
@@ -792,10 +793,11 @@ stages:
       content:
       - N-10-1
   - id: polynomial-multiplication
-    title: 乘法公式：和的平方
+    title: 乘法公式
     coreQuestion: (a+b)² 為什麼不等於 a²+b²？
     prerequisites:
     - expanding-brackets
+    - area-perimeter
     family: false
     curriculum108:
       grades:
