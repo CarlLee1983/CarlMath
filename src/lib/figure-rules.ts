@@ -114,14 +114,20 @@ function figureProblems({ path, text }: FigureSource): { code: Issue["code"]; me
   return problems;
 }
 
-/** 教具規則：每個 `<svg>` 有 `<title>` 與 `<desc>`，顏色只用色票 token。unitId 取自 import 該教具的教材。 */
-export function figureIssues(figures: FigureSource[], lessons: ParsedLesson[]): Issue[] {
+/** 教具檔（絕對路徑）對應的單元：取第一篇 import 它的教材。教具規則與記法規則共用。 */
+export function figureUnits(lessons: ParsedLesson[]): Map<string, string> {
   const unitOfFigure = new Map<string, string>();
   for (const lesson of lessons) {
     for (const file of importedFigureFiles(lesson)) {
       if (lesson.unit && !unitOfFigure.has(file)) unitOfFigure.set(file, lesson.unit);
     }
   }
+  return unitOfFigure;
+}
+
+/** 教具規則：每個 `<svg>` 有 `<title>` 與 `<desc>`，顏色只用色票 token。unitId 取自 import 該教具的教材。 */
+export function figureIssues(figures: FigureSource[], lessons: ParsedLesson[]): Issue[] {
+  const unitOfFigure = figureUnits(lessons);
   return figures.flatMap((figure) =>
     figureProblems(figure).map(({ code, message }) => lessonIssue(code, message, unitOfFigure.get(resolve(figure.file)))),
   );

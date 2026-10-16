@@ -1,9 +1,10 @@
 import { existsSync, readdirSync, readFileSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve } from "node:path";
 import { checkCourseMap, createCourseIndex } from "./course-map.ts";
 import type { CourseIndex, CourseMap, Issue, Unit } from "./course-map.ts";
 import { allUnits } from "./course-map-model.ts";
-import { figureIssues, type FigureSource } from "./figure-rules.ts";
+import { figureIssues, figureUnits, type FigureSource } from "./figure-rules.ts";
+import { courseMapUnitOf, inequalitySignIssues, type NotationSource } from "./inequality-signs.ts";
 import { lessonIssue } from "./lesson-issue.ts";
 import { parseLesson, type ParsedLesson } from "./lesson-parse.ts";
 import { lessonRuleIssues } from "./lesson-rules.ts";
@@ -22,9 +23,12 @@ function listFiles(dir: string, suffix: string): string[] {
     .sort();
 }
 
-/** 掃描並解析 `<root>/lessons/**\/*.mdx`。教材無法解析時帶檔案路徑丟出例外。 */
-function scanLessons(root: string): ParsedLesson[] {
-  return listFiles(join(root, "lessons"), ".mdx").map((file) => parseLesson(relative(root, file), file, readFileSync(file, "utf8")));
+/** 掃描並解析 `<root>/lessons/**\/*.mdx`，連同原文一起回傳（記法規則逐行檢查原文）。教材無法解析時帶檔案路徑丟出例外。 */
+function scanLessons(root: string): { lesson: ParsedLesson; text: string }[] {
+  return listFiles(join(root, "lessons"), ".mdx").map((file) => {
+    const text = readFileSync(file, "utf8");
+    return { lesson: parseLesson(relative(root, file), file, text), text };
+  });
 }
 
 /** 讀入教材目錄中所有 `*Figure.astro` 教具檔。 */
@@ -71,9 +75,17 @@ export function loadContent(root: string): LoadedContent {
   const { courseMap, issues } = checkCourseMap(text);
   if (!courseMap) return { ok: false, issues };
 
-  const lessons = scanLessons(root);
+  const scanned = scanLessons(root);
+  const lessons = scanned.map(({ lesson }) => lesson);
+  const figures = scanFigures(root);
+  const unitOfFigure = figureUnits(lessons);
+  const notationSources: NotationSource[] = [
+    { path: "course-map.yaml", text, unitOf: courseMapUnitOf(text) },
+    ...scanned.map(({ lesson, text: lessonText }) => ({ path: lesson.path, text: lessonText, unitOf: () => lesson.unit })),
+    ...figures.map((figure) => ({ path: figure.path, text: figure.text, unitOf: () => unitOfFigure.get(resolve(figure.file)) })),
+  ];
   const unitsById = new Map(allUnits(courseMap).map((unit) => [unit.id, unit]));
-  const allIssues = [...issues, ...lessonIssues(lessons, unitsById), ...figureIssues(scanFigures(root), lessons)];
+  const allIssues = [...issues, ...lessonIssues(lessons, unitsById), ...figureIssues(figures, lessons), ...inequalitySignIssues(notationSources)];
   if (allIssues.some((issue) => issue.level === "error")) return { ok: false, issues: allIssues };
 
   const index = createCourseIndex(courseMap, lessons.flatMap((lesson) => (lesson.unit ? [lesson.unit] : [])));
