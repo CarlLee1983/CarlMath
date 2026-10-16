@@ -502,13 +502,38 @@ stages:
       - 2
       - 3
       - 4
-      - 5
       content:
       - S-2-4
       - S-2-5
       - N-3-14
       - N-4-11
       - S-4-3
+  - id: volume
+    title: 體積與容積
+    coreQuestion: 體積是在數什麼？為什麼 1 公升是 1000 立方公分？
+    prerequisites:
+    - area-perimeter
+    - measurement-units
+    family: true
+    curriculum108:
+      grades:
+      - 4
+      - 5
+      content:
+      - N-4-12
+      - S-4-4
+      - S-5-5
+      - N-5-15
+  - id: polygon-area
+    title: 平行四邊形、三角形與梯形的面積
+    coreQuestion: 為什麼平行四邊形、三角形、梯形的面積都能從長方形推出來？
+    prerequisites:
+    - area-perimeter
+    family: false
+    curriculum108:
+      grades:
+      - 5
+      content:
       - S-5-2
   - id: angles
     title: 角與角度
@@ -556,7 +581,7 @@ stages:
     coreQuestion: 圓的面積為什麼是 πr²？
     prerequisites:
     - circle-basics
-    - area-perimeter
+    - polygon-area
     family: false
     curriculum108:
       grades:
