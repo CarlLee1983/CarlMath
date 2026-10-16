@@ -47,16 +47,16 @@ test.describe("首頁", () => {
   test("撰寫進度條顯示已撰寫數／單元總數", async ({ page }) => {
     await page.goto("/");
     const bar = page.getByRole("progressbar", { name: "撰寫進度" });
-    await expect(bar).toHaveAttribute("aria-valuenow", "3");
+    await expect(bar).toHaveAttribute("aria-valuenow", "4");
     await expect(bar).toHaveAttribute("aria-valuemax", "7");
-    await expect(page.locator("main")).toContainText("3 / 7 個單元已撰寫");
+    await expect(page.locator("main")).toContainText("4 / 7 個單元已撰寫");
   });
 
   test("已撰寫單元卡片依 updated 由新到舊，顯示序號、建議年級、核心問題與親子標記", async ({ page }) => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 2, name: "最近撰寫或更新" })).toBeVisible();
     const cards = page.locator(".home-card");
-    expect(await hrefs(cards)).toEqual(["/units/sum-demo/", "/units/fx-count/", "/units/math-demo/"]);
+    expect(await hrefs(cards)).toEqual(["/units/sum-demo/", "/units/fx-count/", "/units/math-demo/", "/units/fx-ratio/"]);
     const sum = cards.nth(0);
     await expect(sum).toContainText("第 3 單元");
     await expect(sum).toContainText("2 年級");

@@ -173,3 +173,280 @@ test.describe("主題切換", () => {
     expect(seen[0]).not.toBe(seen[1]);
   });
 });
+
+// 分數、小數、帶分數數線（fx-ratio fixture）：疊排分數是分子、分數線、分母三個元素，類別 sf-*。
+test.describe("NumberLine 有理數", () => {
+  const rationalPath = "/units/fx-ratio/";
+
+  test("分數數線：整數刻度只寫整數，分數疊排且不約分（2/4 不寫成 1/2）", async ({ page }) => {
+    await page.goto(rationalPath);
+    const svg = figure(page, "四等分數線");
+    expect(await texts(svg.locator(".nl-num"))).toEqual(["0", "1"]);
+    expect(await texts(svg.locator(".sf-num"))).toEqual(["1", "2", "3"]);
+    expect(await texts(svg.locator(".sf-den"))).toEqual(["4", "4", "4"]);
+    expect(await svg.locator(".nl-tick").count()).toBe(5);
+    expect(await svg.locator(".nl-point").count()).toBe(1);
+    expect(await svg.locator(".nl-jump").count()).toBe(1);
+    expect(await svg.locator(".nl-span").count()).toBe(1);
+  });
+
+  test("疊排結構：分子在分數線上、分母在下，與刻度同一個 x，各刻度的分數線等長", async ({ page }) => {
+    await page.goto(rationalPath);
+    const svg = figure(page, "四等分數線");
+    const ticks = nums(await attrs(svg.locator(".nl-tick"), "x1"));
+    const groups = await svg.locator(".sf").evaluateAll((els) =>
+      els.map((g) => {
+        const n = (sel: string, name: string) => Number(g.querySelector(sel)!.getAttribute(name));
+        return {
+          numX: n(".sf-num", "x"),
+          numY: n(".sf-num", "y"),
+          denX: n(".sf-den", "x"),
+          denY: n(".sf-den", "y"),
+          barY: n(".sf-bar", "y1"),
+          barMid: (n(".sf-bar", "x1") + n(".sf-bar", "x2")) / 2,
+          barLen: n(".sf-bar", "x2") - n(".sf-bar", "x1"),
+        };
+      }),
+    );
+    expect(groups).toHaveLength(3);
+    groups.forEach((g, i) => {
+      expect(g.numY).toBeLessThan(g.barY);
+      expect(g.barY).toBeLessThan(g.denY);
+      expect(g.numX).toBeCloseTo(ticks[i + 1]!, 5);
+      expect(g.denX).toBeCloseTo(ticks[i + 1]!, 5);
+      expect(g.barMid).toBeCloseTo(ticks[i + 1]!, 5);
+      expect(g.barLen).toBe(groups[0]!.barLen);
+    });
+  });
+
+  test("疊排分數字級 22、分數線寬同刻度（2px）；文字標籤不計入刻度分數", async ({ page }) => {
+    await page.goto(rationalPath);
+    const svg = figure(page, "四等分數線");
+    const style = (locator: Locator, prop: "fontSize" | "strokeWidth") => locator.first().evaluate((el, p) => getComputedStyle(el)[p], prop);
+    expect(await style(svg.locator(".sf-num"), "fontSize")).toBe("22px");
+    expect(await style(svg.locator(".sf-den"), "fontSize")).toBe("22px");
+    expect(await style(svg.locator(".sf-bar"), "strokeWidth")).toBe("2px");
+    expect(await style(svg.locator(".nl-tick:not(.nl-tick-zero)"), "strokeWidth")).toBe("2px");
+    expect(await texts(svg.locator(".nl-label"))).toEqual(["跳", "半條"]);
+  });
+
+  test("有疊排分數時，距離括號與標籤在分數下方，不重疊", async ({ page }) => {
+    await page.goto(rationalPath);
+    const svg = figure(page, "四等分數線");
+    const fracBottom = await svg.locator(".sf").evaluateAll((els) => Math.max(...els.map((el) => (el as SVGGraphicsElement).getBBox().y + (el as SVGGraphicsElement).getBBox().height)));
+    const span = await svg.locator(".nl-span").evaluate((el) => (el as SVGGraphicsElement).getBBox().y);
+    expect(span).toBeGreaterThan(fracBottom);
+    const viewBoxHeight = (await svg.getAttribute("viewBox"))!.split(" ").map(Number)[3]!;
+    const labelBottom = await svg.locator(".nl-label").last().evaluate((el) => (el as SVGGraphicsElement).getBBox().y + (el as SVGGraphicsElement).getBBox().height);
+    expect(viewBoxHeight).toBeGreaterThanOrEqual(labelBottom);
+  });
+
+  test("小數數線：每格 0.1，照十進位寫，沒有疊排分數", async ({ page }) => {
+    await page.goto(rationalPath);
+    const svg = figure(page, "小數數線");
+    expect(await texts(svg.locator(".nl-num"))).toEqual(["0", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6", "0.7", "0.8", "0.9", "1"]);
+    expect(await svg.locator(".sf").count()).toBe(0);
+    const point = Number(await svg.locator(".nl-point").getAttribute("cx"));
+    const ticks = nums(await attrs(svg.locator(".nl-tick"), "x1"));
+    expect(point).toBeCloseTo(ticks[3]!, 5);
+  });
+
+  test("帶分數數線：大於 1 的分數寫成整數接疊排真分數；不開 mixed 則寫假分數", async ({ page }) => {
+    await page.goto(rationalPath);
+    const mixed = figure(page, "帶分數數線");
+    expect(await texts(mixed.locator(".nl-num"))).toEqual(["0", "1", "2"]);
+    expect(await texts(mixed.locator(".sf-whole"))).toEqual(["1"]);
+    expect(await texts(mixed.locator(".sf-num"))).toEqual(["1", "1"]);
+    expect(await texts(mixed.locator(".sf-den"))).toEqual(["2", "2"]);
+    const whole = Number(await mixed.locator(".sf-whole").getAttribute("x"));
+    const bar = await mixed.locator(".sf").nth(1).locator(".sf-bar").evaluate((el) => Number(el.getAttribute("x1")));
+    expect(whole).toBeLessThan(bar);
+    const improper = figure(page, "假分數數線");
+    expect(await texts(improper.locator(".sf-num"))).toEqual(["1", "3"]);
+    expect(await improper.locator(".sf-whole").count()).toBe(0);
+  });
+
+  test("超過 10 段的分數數線只標整數、兩端點與 points", async ({ page }) => {
+    await page.goto(rationalPath);
+    const svg = figure(page, "分成八分之一");
+    expect(await svg.locator(".nl-tick").count()).toBe(25);
+    expect(await texts(svg.locator(".nl-num"))).toEqual(["0", "1", "2", "3"]);
+    expect(await texts(svg.locator(".sf-num"))).toEqual(["5"]);
+    expect(await texts(svg.locator(".sf-den"))).toEqual(["8"]);
+  });
+
+  test("labelEvery 可寫分數：每二分之一標一次，分母仍沿用刻度的 4", async ({ page }) => {
+    await page.goto(rationalPath);
+    const svg = figure(page, "每半個標");
+    expect(await texts(svg.locator(".nl-num"))).toEqual(["0", "1", "2"]);
+    expect(await texts(svg.locator(".sf-num"))).toEqual(["2", "6"]);
+    expect(await texts(svg.locator(".sf-den"))).toEqual(["4", "4"]);
+  });
+
+  test("320px 下頁面沒有水平捲軸，每張有理數數線都在視窗內", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "narrow", "只在 320px 專案驗證");
+    await page.goto(rationalPath);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    const widths = await page.locator("svg.nl-fig").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().right));
+    for (const right of widths) expect(right).toBeLessThanOrEqual(320);
+  });
+
+  test("主題切換：分數與分數線用 --fg，淺色與深色各自隨主題切換", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "以 emulateMedia 切換淺深色，只跑一次");
+    await page.goto(rationalPath);
+    const svg = figure(page, "帶分數數線");
+    const token = () =>
+      page.evaluate(() => {
+        const probe = document.createElement("div");
+        document.body.append(probe);
+        probe.style.color = "var(--fg)";
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+      });
+    const seen: string[] = [];
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      const fg = await token();
+      expect(await svg.locator(".sf-num").first().evaluate((el) => getComputedStyle(el).fill)).toBe(fg);
+      expect(await svg.locator(".sf-den").first().evaluate((el) => getComputedStyle(el).fill)).toBe(fg);
+      expect(await svg.locator(".sf-whole").first().evaluate((el) => getComputedStyle(el).fill)).toBe(fg);
+      expect(await svg.locator(".sf-bar").first().evaluate((el) => getComputedStyle(el).stroke)).toBe(fg);
+      seen.push(fg);
+    }
+    expect(seen[0]).not.toBe(seen[1]);
+  });
+});
+
+// 分數條 FractionBar（fx-ratio fixture）：塗色的份實心 --accent，沒塗的份只有框線；右側標籤與數線共用疊排分數（類別 sf-*）。
+test.describe("FractionBar", () => {
+  const barPath = "/units/fx-ratio/";
+
+  test("單條：parts 份等分，從左邊連續塗滿 shaded 份，沒有標籤", async ({ page }) => {
+    await page.goto(barPath);
+    const svg = figure(page, "單條分數條");
+    expect(await svg.locator(".fb-bar").count()).toBe(1);
+    expect(await svg.locator(".fb-part").count()).toBe(3);
+    expect(await svg.locator(".fb-part-shaded").count()).toBe(2);
+    expect(await svg.locator(".fb-divider").count()).toBe(2);
+    const classes = await svg.locator(".fb-part").evaluateAll((els) => els.map((el) => el.classList.contains("fb-part-shaded")));
+    expect(classes).toEqual([true, true, false]);
+    expect(await svg.locator(".sf, .fb-num").count()).toBe(0);
+    // 沒有標籤時，條的左右端是數線的 from、to（寬 480、左右各留 28）
+    const outline = svg.locator(".fb-outline");
+    expect(Number(await outline.getAttribute("x"))).toBe(28);
+    expect(Number(await outline.getAttribute("x")) + Number(await outline.getAttribute("width"))).toBe(452);
+  });
+
+  test("多條：條數、各自的份數與塗色數、長度相同，有標籤時條縮短騰出右側", async ({ page }) => {
+    await page.goto(barPath);
+    const svg = figure(page, "三條一樣長");
+    const bars = svg.locator(".fb-bar");
+    expect(await bars.count()).toBe(3);
+    expect(await bars.evaluateAll((els) => els.map((el) => el.querySelectorAll(".fb-part").length))).toEqual([2, 4, 8]);
+    expect(await bars.evaluateAll((els) => els.map((el) => el.querySelectorAll(".fb-part-shaded").length))).toEqual([1, 2, 4]);
+    const outlines = await svg.locator(".fb-outline").evaluateAll((els) => els.map((el) => [el.getAttribute("x"), el.getAttribute("width")]));
+    expect(new Set(outlines.map((o) => o.join())).size).toBe(1);
+    expect(Number(outlines[0]![0]) + Number(outlines[0]![1])).toBeLessThan(452);
+    // 標籤是疊排分數，不約分
+    expect(await texts(svg.locator(".sf-num"))).toEqual(["1", "2", "4"]);
+    expect(await texts(svg.locator(".sf-den"))).toEqual(["2", "4", "8"]);
+    // 分數線與該條的中線同高，分子在上、分母在下
+    const rows = await bars.evaluateAll((els) =>
+      els.map((el) => {
+        const n = (sel: string, name: string) => Number(el.querySelector(sel)!.getAttribute(name));
+        return { mid: n(".fb-outline", "y") + n(".fb-outline", "height") / 2, barY: n(".sf-bar", "y1"), numY: n(".sf-num", "y"), denY: n(".sf-den", "y") };
+      }),
+    );
+    for (const r of rows) {
+      expect(r.barY).toBeCloseTo(r.mid, 5);
+      expect(r.numY).toBeLessThan(r.barY);
+      expect(r.barY).toBeLessThan(r.denY);
+    }
+  });
+
+  test("整數標籤畫成純文字，不疊排", async ({ page }) => {
+    await page.goto(barPath);
+    const svg = figure(page, "整條是一");
+    expect(await texts(svg.locator(".fb-num"))).toEqual(["1"]);
+    expect(await svg.locator(".sf").count()).toBe(0);
+    expect(await svg.locator(".fb-part-shaded").count()).toBe(1);
+    expect(await svg.locator(".fb-divider").count()).toBe(0);
+  });
+
+  test("線寬與字級：外框 3、等分線 2、疊排分數線 2、標籤數字 22", async ({ page }) => {
+    await page.goto(barPath);
+    const style = (locator: Locator, prop: "fontSize" | "strokeWidth") => locator.first().evaluate((el, p) => getComputedStyle(el)[p], prop);
+    const bars = figure(page, "三條一樣長");
+    expect(await style(bars.locator(".fb-outline"), "strokeWidth")).toBe("3px");
+    expect(await style(bars.locator(".fb-divider"), "strokeWidth")).toBe("2px");
+    expect(await style(bars.locator(".sf-bar"), "strokeWidth")).toBe("2px");
+    expect(await style(bars.locator(".sf-num"), "fontSize")).toBe("22px");
+    expect(await style(figure(page, "整條是一").locator(".fb-num"), "fontSize")).toBe("22px");
+  });
+
+  test("標籤與數線的疊排分數是同一種畫法：同類別、字級與分數線寬一樣", async ({ page }) => {
+    await page.goto(barPath);
+    const read = (locator: Locator) =>
+      locator.first().evaluate((el) => {
+        const cs = getComputedStyle(el);
+        return [el.tagName, cs.fontSize, cs.strokeWidth, cs.fill, cs.stroke, cs.textAnchor].join("|");
+      });
+    for (const part of [".sf-num", ".sf-den", ".sf-bar"]) {
+      expect(await read(figure(page, "三條一樣長").locator(part))).toBe(await read(figure(page, "帶分數數線").locator(part)));
+    }
+  });
+
+  test("與 0 到 1 的數線對齊：條的左右端與等分線的 x 等於數線的刻度 x（viewBox 與畫面）", async ({ page }) => {
+    await page.goto(barPath);
+    const bar = figure(page, "對齊的分數條");
+    const line = figure(page, "對齊的數線");
+    const ticks = nums(await attrs(line.locator(".nl-tick"), "x1"));
+    expect(ticks).toHaveLength(5);
+    const outlineX = Number(await bar.locator(".fb-outline").getAttribute("x"));
+    const outlineW = Number(await bar.locator(".fb-outline").getAttribute("width"));
+    expect(outlineX).toBeCloseTo(ticks[0]!, 5);
+    expect(outlineX + outlineW).toBeCloseTo(ticks[4]!, 5);
+    expect(nums(await attrs(bar.locator(".fb-divider"), "x1"))).toEqual(ticks.slice(1, 4).map((t) => expect.closeTo(t, 5)));
+    // 畫面上也對齊：兩張圖寬度相同，等分線的螢幕 x 與刻度的螢幕 x 相同
+    const screenX = (locator: Locator) => locator.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().x + el.getBoundingClientRect().width / 2));
+    const [dividers, tickXs] = [await screenX(bar.locator(".fb-divider")), (await screenX(line.locator(".nl-tick"))).slice(1, 4)];
+    dividers.forEach((x, i) => expect(x).toBeCloseTo(tickXs[i]!, 0));
+  });
+
+  test("320px 下頁面沒有水平捲軸，每張分數條都在視窗內", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "narrow", "只在 320px 專案驗證");
+    await page.goto(barPath);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    const rights = await page.locator("svg.fb-fig").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().right));
+    expect(rights).toHaveLength(4);
+    for (const right of rights) expect(right).toBeLessThanOrEqual(320);
+  });
+
+  test("主題切換：塗色的份用 --accent，外框用 --fg，沒塗的份不填色，淺色與深色各自隨主題切換", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "以 emulateMedia 切換淺深色，只跑一次");
+    await page.goto(barPath);
+    const svg = figure(page, "單條分數條");
+    const token = (name: string) =>
+      page.evaluate((n) => {
+        const probe = document.createElement("div");
+        document.body.append(probe);
+        probe.style.color = `var(${n})`;
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+      }, name);
+    const computed = (locator: Locator, prop: "stroke" | "fill") => locator.first().evaluate((el, p) => getComputedStyle(el)[p], prop);
+    const seen: string[] = [];
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      const [fg, accent] = [await token("--fg"), await token("--accent")];
+      expect(await computed(svg.locator(".fb-part-shaded"), "fill")).toBe(accent);
+      expect(await computed(svg.locator(".fb-part:not(.fb-part-shaded)"), "fill")).toBe("none");
+      expect(await computed(svg.locator(".fb-outline"), "stroke")).toBe(fg);
+      expect(await computed(figure(page, "三條一樣長").locator(".sf-num"), "fill")).toBe(fg);
+      seen.push(accent);
+    }
+    expect(seen[0]).not.toBe(seen[1]);
+  });
+});

@@ -69,7 +69,7 @@ test("「只看親子共學」「只看已撰寫」可以單獨或一起用", as
   await writtenOnly(page).check();
   expect(await visibleRows(page)).toEqual(["fx-count"]);
   await familyOnly(page).uncheck();
-  expect(await visibleRows(page)).toEqual(["fx-count", "sum-demo", "math-demo"]);
+  expect(await visibleRows(page)).toEqual(["fx-count", "sum-demo", "math-demo", "fx-ratio"]);
 });
 
 test("搜尋不分大小寫", async ({ page }) => {
@@ -97,7 +97,7 @@ test("網址 ?written=1、?family=1 預先套用篩選", async ({ page }) => {
   await page.goto(`${path}?written=1`);
   await expect(writtenOnly(page)).toBeChecked();
   await expect(familyOnly(page)).not.toBeChecked();
-  expect(await visibleRows(page)).toEqual(["fx-count", "sum-demo", "math-demo"]);
+  expect(await visibleRows(page)).toEqual(["fx-count", "sum-demo", "math-demo", "fx-ratio"]);
 
   await page.goto(`${path}?family=1&written=1`);
   expect(await visibleRows(page)).toEqual(["fx-count"]);
@@ -131,9 +131,11 @@ test("階段跳轉膠囊連到每個階段", async ({ page }) => {
 
 test("階段被篩選藏起來時，點階段膠囊會清除篩選再跳過去", async ({ page }) => {
   await page.goto(path);
+  await familyOnly(page).check();
   await writtenOnly(page).check();
   await expect(page.locator("#stage-stage-b")).toBeHidden();
   await page.getByRole("navigation", { name: "階段" }).getByRole("link", { name: /階段乙/ }).click();
+  await expect(familyOnly(page)).not.toBeChecked();
   await expect(writtenOnly(page)).not.toBeChecked();
   await expect(page.locator("#stage-stage-b h2")).toBeInViewport();
 });

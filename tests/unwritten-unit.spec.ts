@@ -82,7 +82,7 @@ test("sitemap 不含未撰寫單元頁，含已撰寫單元頁（含親子篇）
   const urls = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
   expect(urls).toContain("https://math.gravito.dev/");
   expect(urls).toContain("https://math.gravito.dev/units/math-demo/");
-  expect(urls.filter((u) => u.includes("/units/fx-"))).toEqual(["https://math.gravito.dev/units/fx-count/"]);
+  expect(urls.filter((u) => u.includes("/units/fx-"))).toEqual(["https://math.gravito.dev/units/fx-count/", "https://math.gravito.dev/units/fx-ratio/"]);
 });
 
 test("各頁 title 與 description", async ({ page }) => {

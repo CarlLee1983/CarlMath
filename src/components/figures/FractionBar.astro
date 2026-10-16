@@ -1,0 +1,108 @@
+---
+import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
+import { resolveFractionBars } from "../../lib/fraction-bar.ts";
+import type { FractionBarInput } from "../../lib/fraction-bar.ts";
+import { STACKED_HEIGHT, isStacked, stackedFractionWidth, textWidth } from "../../lib/stacked-fraction.ts";
+import StackedFraction from "./StackedFraction.astro";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc>，給讀圖軟體與看不到圖的人 */
+  desc: string;
+  /** 1–4 條，每條代表同一個整體、長度相同：parts 等分成幾份（1–24），shaded 從左邊連續塗滿幾份，label 畫在條右側 */
+  bars: FractionBarInput[];
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("FractionBar", title, desc);
+const bars = resolveFractionBars(props.bars);
+
+const prefix = figureIdPrefix("fb", props);
+
+// 版面（viewBox 單位）：左右邊界與數線相同；沒有任何標籤時，條的左右端對齊數線的 from、to
+const WIDTH = 480;
+const MARGIN = 28;
+const BAR_HEIGHT = 40;
+const ROW_GAP = 14;
+const LABEL_GAP = 12; // 條右端到標籤的距離
+const EDGE = 3; // 上下留給外框線寬的邊
+const labelWidth = (label: (typeof bars)[number]["label"]) => {
+  if (!label) return 0;
+  return isStacked(label) ? stackedFractionWidth(label) : textWidth(label.text);
+};
+const labelRoom = Math.max(...bars.map((b) => labelWidth(b.label)));
+const x1 = MARGIN;
+const x2 = WIDTH - MARGIN - (labelRoom > 0 ? LABEL_GAP + labelRoom : 0);
+const labelCx = x2 + LABEL_GAP + labelRoom / 2;
+// 有標籤時每列至少和疊排分數一樣高，分數線與條的中線同高
+const rowHeight = labelRoom > 0 ? STACKED_HEIGHT : BAR_HEIGHT;
+const rows = bars.map((bar, i) => {
+  const top = EDGE + i * (rowHeight + ROW_GAP);
+  const barTop = top + (rowHeight - BAR_HEIGHT) / 2;
+  const x = (k: number) => x1 + (k / bar.parts) * (x2 - x1);
+  return { ...bar, top, barTop, x };
+});
+const height = EDGE * 2 + bars.length * rowHeight + (bars.length - 1) * ROW_GAP;
+---
+
+<svg class="fb-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {
+    rows.map((row) => (
+      <g class="fb-bar">
+        {Array.from({ length: row.parts }, (_, k) => (
+          <rect class={k < row.shaded ? "fb-part fb-part-shaded" : "fb-part"} x={row.x(k)} y={row.barTop} width={row.x(k + 1) - row.x(k)} height={BAR_HEIGHT} />
+        ))}
+        {Array.from({ length: row.parts - 1 }, (_, k) => (
+          <line class="fb-divider" x1={row.x(k + 1)} y1={row.barTop} x2={row.x(k + 1)} y2={row.barTop + BAR_HEIGHT} />
+        ))}
+        <rect class="fb-outline" x={x1} y={row.barTop} width={x2 - x1} height={BAR_HEIGHT} />
+        {row.label && isStacked(row.label) && <StackedFraction cx={labelCx} top={row.top} numerator={row.label.numerator} denominator={row.label.denominator} />}
+        {row.label?.kind === "integer" && (
+          <text class="fb-num" x={labelCx} y={row.top + rowHeight / 2 + 8}>
+            {row.label.text}
+          </text>
+        )}
+      </g>
+    ))
+  }
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.fb-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 塗色的份實心；沒塗的份只有框線，灰階下仍分得出來 */
+  .fb-part {
+    fill: none;
+  }
+  .fb-part-shaded {
+    fill: var(--accent);
+  }
+  /* 等分線是輔助線，與數線刻度同色同寬 */
+  .fb-divider {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  /* 外框是主線 */
+  .fb-outline {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  .fb-num {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+</style>

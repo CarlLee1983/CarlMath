@@ -232,7 +232,7 @@ test.describe("下一步", () => {
     const heading = page.getByRole("heading", { level: 3, name: "這個單元會在這些地方用上" });
     await expect(page.getByRole("heading", { level: 2 }).last()).toHaveText("下一步");
     const list = heading.locator("xpath=following-sibling::*[1]");
-    await expect(list.getByRole("listitem")).toHaveText([/^\s*分數尚未撰寫\s*$/, /^\s*比例尚未撰寫\s*$/]);
+    await expect(list.getByRole("listitem")).toHaveText([/^\s*分數尚未撰寫\s*$/, "比例"]);
     expect(await hrefs(list.getByRole("link"))).toEqual(["/units/fx-fraction/", "/units/fx-ratio/"]);
     await expect(page.getByRole("heading", { level: 3, name: "下一個單元" })).toHaveCount(0);
     await expect(page.getByRole("heading", { level: 3, name: "複習建議" })).toBeVisible();
