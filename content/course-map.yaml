@@ -591,6 +591,21 @@ stages:
 - id: integers-algebra-basics
   title: 負數與代數入門
   units:
+  - id: variables
+    title: 用字母代表數
+    coreQuestion: 為什麼要用 x 代替還不知道或會變動的數？
+    prerequisites:
+    - arithmetic-properties
+    family: false
+    curriculum108:
+      grades:
+      - 5
+      - 6
+      - 7
+      content:
+      - R-5-3
+      - R-6-3
+      - A-7-1
   - id: negative-numbers
     title: 負數：比零還少
     coreQuestion: 比零還少是什麼意思，數線怎麼往左延伸？
@@ -607,6 +622,7 @@ stages:
     title: 負數加減
     coreQuestion: 減去一個負數為什麼會變多？
     prerequisites:
+    - variables
     - negative-numbers
     family: false
     curriculum108:
@@ -618,6 +634,7 @@ stages:
     title: 絕對值：到零的距離
     coreQuestion: 為什麼 |a−b| 剛好是數線上兩點的距離？
     prerequisites:
+    - variables
     - negative-numbers
     family: false
     curriculum108:
@@ -662,21 +679,6 @@ stages:
       - 7
       content:
       - N-7-8
-  - id: variables
-    title: 用字母代表數
-    coreQuestion: 為什麼要用 x 代替還不知道或會變動的數？
-    prerequisites:
-    - arithmetic-properties
-    family: false
-    curriculum108:
-      grades:
-      - 5
-      - 6
-      - 7
-      content:
-      - R-5-3
-      - R-6-3
-      - A-7-1
   - id: algebraic-expressions
     title: 化簡式子：同類項
     coreQuestion: 含有字母的式子怎麼合併得更簡單？
