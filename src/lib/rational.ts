@@ -26,33 +26,40 @@ export const key = (a: Rational): string => `${a.n}/${a.d}`;
 const DECIMAL_LITERAL = /^(-?)(\d+)(?:\.(\d+))?(?:e([+-]?\d+))?$/;
 const FRACTION_STRING = /^(-?\d+)\/(\d+)$/;
 
-/** 把 "a/b" 字串拆成分子與分母（不約分）；格式不符回傳 undefined。分母可以是 0，由呼叫端決定怎麼報錯。 */
-export function splitFraction(raw: unknown): { n: number; d: number } | undefined {
+const shown = (raw: unknown) => (typeof raw === "string" ? `"${raw}"` : String(raw));
+
+function assertSafe(n: number, d: number, subject: string, raw: unknown): void {
+  if (!Number.isSafeInteger(n) || !Number.isSafeInteger(d)) throw new Error(`${subject}（${shown(raw)}）的位數太多，無法精確表示`);
+}
+
+/**
+ * 解析 "a/b" 字串成分子與分母，不約分：整數分子、正整數分母，分母為 0、格式錯誤、超過安全整數都丟中文錯誤。
+ * `subject` 是錯誤訊息裡的主詞（例如「<NumberLine> 的 from」），`accepts` 說明字串以外還接受什麼（例如「數字」）。
+ */
+export function parseFractionParts(raw: unknown, subject: string, accepts: string): { n: number; d: number } {
   const m = typeof raw === "string" ? FRACTION_STRING.exec(raw) : null;
-  return m ? { n: Number(m[1]), d: Number(m[2]) } : undefined;
+  if (!m) throw new Error(`${subject} 必須是${accepts}或 "a/b" 字串（整數分子、正整數分母），目前是 ${JSON.stringify(raw)}`);
+  const [n, d] = [Number(m[1]), Number(m[2])];
+  if (d === 0) throw new Error(`${subject}（${shown(raw)}）的分母不能是 0`);
+  assertSafe(n, d, subject, raw);
+  return { n, d };
 }
 
 /**
  * 把位置值解析成精確有理數。數字取它的十進位字面（0.1 就是 1/10，不經浮點運算），
- * 字串必須是 "a/b"：整數分子、正整數分母。`subject` 是錯誤訊息裡的主詞，例如「<NumberLine> 的 from」。
+ * 字串必須是 "a/b"（見 parseFractionParts）。`subject` 是錯誤訊息裡的主詞，例如「<NumberLine> 的 from」。
  */
 export function parseRational(raw: unknown, subject: string): Rational {
-  const bad = () => new Error(`${subject} 必須是數字或 "a/b" 字串（整數分子、正整數分母），目前是 ${JSON.stringify(raw)}`);
-  if (typeof raw === "number") {
-    const m = Number.isFinite(raw) ? DECIMAL_LITERAL.exec(String(raw)) : null;
-    if (!m) throw bad();
-    const [, sign, whole, fraction = "", exponent = "0"] = m;
-    const digits = Number(`${whole}${fraction}`);
-    const shift = Number(exponent) - fraction.length;
-    const n = (sign ? -1 : 1) * digits * 10 ** Math.max(shift, 0);
-    const d = 10 ** Math.max(-shift, 0);
-    if (!Number.isSafeInteger(n) || !Number.isSafeInteger(d)) throw new Error(`${subject}（${raw}）的位數太多，無法精確表示`);
+  if (typeof raw !== "number") {
+    const { n, d } = parseFractionParts(raw, subject, "數字");
     return rational(n, d);
   }
-  const parts = splitFraction(raw);
-  if (!parts) throw bad();
-  const { n, d } = parts;
-  if (d === 0) throw new Error(`${subject}（"${raw}"）的分母不能是 0`);
-  if (!Number.isSafeInteger(n) || !Number.isSafeInteger(d)) throw new Error(`${subject}（"${raw}"）的位數太多，無法精確表示`);
+  const m = Number.isFinite(raw) ? DECIMAL_LITERAL.exec(String(raw)) : null;
+  if (!m) throw new Error(`${subject} 必須是數字或 "a/b" 字串（整數分子、正整數分母），目前是 ${JSON.stringify(raw)}`);
+  const [, sign, whole, fraction = "", exponent = "0"] = m;
+  const shift = Number(exponent) - fraction.length;
+  const n = (sign ? -1 : 1) * Number(`${whole}${fraction}`) * 10 ** Math.max(shift, 0);
+  const d = 10 ** Math.max(-shift, 0);
+  assertSafe(n, d, subject, raw);
   return rational(n, d);
 }

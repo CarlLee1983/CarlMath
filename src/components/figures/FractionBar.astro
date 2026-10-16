@@ -2,7 +2,7 @@
 import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
 import { resolveFractionBars } from "../../lib/fraction-bar.ts";
 import type { FractionBarInput } from "../../lib/fraction-bar.ts";
-import { STACKED_HEIGHT, stackedFractionWidth, textWidth } from "../../lib/stacked-fraction.ts";
+import { STACKED_HEIGHT, isStacked, stackedFractionWidth, textWidth } from "../../lib/stacked-fraction.ts";
 import StackedFraction from "./StackedFraction.astro";
 
 interface Props {
@@ -30,7 +30,7 @@ const LABEL_GAP = 12; // 條右端到標籤的距離
 const EDGE = 3; // 上下留給外框線寬的邊
 const labelWidth = (label: (typeof bars)[number]["label"]) => {
   if (!label) return 0;
-  return label.kind === "integer" ? textWidth(label.text) : stackedFractionWidth(label);
+  return isStacked(label) ? stackedFractionWidth(label) : textWidth(label.text);
 };
 const labelRoom = Math.max(...bars.map((b) => labelWidth(b.label)));
 const x1 = MARGIN;
@@ -60,7 +60,7 @@ const height = EDGE * 2 + bars.length * rowHeight + (bars.length - 1) * ROW_GAP;
           <line class="fb-divider" x1={row.x(k + 1)} y1={row.barTop} x2={row.x(k + 1)} y2={row.barTop + BAR_HEIGHT} />
         ))}
         <rect class="fb-outline" x={x1} y={row.barTop} width={x2 - x1} height={BAR_HEIGHT} />
-        {row.label?.kind === "fraction" && <StackedFraction cx={labelCx} top={row.top} numerator={row.label.numerator} denominator={row.label.denominator} />}
+        {row.label && isStacked(row.label) && <StackedFraction cx={labelCx} top={row.top} numerator={row.label.numerator} denominator={row.label.denominator} />}
         {row.label?.kind === "integer" && (
           <text class="fb-num" x={labelCx} y={row.top + rowHeight / 2 + 8}>
             {row.label.text}

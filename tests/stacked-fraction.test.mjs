@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { stackedFractionLayout, stackedFractionWidth, textWidth, STACKED_HEIGHT } from "../src/lib/stacked-fraction.ts";
+import { isStacked, stackedFractionLayout, stackedFractionWidth, textWidth, STACKED_HEIGHT } from "../src/lib/stacked-fraction.ts";
 
 test("分子在分數線上方、分母在下方，三者都置中於 cx", () => {
   const l = stackedFractionLayout({ numerator: "1", denominator: "2" }, 100, 50);
@@ -37,4 +37,11 @@ test("整體寬度等於版面左右緣的距離，純文字的寬度用同一�
   const layout = stackedFractionLayout(parts, 100, 0);
   assert.equal(layout.bar.x2 - (layout.whole.x - layout.whole.width / 2), l);
   assert.equal(textWidth("12"), 2 * textWidth("1"));
+});
+
+test("isStacked：分數與帶分數要疊排，整數與小數不用", () => {
+  assert.equal(isStacked({ kind: "fraction", numerator: "1", denominator: "2" }), true);
+  assert.equal(isStacked({ kind: "mixed", whole: "1", numerator: "1", denominator: "2" }), true);
+  assert.equal(isStacked({ kind: "integer", text: "1" }), false);
+  assert.equal(isStacked({ kind: "decimal", text: "0.5" }), false);
 });

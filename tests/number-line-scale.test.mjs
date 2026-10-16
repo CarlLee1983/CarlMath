@@ -186,3 +186,12 @@ test("文字標籤合計最多三個", () => {
   rejects(four, "<NumberLine> 圖內最多三個文字標籤，目前有 4 個");
   assert.doesNotThrow(() => scale({ ...four, spans: [{ from: 1, to: 2 }] }));
 });
+
+test("分數 step 與 labelEvery 必須寫成最簡分數，否則標籤的分母會被悄悄約掉", () => {
+  rejects({ from: 0, to: 1, step: "2/4" }, '<NumberLine> 的 step（"2/4"）必須寫成最簡分數，例如 "1/2"（整數請直接寫數字）');
+  rejects({ from: 0, to: 1, step: "1/4", labelEvery: "2/4" }, '<NumberLine> 的 labelEvery（"2/4"）必須寫成最簡分數，例如 "1/2"（整數請直接寫數字）');
+  rejects({ from: 0, to: 2, step: "4/2" }, '<NumberLine> 的 step（"4/2"）必須寫成最簡分數，例如 "1/2"（整數請直接寫數字）');
+  assert.doesNotThrow(() => scale({ from: 0, to: 2, step: "2/1" }));
+  // from、to、位置不受限：它們只決定位置，不決定標籤的分母
+  assert.doesNotThrow(() => scale({ from: "0/4", to: "4/4", step: "1/4", points: [{ at: "2/4" }] }));
+});

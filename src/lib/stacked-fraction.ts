@@ -10,6 +10,32 @@ export interface StackedFractionParts {
   denominator: string;
 }
 
+/** 數線刻度與分數條標籤共用的標籤種類：整數與小數是純文字，分數與帶分數要疊排（欄位都是已排好的字串） */
+export interface IntegerLabel {
+  kind: "integer";
+  text: string;
+}
+export interface DecimalLabel {
+  kind: "decimal";
+  text: string;
+}
+export interface FractionLabel {
+  kind: "fraction";
+  numerator: string;
+  denominator: string;
+}
+export interface MixedLabel {
+  kind: "mixed";
+  whole: string;
+  numerator: string;
+  denominator: string;
+}
+export type StackedLabel = FractionLabel | MixedLabel;
+
+/** 標籤是否要用疊排分數畫（分數或帶分數） */
+export const isStacked = <L extends { kind: string }>(label: L): label is Extract<L, StackedLabel> =>
+  label.kind === "fraction" || label.kind === "mixed";
+
 export interface StackedFractionLayout {
   whole?: { text: string; x: number; y: number; width: number };
   numerator: { text: string; x: number; y: number };
@@ -17,8 +43,6 @@ export interface StackedFractionLayout {
   bar: { x1: number; x2: number; y: number };
 }
 
-/** 數字字級（viewBox 單位），與數線刻度數字相同 */
-export const STACKED_FONT_SIZE = 22;
 /** 疊排分數整體高度：從分子上緣到分母下緣 */
 export const STACKED_HEIGHT = 46;
 /** 分數線離整體上緣的距離，也是整數部分的垂直中心 */

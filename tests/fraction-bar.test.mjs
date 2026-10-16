@@ -51,3 +51,7 @@ test("label 必須是 \"a/b\" 字串或整數，分母不能是 0", () => {
   for (const value of ["abc", "1/", "1.5/2", "1/-2", "3", 0.5, Number.NaN]) rejects([{ parts: 4, shaded: 1, label: value }], format(0, value));
   rejects([{ parts: 4, shaded: 1, label: "1/0" }], '<FractionBar> 的 bars[0].label（"1/0"）的分母不能是 0');
 });
+
+test("label 超過安全整數丟中文錯誤，不默默失去精度", () => {
+  rejects([{ parts: 4, shaded: 1, label: "9007199254740993/2" }], '<FractionBar> 的 bars[0].label（"9007199254740993/2"）的位數太多，無法精確表示');
+});
