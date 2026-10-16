@@ -195,3 +195,65 @@ test("分數 step 與 labelEvery 必須寫成最簡分數，否則標籤的分�
   // from、to、位置不受限：它們只決定位置，不決定標籤的分母
   assert.doesNotThrow(() => scale({ from: "0/4", to: "4/4", step: "1/4", points: [{ at: "2/4" }] }));
 });
+
+// 負數：負號一律是數學減號 U+2212，不是連字號
+const MINUS = "−";
+
+test("負整數與負小數的標籤用 U+2212，0 沒有負號", () => {
+  assert.deepEqual(shown({ from: -3, to: 3 }), [`${MINUS}3`, `${MINUS}2`, `${MINUS}1`, "0", "1", "2", "3"]);
+  assert.deepEqual(shown({ from: -0.5, to: 0.5, step: 0.25 }), [`${MINUS}0.5`, `${MINUS}0.25`, "0", "0.25", "0.5"]);
+  for (const text of shown({ from: -2, to: 1, step: 0.5 })) assert.ok(!text.includes("-"), text);
+});
+
+test("跨 0 的整數數線：0 的刻度是 isZero，位置依比例", () => {
+  const r = scale({ from: -4, to: 4 });
+  assert.deepEqual(r.ticks.map((t) => t.isZero), [false, false, false, false, true, false, false, false, false]);
+  assert.equal(r.ticks[4].at, 0.5);
+});
+
+test("負分數標籤：負號與分數分開，分子分母為正，分母沿用刻度的分母、不約分", () => {
+  const labels = scale({ from: -1, to: 1, step: "1/4" }).numbers.map((n) => n.label);
+  assert.deepEqual(labels[1], { kind: "fraction", negative: true, numerator: "3", denominator: "4" });
+  assert.deepEqual(labels[2], { kind: "fraction", negative: true, numerator: "2", denominator: "4" });
+  assert.deepEqual(labels[3], { kind: "fraction", negative: true, numerator: "1", denominator: "4" });
+  assert.deepEqual(labels[5], { kind: "fraction", numerator: "1", denominator: "4" });
+  assert.deepEqual(labels[0], { kind: "integer", text: `${MINUS}1` });
+  assert.equal(labels[4].text, "0");
+});
+
+test("跨 0 的分數刻度序列", () => {
+  const signed = scale({ from: -1, to: 1, step: "1/2" }).numbers.map((n) => `${n.label.negative ? "-" : ""}${text(n.label).replace(MINUS, "-")}`);
+  assert.deepEqual(signed, ["-1", "-1/2", "0", "1/2", "1"]);
+  assert.deepEqual(kinds({ from: -1, to: 1, step: "1/2" }), ["integer", "fraction", "integer", "fraction", "integer"]);
+});
+
+test("mixed：絕對值大於 1 的負分數寫成帶分數，負號在整數部分左邊；−1/2 與 −2/2 不變", () => {
+  const labels = scale({ from: -2, to: 0, step: "1/2", mixed: true }).numbers.map((n) => n.label);
+  assert.deepEqual(labels[1], { kind: "mixed", negative: true, whole: "1", numerator: "1", denominator: "2" });
+  assert.deepEqual(labels[2], { kind: "integer", text: `${MINUS}1` });
+  assert.deepEqual(labels[3], { kind: "fraction", negative: true, numerator: "1", denominator: "2" });
+  const quarter = scale({ from: "-3/2", to: -1, step: "1/2", mixed: true }).numbers.map((n) => n.label);
+  assert.deepEqual(quarter[0], { kind: "mixed", negative: true, whole: "1", numerator: "1", denominator: "2" });
+});
+
+test("不開 mixed 時，−3/2 寫成負的假分數", () => {
+  const labels = scale({ from: -2, to: 0, step: "1/2" }).numbers.map((n) => n.label);
+  assert.deepEqual(labels[1], { kind: "fraction", negative: true, numerator: "3", denominator: "2" });
+});
+
+test("負的點落在刻度上，hasStacked 計入負分數", () => {
+  const r = scale({ from: -1, to: 1, step: "1/2", points: [{ at: "-1/2" }] });
+  assert.equal(r.points[0].at, 0.25);
+  assert.equal(r.hasStacked, true);
+  assert.equal(scale({ from: -3, to: 3 }).hasStacked, false);
+});
+
+test("超過 10 段的跨 0 整數數線只標 5 的倍數", () => {
+  assert.deepEqual(shown({ from: -10, to: 10, step: 1 }).map((s) => s.replace(MINUS, "-")), ["-10", "-5", "0", "5", "10"]);
+});
+
+test("正數數線的標籤不變（沒有 negative 欄位）", () => {
+  const labels = scale({ from: 0, to: 2, step: "1/2", mixed: true }).numbers.map((n) => n.label);
+  assert.deepEqual(labels[1], { kind: "fraction", numerator: "1", denominator: "2" });
+  assert.deepEqual(labels[3], { kind: "mixed", whole: "1", numerator: "1", denominator: "2" });
+});

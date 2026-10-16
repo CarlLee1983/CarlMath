@@ -3,7 +3,7 @@
  * 位置值是數字（取十進位字面）或 "a/b" 字串，內部一律以約分後的有理數比較。
  */
 import { add, compare, div, isInteger, key, lcm, mul, parseFractionParts, parseRational, rational, sub, toNumber } from "./rational.ts";
-import { isStacked } from "./stacked-fraction.ts";
+import { MINUS, isStacked } from "./stacked-fraction.ts";
 import type { DecimalLabel, FractionLabel, IntegerLabel, MixedLabel } from "./stacked-fraction.ts";
 import type { Rational } from "./rational.ts";
 
@@ -53,7 +53,7 @@ function decimalText(v: Rational): string | undefined {
   const scaled = (v.n * 10 ** k) / v.d;
   const digits = String(Math.abs(scaled)).padStart(k + 1, "0");
   const text = k === 0 ? digits : `${digits.slice(0, -k)}.${digits.slice(-k)}`;
-  return scaled < 0 ? `-${text}` : text;
+  return scaled < 0 ? `${MINUS}${text}` : text;
 }
 
 /** step 與 labelEvery 決定刻度標籤的分母（不約分），字串寫法必須已是最簡分數，免得標籤悄悄變成約分後的分母 */
@@ -121,12 +121,15 @@ export function resolveNumberLine(input: NumberLineInput): NumberLineScale {
   // 分數的分母沿用刻度的分母、不約分：所有刻度的分母都整除 from 與 step 的最小公倍數
   const denominator = lcm(from.d, step.d);
   const labelOf = (v: Rational): TickLabel => {
-    if (isInteger(v)) return { kind: "integer", text: String(v.n) };
+    if (isInteger(v)) return { kind: "integer", text: v.n < 0 ? `${MINUS}${-v.n}` : String(v.n) };
     if (fractionStyle) {
-      const numerator = v.n * (denominator / v.d);
-      const whole = mixed && v.n > v.d ? Math.floor(v.n / v.d) : 0;
-      if (whole === 0) return { kind: "fraction", numerator: String(numerator), denominator: String(denominator) };
-      return { kind: "mixed", whole: String(whole), numerator: String(numerator - whole * denominator), denominator: String(denominator) };
+      // 負分數：負號與分數分開（negative），分子分母、整數部分都用絕對值
+      const negative = v.n < 0 ? { negative: true as const } : {};
+      const abs = Math.abs(v.n);
+      const numerator = abs * (denominator / v.d);
+      const whole = mixed && abs > v.d ? Math.floor(abs / v.d) : 0;
+      if (whole === 0) return { kind: "fraction", ...negative, numerator: String(numerator), denominator: String(denominator) };
+      return { kind: "mixed", ...negative, whole: String(whole), numerator: String(numerator - whole * denominator), denominator: String(denominator) };
     }
     const text = decimalText(v);
     if (text === undefined) throw new Error(`${SUBJECT} 的 step 是數字時，刻度必須能寫成有限小數（${v.n}/${v.d} 不行）`);

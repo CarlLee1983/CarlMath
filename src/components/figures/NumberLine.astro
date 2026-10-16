@@ -97,7 +97,7 @@ const bracketPath = (m: NumberLineMove<number>) => {
   {
     numbers.map(({ at, label }) =>
       isStacked(label) ? (
-        <StackedFraction cx={x(at)} top={axisY + STACK_TOP} whole={label.kind === "mixed" ? label.whole : undefined} numerator={label.numerator} denominator={label.denominator} />
+        <StackedFraction cx={x(at)} top={axisY + STACK_TOP} negative={label.negative} whole={label.kind === "mixed" ? label.whole : undefined} numerator={label.numerator} denominator={label.denominator} />
       ) : (
         <text class="nl-num" x={x(at)} y={numY}>{label.text}</text>
       ),

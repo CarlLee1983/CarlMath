@@ -88,6 +88,50 @@ import UnitGrid from "@figures/UnitGrid.astro";
 </Figure>
 
 <Figure caption="一條平分成 3 份，塗 2 份">
+<Figure caption="跨 0 的整數數線，負號是減號 −">
+  <NumberLine
+    title="跨零整數數線"
+    desc="負四到四的數線，每格是 1，零的刻度加粗。負三有一個點。"
+    from={-4}
+    to={4}
+    points={[{ at: -3 }]}
+  />
+</Figure>
+
+<Figure caption="跨 0 的小數數線">
+  <NumberLine
+    title="跨零小數數線"
+    desc="負一點五到一點五的數線，每格是零點五。負一點五有一個點。"
+    from={-1.5}
+    to={1.5}
+    step={0.5}
+    points={[{ at: -1.5 }]}
+  />
+</Figure>
+
+<Figure caption="負分數：負號在整個分數左邊，分母不約分">
+  <NumberLine
+    title="負分數數線"
+    desc="負一到一的數線，每格是四分之一。負四分之二有一個點，刻度寫成負四分之三、負四分之二、負四分之一、四分之一、四分之二、四分之三。"
+    from={-1}
+    to={1}
+    step="1/4"
+    points={[{ at: "-2/4" }]}
+  />
+</Figure>
+
+<Figure caption="負帶分數：負號在整數部分左邊">
+  <NumberLine
+    title="負帶分數數線"
+    desc="負二到一的數線，每格是二分之一，刻度寫成帶分數。負一又二分之一有一個點，和負二分之三是同一個位置。"
+    from={-2}
+    to={1}
+    step="1/2"
+    mixed
+    points={[{ at: "-3/2" }]}
+  />
+</Figure>
+
   <FractionBar title="單條分數條" desc="一條長條平分成三份，從左邊塗滿兩份，是三分之二。" bars={[{ parts: 3, shaded: 2 }]} />
 </Figure>
 

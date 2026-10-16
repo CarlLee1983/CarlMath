@@ -318,6 +318,104 @@ test.describe("NumberLine 有理數", () => {
   });
 });
 
+// 數線的負數（fx-ratio fixture）：負號是數學減號 U+2212；負分數的負號（.sf-sign）在整個疊排分數左邊、與分數線同高。
+test.describe("NumberLine 負數", () => {
+  const negativePath = "/units/fx-ratio/";
+  const MINUS = "\u2212";
+
+  test("負整數與負小數刻度用 U+2212，不用連字號；0 與正數沒有負號", async ({ page }) => {
+    await page.goto(negativePath);
+    expect(await texts(figure(page, "跨零整數數線").locator(".nl-num"))).toEqual([`${MINUS}4`, `${MINUS}3`, `${MINUS}2`, `${MINUS}1`, "0", "1", "2", "3", "4"]);
+    expect(await texts(figure(page, "跨零小數數線").locator(".nl-num"))).toEqual([`${MINUS}1.5`, `${MINUS}1`, `${MINUS}0.5`, "0", "0.5", "1", "1.5"]);
+    for (const title of ["跨零整數數線", "跨零小數數線", "負分數數線", "負帶分數數線"]) {
+      expect(await figure(page, title).evaluate((svg) => svg.textContent!.includes("-"))).toBe(false);
+    }
+  });
+
+  test("跨 0 的整數數線：0 的刻度在正中間並加粗，點落在 −3", async ({ page }) => {
+    await page.goto(negativePath);
+    const svg = figure(page, "跨零整數數線");
+    const ticks = nums(await attrs(svg.locator(".nl-tick"), "x1"));
+    expect(ticks).toHaveLength(9);
+    expect(await svg.locator(".nl-tick-zero").getAttribute("x1")).toBe(String(ticks[4]));
+    expect(Number(await svg.locator(".nl-point").getAttribute("cx"))).toBeCloseTo(ticks[1]!, 5);
+  });
+
+  test("負分數：負號是 U+2212 且分開畫，位於分數線左側、與分數線同高，分子分母是正數、分母不約分", async ({ page }) => {
+    await page.goto(negativePath);
+    const svg = figure(page, "負分數數線");
+    expect(await texts(svg.locator(".nl-num"))).toEqual([`${MINUS}1`, "0", "1"]);
+    expect(await texts(svg.locator(".sf-sign"))).toEqual([MINUS, MINUS, MINUS]);
+    expect(await texts(svg.locator(".sf-num"))).toEqual(["3", "2", "1", "1", "2", "3"]);
+    expect(await texts(svg.locator(".sf-den"))).toEqual(Array(6).fill("4"));
+    const groups = await svg.locator(".sf").evaluateAll((els) =>
+      els.map((g) => {
+        const box = (sel: string) => {
+          const el = g.querySelector(sel) as SVGGraphicsElement | null;
+          if (!el) return null;
+          const r = el.getBoundingClientRect();
+          return { left: r.left, right: r.right, midY: r.top + r.height / 2 };
+        };
+        return { sign: box(".sf-sign"), bar: box(".sf-bar") };
+      }),
+    );
+    groups.forEach((g, i) => {
+      if (i < 3) {
+        expect(g.sign).not.toBeNull();
+        expect(g.sign!.right).toBeLessThanOrEqual(g.bar!.left + 0.5);
+        expect(Math.abs(g.sign!.midY - g.bar!.midY)).toBeLessThan(5);
+      } else {
+        expect(g.sign).toBeNull();
+      }
+    });
+  });
+
+  test("mixed：−3/2 寫成帶分數，負號在整數部分左邊，整數部分、分子分母都是正數", async ({ page }) => {
+    await page.goto(negativePath);
+    const svg = figure(page, "負帶分數數線");
+    expect(await texts(svg.locator(".nl-num"))).toEqual([`${MINUS}2`, `${MINUS}1`, "0", "1"]);
+    expect(await texts(svg.locator(".sf-whole"))).toEqual(["1"]);
+    expect(await texts(svg.locator(".sf-sign"))).toEqual([MINUS, MINUS]);
+    expect(await texts(svg.locator(".sf-num"))).toEqual(["1", "1", "1"]);
+    const mixed = svg.locator(".sf").filter({ has: page.locator(".sf-whole") });
+    const signRight = await mixed.locator(".sf-sign").evaluate((el) => el.getBoundingClientRect().right);
+    const wholeLeft = await mixed.locator(".sf-whole").evaluate((el) => el.getBoundingClientRect().left);
+    expect(signRight).toBeLessThanOrEqual(wholeLeft + 0.5);
+  });
+
+  test("負號字級 22；淺色與深色的負號顏色隨主題切換（--fg）", async ({ page }, testInfo) => {
+    await page.goto(negativePath);
+    const svg = figure(page, "負分數數線");
+    expect(await svg.locator(".sf-sign").first().evaluate((el) => getComputedStyle(el).fontSize)).toBe("22px");
+    test.skip(testInfo.project.name !== "desktop", "以 emulateMedia 切換淺深色，只跑一次");
+    const seen: string[] = [];
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      const fg = await page.evaluate(() => {
+        const probe = document.createElement("div");
+        document.body.append(probe);
+        probe.style.color = "var(--fg)";
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+      });
+      expect(await svg.locator(".sf-sign").first().evaluate((el) => getComputedStyle(el).fill)).toBe(fg);
+      expect(await figure(page, "跨零整數數線").locator(".nl-num").first().evaluate((el) => getComputedStyle(el).fill)).toBe(fg);
+      seen.push(fg);
+    }
+    expect(seen[0]).not.toBe(seen[1]);
+  });
+
+  test("320px 寬沒有水平捲軸，負數數線不超出畫面", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "narrow", "只在 320px 驗證");
+    await page.goto(negativePath);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    for (const title of ["跨零整數數線", "跨零小數數線", "負分數數線", "負帶分數數線"]) {
+      expect(await figure(page, title).evaluate((el) => el.getBoundingClientRect().right)).toBeLessThanOrEqual(320);
+    }
+  });
+});
+
 // 分數條 FractionBar（fx-ratio fixture）：塗色的份實心 --accent，沒塗的份只有框線；右側標籤與數線共用疊排分數（類別 sf-*）。
 test.describe("FractionBar", () => {
   const barPath = "/units/fx-ratio/";
