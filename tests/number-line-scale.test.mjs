@@ -257,3 +257,18 @@ test("正數數線的標籤不變（沒有 negative 欄位）", () => {
   assert.deepEqual(labels[1], { kind: "fraction", numerator: "1", denominator: "2" });
   assert.deepEqual(labels[3], { kind: "mixed", whole: "1", numerator: "1", denominator: "2" });
 });
+
+test("points、jumps、spans 的 label 裡連字號後面接數字會丟錯，要求改用 U+2212", () => {
+  const base = { from: -5, to: 5 };
+  const message = (where) => `<NumberLine> 的 ${where}.label（"-3"）裡的負號要用數學減號「−」（U+2212），不要用連字號「-」`;
+  rejects({ ...base, points: [{ at: 0, label: "-3" }] }, message("points[0]"));
+  rejects({ ...base, jumps: [{ from: 0, to: 1, label: "-3" }] }, message("jumps[0]"));
+  rejects({ ...base, spans: [{ from: 0, to: 1, label: "-3" }] }, message("spans[0]"));
+  rejectsMatch({ ...base, points: [{ at: 0, label: "5 -2" }] }, /U\+2212/);
+});
+
+test("label 用 U+2212 的負號可以通過；連字號後面不是數字的文字不擋", () => {
+  const base = { from: -5, to: 5 };
+  assert.doesNotThrow(() => scale({ ...base, points: [{ at: 0, label: "−3" }], jumps: [{ from: 0, to: 1, label: "5 − 2" }] }));
+  assert.doesNotThrow(() => scale({ ...base, points: [{ at: 0, label: "A-B" }], spans: [{ from: 0, to: 1, label: "- 3" }] }));
+});

@@ -101,6 +101,16 @@ export function resolveNumberLine(input: NumberLineInput): NumberLineScale {
     list.map((m, i) => ({ from: onTick(m.from, `${name}[${i}].from`), to: onTick(m.to, `${name}[${i}].to`), label: m.label }));
   const jumpValues = moves("jumps", jumps);
   const spanValues = moves("spans", spans);
+  // 作者寫在標籤裡的負數也要用數學減號，不自動轉換，讓作者看見並改掉
+  const assertMinusSign = (name: string, list: NumberLineMove[] | { label?: string }[]) =>
+    list.forEach((m, i) => {
+      if (m.label && /-\d/.test(m.label)) {
+        throw new Error(`${SUBJECT} 的 ${name}[${i}].label（"${m.label}"）裡的負號要用數學減號「${MINUS}」（U+2212），不要用連字號「-」`);
+      }
+    });
+  assertMinusSign("points", points);
+  assertMinusSign("jumps", jumps);
+  assertMinusSign("spans", spans);
   const labelCount = [...points, ...jumps, ...spans].filter((m) => m.label).length;
   if (labelCount > 3) throw new Error(`${SUBJECT} 圖內最多三個文字標籤，目前有 ${labelCount} 個`);
 
