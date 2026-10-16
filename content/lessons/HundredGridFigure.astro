@@ -1,0 +1,104 @@
+---
+// 小數位值的一次性教具：百格圖。一個大正方形代表 1，平分成 10 × 10 共 100 小格；
+// 一整直排是 0.1，一小格是 0.01。塗色由左邊的直排開始，一排塗滿才往右，排內由上往下。
+// 最多並排兩張，用來比較兩個小數；每張下方可標一個數。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Grid {
+  /** 塗幾小格，0–100 的整數（35 就是 3 整排加 5 小格） */
+  shaded: number;
+  /** 畫在格子下方的數，例如 "0.35"；練習題不給，不洩漏答案 */
+  label?: string;
+}
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+  /** 1 或 2 張百格圖，由左往右排 */
+  grids: Grid[];
+}
+const props = Astro.props;
+const { title, desc, grids } = props;
+
+assertAltText("HundredGridFigure", title, desc);
+if (!Array.isArray(grids) || grids.length < 1 || grids.length > 2) throw new Error("<HundredGridFigure> 的 grids 必須是 1 或 2 張");
+for (const g of grids) {
+  if (!Number.isInteger(g.shaded) || g.shaded < 0 || g.shaded > 100) throw new Error(`<HundredGridFigure> 的 shaded 必須是 0 到 100 的整數：${g.shaded}`);
+  if (g.label !== undefined && (g.label.trim() === "" || [...g.label].length > 6)) throw new Error(`<HundredGridFigure> 的 label 必須是 1 到 6 個字元：${g.label}`);
+}
+
+const prefix = figureIdPrefix("hg", props);
+
+const WIDTH = 480;
+const N = 10;
+// 一張時格子大一點；兩張並排時縮小，加上中間的間隔仍在 480 內（2 × 190 + 44 = 424，左右各留 28）
+const CELL = grids.length === 1 ? 24 : 19;
+const SIDE = CELL * N;
+const GAP = 44;
+const TOP = 12;
+const hasLabel = grids.some((g) => g.label !== undefined);
+const LABEL_Y = TOP + SIDE + 36;
+const height = hasLabel ? LABEL_Y + 12 : TOP + SIDE + 12;
+const totalWidth = grids.length * SIDE + (grids.length - 1) * GAP;
+const left = (WIDTH - totalWidth) / 2;
+
+const layout = grids.map((g, i) => {
+  const x0 = left + i * (SIDE + GAP);
+  // 由左邊的直排開始塗：第 k 小格在第 floor(k / 10) 排、該排由上往下第 k % 10 格
+  const cells = Array.from({ length: g.shaded }, (_, k) => ({
+    x: x0 + Math.floor(k / N) * CELL,
+    y: TOP + (k % N) * CELL,
+  }));
+  const inner = Array.from({ length: N - 1 }, (_, j) => (j + 1) * CELL);
+  return { x0, cells, inner, label: g.label };
+});
+---
+
+<svg class="hg-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {
+    layout.map(({ x0, cells, inner, label }) => (
+      <g>
+        {cells.map(({ x, y }) => <rect class="hg-shaded" x={x} y={y} width={CELL} height={CELL} />)}
+        {inner.map((d) => <line class="hg-grid" x1={x0 + d} y1={TOP} x2={x0 + d} y2={TOP + SIDE} />)}
+        {inner.map((d) => <line class="hg-grid" x1={x0} y1={TOP + d} x2={x0 + SIDE} y2={TOP + d} />)}
+        <rect class="hg-frame" x={x0} y={TOP} width={SIDE} height={SIDE} />
+        {label !== undefined && <text class="hg-label" x={x0 + SIDE / 2} y={LABEL_Y}>{label}</text>}
+      </g>
+    ))
+  }
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.hg-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 塗色的格是實心、沒塗的格只有框線：灰階下也分得出來，顏色不是唯一訊息 */
+  .hg-shaded {
+    fill: var(--accent);
+  }
+  .hg-grid {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  .hg-frame {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  .hg-label {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+</style>
