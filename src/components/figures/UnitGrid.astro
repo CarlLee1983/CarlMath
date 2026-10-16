@@ -1,0 +1,104 @@
+---
+import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
+import { resolveUnitGrid } from "../../lib/unit-grid.ts";
+import type { UnitGridInput } from "../../lib/unit-grid.ts";
+
+interface Props extends UnitGridInput {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc>，給讀圖軟體與看不到圖的人 */
+  desc: string;
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("UnitGrid", title, desc);
+const grid = resolveUnitGrid(props);
+
+const prefix = figureIdPrefix("ug", props);
+
+// 版面（viewBox 單位）：寬 480，方格置中；一格 32，10 行 320 寬，左右各剩 80 放標籤
+const WIDTH = 480;
+const CELL = 32;
+const EDGE = 3; // 外框線寬的邊
+const LABEL_GAP = 10; // 方格到標籤的距離
+const LABEL_ROOM = 32; // 上下標籤佔的高度
+const gridWidth = grid.cols * CELL;
+const gridHeight = grid.rows * CELL;
+const x0 = (WIDTH - gridWidth) / 2;
+const hasSide = (side: string) => grid.labels.some((l) => l.side === side);
+const y0 = EDGE + (hasSide("top") ? LABEL_ROOM : 0);
+const height = y0 + gridHeight + EDGE + (hasSide("bottom") ? LABEL_ROOM : 0);
+const shaded = new Set(grid.cells.map(([r, c]) => `${r},${c}`));
+const cells = Array.from({ length: grid.rows * grid.cols }, (_, k) => {
+  const row = Math.floor(k / grid.cols);
+  const col = k % grid.cols;
+  return { x: x0 + col * CELL, y: y0 + row * CELL, shaded: shaded.has(`${row},${col}`) };
+});
+const px = (x: number) => x0 + x * CELL;
+const py = (y: number) => y0 + y * CELL;
+const outlinePath = grid.outline?.segments.map((s) => `M${px(s.x1)} ${py(s.y1)}L${px(s.x2)} ${py(s.y2)}`).join("");
+// 標籤置中在塗色區外接範圍的那一邊（沒有塗色則整個方格）
+const { row0, col0, row1, col1 } = grid.bounds;
+const midX = (px(col0) + px(col1)) / 2;
+const midY = (py(row0) + py(row1)) / 2;
+const labelPlace = {
+  top: { x: midX, y: y0 - LABEL_GAP, anchor: "middle" },
+  bottom: { x: midX, y: y0 + gridHeight + LABEL_GAP + 18, anchor: "middle" },
+  left: { x: x0 - LABEL_GAP, y: midY + 7, anchor: "end" },
+  right: { x: x0 + gridWidth + LABEL_GAP, y: midY + 7, anchor: "start" },
+} as const;
+---
+
+<svg class="ug-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {cells.map((cell) => <rect class={cell.shaded ? "ug-cell ug-cell-shaded" : "ug-cell"} x={cell.x} y={cell.y} width={CELL} height={CELL} />)}
+  {outlinePath && <path class="ug-outline" d={outlinePath} />}
+  {
+    grid.labels.map((label) => {
+      const place = labelPlace[label.side];
+      return (
+        <text class={label.kind === "count" ? "ug-num" : "ug-label"} x={place.x} y={place.y} text-anchor={place.anchor}>
+          {label.text}
+        </text>
+      );
+    })
+  }
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.ug-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 格線是輔助線；沒塗的格只有格線，塗色的格實心，灰階下仍分得出來 */
+  .ug-cell {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 2px;
+  }
+  .ug-cell-shaded {
+    fill: var(--accent);
+  }
+  /* 周長外框是主線，沿塗色區的實際邊界 */
+  .ug-outline {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .ug-num {
+    fill: var(--fg);
+    font-size: 22px;
+  }
+  .ug-label {
+    fill: var(--fg);
+    font-size: 20px;
+  }
+</style>

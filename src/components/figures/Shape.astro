@@ -1,0 +1,111 @@
+---
+import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
+import { resolveShape } from "../../lib/shape-geometry.ts";
+import type { ShapeCircle, ShapeGuide, ShapePolygon } from "../../lib/shape-geometry.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc>，給讀圖軟體與看不到圖的人 */
+  desc: string;
+  /** 多邊形：抽象座標（y 軸朝上）的頂點，可帶頂點字母、邊長與等邊／平行記號、角弧／度數／直角記號，可整塊塗色 */
+  polygons?: ShapePolygon[];
+  /** 圓：圓心與半徑，可畫出半徑或直徑線段 */
+  circles?: ShapeCircle[];
+  /** 虛線輔助線段，例如三角形的高 */
+  guides?: ShapeGuide[];
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("Shape", title, desc);
+const layout = resolveShape({ polygons: props.polygons, circles: props.circles, guides: props.guides });
+
+const prefix = figureIdPrefix("sh", props);
+const pointList = (points: [number, number][]) => points.map(([x, y]) => `${x},${y}`).join(" ");
+const textClass = { length: "sh-num", degree: "sh-num", letter: "sh-num sh-letter", note: "sh-label" };
+---
+
+<svg class="sh-fig" viewBox={`0 0 ${layout.width} ${layout.height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {layout.polygons.map((p) => <polygon class={p.filled ? "sh-outline sh-filled" : "sh-outline"} points={pointList(p.points)} />)}
+  {
+    layout.circles.map((c) => (
+      <g>
+        <circle class="sh-outline" cx={c.cx} cy={c.cy} r={c.r} />
+        {c.segment && <line class="sh-outline" x1={c.segment.x1} y1={c.segment.y1} x2={c.segment.x2} y2={c.segment.y2} />}
+        {c.segment && <circle class="sh-dot" cx={c.cx} cy={c.cy} r="4" />}
+      </g>
+    ))
+  }
+  {layout.guides.map((g) => <line class="sh-guide" x1={g.x1} y1={g.y1} x2={g.x2} y2={g.y2} />)}
+  {layout.arcs.map((d) => <path class="sh-arc" d={d} />)}
+  {layout.rightMarks.map((points) => <polyline class="sh-arc" points={pointList(points)} />)}
+  {layout.equalMarks.map((m) => <line class="sh-mark" x1={m.x1} y1={m.y1} x2={m.x2} y2={m.y2} />)}
+  {layout.parallelMarks.map((d) => <path class="sh-mark" d={d} />)}
+  {layout.texts.map((t) => <text class={textClass[t.kind]} x={t.x} y={t.y}>{t.text}</text>)}
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.sh-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 外框與圓是主線 */
+  .sh-outline {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  /* 塗色的多邊形實心；半透明讓區內的度數與輔助線仍看得見，外框維持主線，灰階下以有沒有填色區分 */
+  .sh-filled {
+    fill: var(--accent);
+    fill-opacity: 0.35;
+  }
+  .sh-dot {
+    fill: var(--fg);
+  }
+  /* 輔助線用虛線，與實線外框以線型區分 */
+  .sh-guide {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-dasharray: 8 6;
+    stroke-linecap: round;
+  }
+  /* 角弧與直角記號 */
+  .sh-arc {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5px;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  /* 等邊與平行記號 */
+  .sh-mark {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+    stroke-linecap: round;
+  }
+  .sh-num {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+  .sh-letter {
+    font-weight: 600;
+  }
+  .sh-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+</style>

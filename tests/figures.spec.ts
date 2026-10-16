@@ -450,3 +450,198 @@ test.describe("FractionBar", () => {
     expect(seen[0]).not.toBe(seen[1]);
   });
 });
+
+// 單位方格 UnitGrid（math-demo fixture）：塗色的格實心 --accent，沒塗的格只有格線；周長外框沿塗色區的實際邊界，用主線。
+test.describe("UnitGrid", () => {
+  const gridPath = "/units/math-demo/";
+
+  test("長方形塗色：格數、塗色格數與格數標籤，沒有外框", async ({ page }) => {
+    await page.goto(gridPath);
+    const svg = figure(page, "長方形塗色");
+    expect(await svg.locator(".ug-cell").count()).toBe(20);
+    expect(await svg.locator(".ug-cell-shaded").count()).toBe(6);
+    const shaded = await svg.locator(".ug-cell").evaluateAll((els) => els.map((el) => el.classList.contains("ug-cell-shaded")));
+    // 4 列 × 5 行，左上 2 列 × 3 行塗色
+    const expected = Array.from({ length: 20 }, (_, k) => Math.floor(k / 5) < 2 && k % 5 < 3);
+    expect(shaded).toEqual(expected);
+    expect(await svg.locator(".ug-outline").count()).toBe(0);
+    expect(await texts(svg.locator(".ug-num"))).toEqual(["3", "2"]);
+  });
+
+  test("不規則塗色加周長外框：外框一條路徑，總長 12 個單位邊（一格 32），文字標籤字級 20", async ({ page }) => {
+    await page.goto(gridPath);
+    const svg = figure(page, "不規則周長");
+    expect(await svg.locator(".ug-cell").count()).toBe(16);
+    expect(await svg.locator(".ug-cell-shaded").count()).toBe(5);
+    expect(await svg.locator(".ug-outline").count()).toBe(1);
+    const d = (await svg.locator(".ug-outline").getAttribute("d"))!;
+    const runs = [...d.matchAll(/M([\d.]+) ([\d.]+)L([\d.]+) ([\d.]+)/g)].map((m) => m.slice(1).map(Number) as [number, number, number, number]);
+    expect(runs).toHaveLength(6);
+    const length = runs.reduce((sum, [x1, y1, x2, y2]) => sum + Math.abs(x2 - x1) + Math.abs(y2 - y1), 0);
+    expect(length / 32).toBe(12);
+    expect(await texts(svg.locator(".ug-label"))).toEqual(["周長"]);
+    expect(await svg.locator(".ug-label").evaluate((el) => getComputedStyle(el).fontSize)).toBe("20px");
+    expect(await svg.locator(".ug-num").evaluate((el) => getComputedStyle(el).fontSize)).toBe("22px");
+  });
+
+  test("線寬：外框 3、格線 2", async ({ page }) => {
+    await page.goto(gridPath);
+    const svg = figure(page, "不規則周長");
+    expect(await svg.locator(".ug-outline").evaluate((el) => getComputedStyle(el).strokeWidth)).toBe("3px");
+    expect(await svg.locator(".ug-cell").first().evaluate((el) => getComputedStyle(el).strokeWidth)).toBe("2px");
+  });
+
+  test("320px 下頁面沒有水平捲軸，每張方格都在視窗內", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "narrow", "只在 320px 專案驗證");
+    await page.goto(gridPath);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    const rights = await page.locator("svg.ug-fig").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().right));
+    expect(rights).toHaveLength(2);
+    for (const right of rights) expect(right).toBeLessThanOrEqual(320);
+  });
+
+  test("主題切換：塗色的格用 --accent，沒塗的格不填色，格線 --muted，外框 --fg，淺色與深色各自隨主題切換", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "以 emulateMedia 切換淺深色，只跑一次");
+    await page.goto(gridPath);
+    const svg = figure(page, "不規則周長");
+    const token = (name: string) =>
+      page.evaluate((n) => {
+        const probe = document.createElement("div");
+        document.body.append(probe);
+        probe.style.color = `var(${n})`;
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+      }, name);
+    const computed = (locator: Locator, prop: "stroke" | "fill") => locator.first().evaluate((el, p) => getComputedStyle(el)[p], prop);
+    const seen: string[] = [];
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      const [fg, muted, accent] = [await token("--fg"), await token("--muted"), await token("--accent")];
+      expect(await computed(svg.locator(".ug-cell-shaded"), "fill")).toBe(accent);
+      expect(await computed(svg.locator(".ug-cell:not(.ug-cell-shaded)"), "fill")).toBe("none");
+      expect(await computed(svg.locator(".ug-cell"), "stroke")).toBe(muted);
+      expect(await computed(svg.locator(".ug-outline"), "stroke")).toBe(fg);
+      expect(await computed(svg.locator(".ug-label"), "fill")).toBe(fg);
+      seen.push(accent);
+    }
+    expect(seen[0]).not.toBe(seen[1]);
+  });
+});
+
+// 平面圖形 Shape（fx-ratio fixture，ADR 0003）：外框是主線，輔助線虛線，角弧用 --accent，數字 22、文字標籤 20。
+test.describe("Shape", () => {
+  const shapePath = "/units/fx-ratio/";
+  const style = (locator: Locator, prop: "fontSize" | "strokeWidth" | "strokeDasharray" | "fillOpacity") => locator.first().evaluate((el, p) => getComputedStyle(el)[p], prop);
+
+  test("三角形：頂點字母、度數與「?」、直角記號取代角弧、等邊記號、虛線的高", async ({ page }) => {
+    await page.goto(shapePath);
+    const svg = figure(page, "直角等腰三角形");
+    expect(await svg.getAttribute("viewBox")).toMatch(/^0 0 480 /);
+    expect(await texts(svg.locator(".sh-letter"))).toEqual(["A", "B", "C"]);
+    expect(await texts(svg.locator(".sh-num:not(.sh-letter)"))).toEqual(["4", "45°", "?"]);
+    expect(await texts(svg.locator(".sh-label"))).toEqual(["高"]);
+    expect(await svg.locator("polyline.sh-arc").count()).toBe(1);
+    expect(await svg.locator("path.sh-arc").count()).toBe(2);
+    expect(await svg.locator("line.sh-mark").count()).toBe(2);
+    expect(await svg.locator(".sh-guide").count()).toBe(1);
+    expect(await svg.locator("polygon.sh-outline").count()).toBe(1);
+    expect(await svg.locator("polygon.sh-filled").count()).toBe(0);
+  });
+
+  test("線寬、字級、虛線：外框 3、角弧 2.5、記號與輔助線 2、數字 22、文字標籤 20、輔助線是虛線", async ({ page }) => {
+    await page.goto(shapePath);
+    const svg = figure(page, "直角等腰三角形");
+    expect(await style(svg.locator(".sh-outline"), "strokeWidth")).toBe("3px");
+    expect(await style(svg.locator(".sh-arc"), "strokeWidth")).toBe("2.5px");
+    expect(await style(svg.locator(".sh-mark"), "strokeWidth")).toBe("2px");
+    expect(await style(svg.locator(".sh-guide"), "strokeWidth")).toBe("2px");
+    expect(await style(svg.locator(".sh-num"), "fontSize")).toBe("22px");
+    expect(await style(svg.locator(".sh-label"), "fontSize")).toBe("20px");
+    expect(await style(svg.locator(".sh-guide"), "strokeDasharray")).not.toBe("none");
+    expect(await style(svg.locator(".sh-outline"), "strokeDasharray")).toBe("none");
+  });
+
+  test("平行四邊形：兩組對邊各有 1 個與 2 個平行箭頭，整塊塗色但外框仍是主線", async ({ page }) => {
+    await page.goto(shapePath);
+    const svg = figure(page, "平行四邊形");
+    expect(await svg.locator("path.sh-mark").count()).toBe(6);
+    expect(await svg.locator("polygon.sh-filled").count()).toBe(1);
+    expect(await style(svg.locator("polygon.sh-filled"), "strokeWidth")).toBe("3px");
+    expect(Number(await style(svg.locator("polygon.sh-filled"), "fillOpacity"))).toBeGreaterThan(0);
+    expect(await texts(svg.locator(".sh-num"))).toEqual(["4"]);
+  });
+
+  test("虛線高的垂足有直角記號：小方框夾在虛線與底邊之間，用角弧的線型", async ({ page }) => {
+    await page.goto(shapePath);
+    const svg = figure(page, "平行四邊形");
+    expect(await svg.locator(".sh-guide").count()).toBe(1);
+    expect(await svg.locator("polyline.sh-arc").count()).toBe(1);
+    const { guide, mark } = await svg.evaluate((el) => {
+      const g = el.querySelector(".sh-guide")!;
+      const pts = el.querySelector("polyline.sh-arc")!.getAttribute("points")!.split(" ").map((p) => p.split(",").map(Number));
+      return { guide: ["x1", "y1", "x2", "y2"].map((n) => Number(g.getAttribute(n))), mark: pts };
+    });
+    // 方框的第一點是垂足（虛線的終點），第二點在虛線上、第四點在底邊上
+    expect(mark).toHaveLength(4);
+    expect(mark[0]![0]).toBeCloseTo(guide[2]!, 5);
+    expect(mark[0]![1]).toBeCloseTo(guide[3]!, 5);
+    expect(mark[1]![0]).toBeCloseTo(guide[2]!, 5);
+    expect(mark[1]![1]).toBeLessThan(guide[3]!);
+    expect(mark[3]![1]).toBeCloseTo(guide[3]!, 5);
+    expect(mark[3]![0]).toBeGreaterThan(guide[2]!);
+  });
+
+  test("圓：半徑線段長等於圓的半徑，直徑線段長等於兩倍，都有圓心點", async ({ page }) => {
+    await page.goto(shapePath);
+    const svg = figure(page, "半徑與直徑");
+    expect(await svg.locator("circle.sh-outline").count()).toBe(2);
+    expect(await svg.locator(".sh-dot").count()).toBe(2);
+    const radii = nums(await attrs(svg.locator("circle.sh-outline"), "r"));
+    const lengths = await svg.locator("line.sh-outline").evaluateAll((els) =>
+      els.map((el) => Math.abs(Number(el.getAttribute("x2")) - Number(el.getAttribute("x1")))),
+    );
+    expect(lengths).toHaveLength(2);
+    expect(lengths[0]).toBeCloseTo(radii[0]!, 5);
+    expect(lengths[1]).toBeCloseTo(2 * radii[1]!, 5);
+    expect(await texts(svg.locator(".sh-num"))).toEqual(["2", "4"]);
+  });
+
+  test("320px 下頁面沒有水平捲軸，每張 Shape 都在視窗內", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "narrow", "只在 320px 專案驗證");
+    await page.goto(shapePath);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    const rights = await page.locator("svg.sh-fig").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().right));
+    expect(rights).toHaveLength(3);
+    for (const right of rights) expect(right).toBeLessThanOrEqual(320);
+  });
+
+  test("主題切換：外框與數字用 --fg、輔助線用 --muted、角弧用 --accent、塗色用 --accent，淺色與深色各自隨主題切換", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "以 emulateMedia 切換淺深色，只跑一次");
+    await page.goto(shapePath);
+    const triangle = figure(page, "直角等腰三角形");
+    const parallelogram = figure(page, "平行四邊形");
+    const token = (name: string) =>
+      page.evaluate((n) => {
+        const probe = document.createElement("div");
+        document.body.append(probe);
+        probe.style.color = `var(${n})`;
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+      }, name);
+    const computed = (locator: Locator, prop: "stroke" | "fill") => locator.first().evaluate((el, p) => getComputedStyle(el)[p], prop);
+    const seen: string[] = [];
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      const [fg, muted, accent] = [await token("--fg"), await token("--muted"), await token("--accent")];
+      expect(await computed(triangle.locator(".sh-outline"), "stroke")).toBe(fg);
+      expect(await computed(triangle.locator(".sh-num"), "fill")).toBe(fg);
+      expect(await computed(triangle.locator(".sh-guide"), "stroke")).toBe(muted);
+      expect(await computed(triangle.locator("path.sh-arc"), "stroke")).toBe(accent);
+      expect(await computed(parallelogram.locator(".sh-filled"), "fill")).toBe(accent);
+      seen.push(fg);
+    }
+    expect(seen[0]).not.toBe(seen[1]);
+  });
+});

@@ -18,6 +18,14 @@ test("共用教具目錄至少有 NumberLine、Counters 與 FractionBar", () => 
   assert.ok(names.includes(join(dir, "FractionBar.astro")), names.join(", "));
 });
 
+test("共用教具目錄有 Shape", () => {
+  assert.ok(sources.map((s) => s.path).includes(join(dir, "Shape.astro")));
+});
+
 test("共用教具都通過教具規則：每個 <svg> 有 <title> 與 <desc>，顏色只用色票 token", () => {
   assert.deepEqual(figureIssues(sources, []), []);
+});
+
+test("共用教具目錄有 UnitGrid（套用上面的教具規則）", () => {
+  assert.ok(sources.some((s) => s.path === join(dir, "UnitGrid.astro")));
 });
