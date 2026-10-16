@@ -1,0 +1,85 @@
+---
+import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
+import { assertSchematicDesc, resolveAreaModel, textRuns } from "../../lib/area-model.ts";
+import type { AreaModelInput } from "../../lib/area-model.ts";
+
+interface Props extends AreaModelInput {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc>；含字母段時必須寫明不按比例 */
+  desc: string;
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("AreaModel", title, desc);
+const model = resolveAreaModel(props);
+assertSchematicDesc(model, desc);
+
+const prefix = figureIdPrefix("am", props);
+---
+
+<svg class="am-fig" viewBox={`0 0 ${model.width} ${model.height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {model.cells.map((c) => <rect class={c.highlighted ? "am-block am-hi" : "am-block"} x={c.x} y={c.y} width={c.w} height={c.h} />)}
+  {
+    model.cols.map((s) => (
+      <text class="am-dim" x={s.start + s.size / 2} y={model.colLabelY}>
+        {textRuns(s.label).map((r) => (r.italic ? <tspan class="am-var">{r.text}</tspan> : r.text))}
+      </text>
+    ))
+  }
+  {
+    model.rows.map((s) => (
+      <text class="am-dim am-dim-left" x={model.rowLabelX} y={s.start + s.size / 2 + 7}>
+        {textRuns(s.label).map((r) => (r.italic ? <tspan class="am-var">{r.text}</tspan> : r.text))}
+      </text>
+    ))
+  }
+  {
+    model.cells.map((c) => (
+      <text class="am-area" x={c.x + c.w / 2} y={c.y + c.h / 2 + 7}>
+        {textRuns(c.area).map((r) => (r.italic ? <tspan class="am-var">{r.text}</tspan> : r.text))}
+      </text>
+    ))
+  }
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.am-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .am-block {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+  }
+  /* 強調的那一列：除了 --accent 淡淡塗色，框線也加粗，顏色不是唯一訊息 */
+  .am-hi {
+    fill: var(--accent);
+    fill-opacity: 0.22;
+    stroke: var(--accent);
+    stroke-width: 3px;
+  }
+  /* 邊長與格內面積視同刻度數字（字級 22） */
+  .am-dim,
+  .am-area {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+  .am-dim-left {
+    text-anchor: end;
+  }
+  /* 圖內的字母用斜體 SVG 文字，不用 KaTeX */
+  .am-var {
+    font-style: italic;
+  }
+</style>

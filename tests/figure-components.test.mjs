@@ -11,13 +11,14 @@ const sources = readdirSync(dir)
   .sort()
   .map((name) => ({ path: join(dir, name), file: join(dir, name), text: readFileSync(join(dir, name), "utf8") }));
 
-test("共用教具目錄有 NumberLine、Counters、FractionBar、Shape 與 UnitGrid", () => {
+test("共用教具目錄有 NumberLine、Counters、FractionBar、Shape、UnitGrid 與 AreaModel", () => {
   const names = sources.map((s) => s.path);
   assert.ok(names.includes(join(dir, "NumberLine.astro")), names.join(", "));
   assert.ok(names.includes(join(dir, "Counters.astro")), names.join(", "));
   assert.ok(names.includes(join(dir, "FractionBar.astro")), names.join(", "));
   assert.ok(names.includes(join(dir, "Shape.astro")), names.join(", "));
   assert.ok(names.includes(join(dir, "UnitGrid.astro")), names.join(", "));
+  assert.ok(names.includes(join(dir, "AreaModel.astro")), names.join(", "));
 });
 
 test("共用教具都通過教具規則：每個 <svg> 有 <title> 與 <desc>，顏色只用色票 token", () => {
