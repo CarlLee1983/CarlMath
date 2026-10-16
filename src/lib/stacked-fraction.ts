@@ -48,15 +48,18 @@ export const STACKED_HEIGHT = 46;
 /** 分數線離整體上緣的距離，也是整數部分的垂直中心 */
 export const STACKED_BAR_OFFSET = 23;
 
-const DIGIT_WIDTH = 13; // 22px 數字的估計寬度，寧寬勿窄
 const BAR_PADDING = 8; // 分數線比較寬那一邊的數字再多出的長度
 const WHOLE_GAP = 4; // 整數部分與分數之間的空隙
 const NUMERATOR_BASELINE = 17;
 const DENOMINATOR_BASELINE = 43;
 const WHOLE_BASELINE = STACKED_BAR_OFFSET + 8; // 讓 22px 數字的視覺中心落在分數線高度
 
-/** 純文字數字（22px）的估計寬度；分數條的整數標籤用它留空間 */
-export const textWidth = (text: string): number => [...text].length * DIGIT_WIDTH;
+/** 估計文字寬度：中日韓字寬等於字級，其餘（數字與拉丁字母）22px 時 13，依字級等比，寧寬勿窄；分數條與 Shape 的標籤用它留空間 */
+export const textWidthAt = (text: string, font: number): number =>
+  [...text].reduce((sum, ch) => sum + (ch.codePointAt(0)! > 0x2e7f ? font : (font * 13) / 22), 0);
+
+/** 純文字數字（22px）的估計寬度 */
+export const textWidth = (text: string): number => textWidthAt(text, 22);
 
 const barWidthOf = ({ numerator, denominator }: StackedFractionParts) => Math.max(textWidth(numerator), textWidth(denominator)) + BAR_PADDING;
 const wholeWidthOf = ({ whole }: StackedFractionParts) => (whole === undefined ? 0 : textWidth(whole) + WHOLE_GAP);

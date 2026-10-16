@@ -1,0 +1,45 @@
+---
+import PrintLayout from "../../layouts/PrintLayout.astro";
+
+// 18 × 26 格；viewBox 一個單位對應 1 格（目標印出 10mm），實際尺寸由卡片 CSS 以 mm 決定
+const COLS = 18;
+const ROWS = 26;
+const cols = Array.from({ length: COLS + 1 }, (_, i) => i);
+const rows = Array.from({ length: ROWS + 1 }, (_, i) => i);
+---
+
+<PrintLayout title="方格紙" description="列印一整頁方格紙，面積與周長、體積的親子活動畫形狀、數格子使用。">
+  <Fragment slot="intro">
+    <p>
+      這份可列印材料是一整頁方格紙（18 × 26 格），給面積與周長、體積的親子活動畫形狀、數格子用。格子的目標大小是 1 公分，但家用印表機印出來的格子不一定剛好 1 公分，所以活動裡的一格就叫「一個單位」，請不要拿尺量格子；只要數有幾格，面積就是幾個單位方格，周長就是沿邊數了幾個單位。
+    </p>
+  </Fragment>
+  <div class="print-card grid-paper-card">
+    <svg viewBox={`0 0 ${COLS} ${ROWS}`} role="img" aria-labelledby="gp-title gp-desc">
+      <title id="gp-title">方格紙</title>
+      <desc id="gp-desc">{`${ROWS} 列 ${COLS} 行的空白方格，共 ${COLS * ROWS} 格。`}</desc>
+      {cols.map((x) => <line class="gp-v" x1={x} y1="0" x2={x} y2={ROWS} />)}
+      {rows.map((y) => <line class="gp-h" x1="0" y1={y} x2={COLS} y2={y} />)}
+    </svg>
+  </div>
+</PrintLayout>
+
+<style>
+  /* 每格目標 10mm：18 × 10 = 180mm 寬、26 × 10 = 260mm 高，加上卡片內距 4mm 仍在 190 × 277mm 內，一頁放一張。螢幕上不超過容器 */
+  .grid-paper-card {
+    padding: 4mm;
+  }
+  .grid-paper-card svg {
+    display: block;
+    width: 180mm;
+    max-width: 100%;
+    height: auto;
+  }
+  /* 線寬不隨縮放變動，窄螢幕與列印都清楚；顏色用 token，列印時 --fg 為黑 */
+  .gp-v,
+  .gp-h {
+    stroke: var(--fg);
+    stroke-width: 1px;
+    vector-effect: non-scaling-stroke;
+  }
+</style>

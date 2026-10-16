@@ -10,7 +10,7 @@ test("正式課程地圖全部單元的階段名、標題、核心問題，字�
   const loaded = loadContent(resolve("content"));
   assert.ok(loaded.ok);
   const { index } = loaded;
-  assert.equal(index.units.length, 120);
+  assert.equal(index.units.length, 122);
   const missing = index.units.flatMap((unit) => {
     const chars = uncoveredChars([index.stageOf(unit.id).title, unit.title, unit.coreQuestion]);
     return chars.length ? [`${unit.id}：${chars.join("")}`] : [];

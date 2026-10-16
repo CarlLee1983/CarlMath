@@ -1,0 +1,142 @@
+---
+// 體積的一次性教具：等角積木堆。長 × 寬 × 高個單位方塊堆成長方體，只畫看得見的三個面
+// （上面、右前面、左前面）；三條邊旁標長、寬、高的方塊數。可以選一層（由下往上數）塗色，
+// 用來看「每層幾個」。座標：i 沿長（往右下）、j 沿寬（往左下）、k 往上，觀察者在 i、j、k 都最大的那一側。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+  /** 長（往右下的方塊數），1–6 */
+  length: number;
+  /** 寬（往左下的方塊數），1–6 */
+  width: number;
+  /** 高（幾層），1–5 */
+  height: number;
+  /** 要塗色的那一層，由下往上數，1 到 height；不給就不塗 */
+  highlight?: number;
+}
+const props = Astro.props;
+const { title, desc, length: L, width: W, height: H, highlight } = props;
+
+assertAltText("BlockStackFigure", title, desc);
+for (const [name, value, max] of [["length", L, 6], ["width", W, 6], ["height", H, 5]] as const) {
+  if (!Number.isInteger(value) || value < 1 || value > max) throw new Error(`<BlockStackFigure> 的 ${name} 必須是 1 到 ${max} 的整數：${value}`);
+}
+if (highlight !== undefined && (!Number.isInteger(highlight) || highlight < 1 || highlight > H)) {
+  throw new Error(`<BlockStackFigure> 的 highlight 必須是 1 到 height（${H}）的整數：${highlight}`);
+}
+
+const prefix = figureIdPrefix("bs", props);
+
+const WIDTH = 480;
+const COS = Math.cos(Math.PI / 6);
+const SIN = 0.5;
+// 一個方塊的邊長（viewBox 單位）：寬度最多佔 360，方塊最大 40
+const u = Math.min(40, 360 / ((L + W) * COS));
+const cx = COS * u;
+const sy = SIN * u;
+const ox = (WIDTH - (L + W) * cx) / 2 + W * cx;
+const oy = 10 + H * u;
+const height = oy + (L + W) * sy + 40;
+
+const pt = (i: number, j: number, k: number) => [ox + (i - j) * cx, oy + (i + j) * sy - k * u] as const;
+const poly = (points: ReadonlyArray<readonly [number, number, number]>) =>
+  points.map(([i, j, k]) => pt(i, j, k).map((n) => n.toFixed(1)).join(",")).join(" ");
+
+interface Face {
+  points: string;
+  hl: boolean;
+}
+const faces: Face[] = [];
+// 上面：只有最上層看得見
+for (let i = 0; i < L; i++) {
+  for (let j = 0; j < W; j++) {
+    faces.push({ points: poly([[i, j, H], [i + 1, j, H], [i + 1, j + 1, H], [i, j + 1, H]]), hl: highlight === H });
+  }
+}
+for (let k = 0; k < H; k++) {
+  const hl = highlight === k + 1;
+  // 右前面（i = L 那一面，往右下）
+  for (let j = 0; j < W; j++) {
+    faces.push({ points: poly([[L, j, k], [L, j + 1, k], [L, j + 1, k + 1], [L, j, k + 1]]), hl });
+  }
+  // 左前面（j = W 那一面，往左下）
+  for (let i = 0; i < L; i++) {
+    faces.push({ points: poly([[i, W, k], [i + 1, W, k], [i + 1, W, k + 1], [i, W, k + 1]]), hl });
+  }
+}
+
+// 外框：六邊形輪廓，加上從最近的上角伸出的三條稜
+const outline = poly([[0, 0, H], [L, 0, H], [L, 0, 0], [L, W, 0], [0, W, 0], [0, W, H]]);
+const edges = [
+  [pt(L, 0, H), pt(L, W, H)],
+  [pt(0, W, H), pt(L, W, H)],
+  [pt(L, W, 0), pt(L, W, H)],
+].map(([a, b]) => `M${a[0].toFixed(1)} ${a[1].toFixed(1)}L${b[0].toFixed(1)} ${b[1].toFixed(1)}`).join("");
+
+// 數字標在三條邊的外側：長在左下邊、寬在右下邊、高在左邊的稜旁
+const lenA = pt(0, W, 0);
+const lenB = pt(L, W, 0);
+const widA = pt(L, W, 0);
+const widB = pt(L, 0, 0);
+const hA = pt(0, W, 0);
+const hB = pt(0, W, H);
+const OFF = 26;
+const lenLabel = { x: (lenA[0] + lenB[0]) / 2 - SIN * OFF, y: (lenA[1] + lenB[1]) / 2 + COS * OFF + 7 };
+const widLabel = { x: (widA[0] + widB[0]) / 2 + SIN * OFF, y: (widA[1] + widB[1]) / 2 + COS * OFF + 7 };
+const hLabel = { x: hA[0] - 14, y: (hA[1] + hB[1]) / 2 + 7 };
+---
+
+<svg class="bs-fig" viewBox={`0 0 ${WIDTH} ${height.toFixed(1)}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {faces.map((f) => <polygon class={f.hl ? "bs-face bs-hl" : "bs-face"} points={f.points} />)}
+  <polygon class="bs-outline" points={outline} />
+  <path class="bs-outline" d={edges} />
+  <text class="bs-num bs-end" x={lenLabel.x.toFixed(1)} y={lenLabel.y.toFixed(1)}>{L}</text>
+  <text class="bs-num bs-start" x={widLabel.x.toFixed(1)} y={widLabel.y.toFixed(1)}>{W}</text>
+  <text class="bs-num bs-end" x={hLabel.x.toFixed(1)} y={hLabel.y.toFixed(1)}>{H}</text>
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.bs-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 每個方塊的面是輔助線；塗色的層是半透明實心，沒塗的只有框線，灰階下仍分得出來 */
+  .bs-face {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+  }
+  .bs-hl {
+    fill: var(--accent);
+    fill-opacity: 0.4;
+  }
+  /* 整個長方體的外框與三條近稜是主線 */
+  .bs-outline {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .bs-num {
+    fill: var(--fg);
+    font-size: 22px;
+  }
+  .bs-start {
+    text-anchor: start;
+  }
+  .bs-end {
+    text-anchor: end;
+  }
+</style>

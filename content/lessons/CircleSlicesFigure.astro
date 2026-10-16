@@ -1,0 +1,138 @@
+---
+// 圓面積的一次性教具：把圓平分成 8 片或 16 片。
+// layout="circle"：圓與切線，隔一片塗一片；layout="strip"：同樣的扇形一正一倒交錯排成一列，越切越細就越像平行四邊形。
+// 扇形的圓心角 θ = 360° ÷ 片數；相鄰兩片的圓心水平相距 r × sin(θ / 2)，倒放的那片比正放的高 r × cos(θ / 2)，
+// 兩片的直邊剛好疊合。排成一列的寬約是周長的一半，高約是半徑。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+  /** 平分成幾片：8 或 16 */
+  slices: 8 | 16;
+  /** circle 是切好的圓，strip 是重排成一列 */
+  layout: "circle" | "strip";
+}
+const props = Astro.props;
+const { title, desc, slices, layout } = props;
+
+assertAltText("CircleSlicesFigure", title, desc);
+if (slices !== 8 && slices !== 16) throw new Error(`<CircleSlicesFigure> 的 slices 必須是 8 或 16：${slices}`);
+if (layout !== "circle" && layout !== "strip") throw new Error(`<CircleSlicesFigure> 的 layout 必須是 "circle" 或 "strip"：${layout}`);
+
+const prefix = figureIdPrefix("cs", props);
+
+const WIDTH = 480;
+const R = 104;
+const theta = (2 * Math.PI) / slices;
+const s = R * Math.sin(theta / 2);
+const c = R * Math.cos(theta / 2);
+const f = (n: number) => Math.round(n * 100) / 100;
+
+interface Piece {
+  d: string;
+  filled: boolean;
+}
+interface Note {
+  x: number;
+  y: number;
+  text: string;
+  end?: boolean;
+}
+interface Drawing {
+  height: number;
+  pieces: Piece[];
+  notes: Note[];
+  heightLine?: { x: number; y1: number; y2: number };
+}
+
+// 切好的圓：第 0 片的中線朝正上方
+function circleDrawing(): Drawing {
+  const cx = WIDTH / 2;
+  const cy = 16 + R;
+  const pieces = Array.from({ length: slices }, (_, k) => {
+    const a0 = -Math.PI / 2 + (k - 0.5) * theta;
+    const a1 = a0 + theta;
+    const [x0, y0] = [cx + R * Math.cos(a0), cy + R * Math.sin(a0)];
+    const [x1, y1] = [cx + R * Math.cos(a1), cy + R * Math.sin(a1)];
+    return { d: `M${f(cx)} ${f(cy)} L${f(x0)} ${f(y0)} A${R} ${R} 0 0 1 ${f(x1)} ${f(y1)} Z`, filled: k % 2 === 0 };
+  });
+  return { height: 16 + 2 * R + 16, pieces, notes: [] };
+}
+
+// 重排成一列：一正一倒交錯
+function stripDrawing(): Drawing {
+  const total = (slices + 1) * s;
+  const x0 = (WIDTH - total) / 2 + s;
+  const TOP_NOTE = 14;
+  const yb = TOP_NOTE + R; // 正放那片的圓心（在下方）
+  const yt = yb - c; // 倒放那片的圓心（在上方）
+  const pieces = Array.from({ length: slices }, (_, k) => {
+    const cx = x0 + k * s;
+    return k % 2 === 0
+      ? { d: `M${f(cx)} ${f(yb)} L${f(cx - s)} ${f(yb - c)} A${R} ${R} 0 0 1 ${f(cx + s)} ${f(yb - c)} Z`, filled: true }
+      : { d: `M${f(cx)} ${f(yt)} L${f(cx - s)} ${f(yt + c)} A${R} ${R} 0 0 0 ${f(cx + s)} ${f(yt + c)} Z`, filled: false };
+  });
+  // 高：整排左側的虛線，從上緣量到下緣（約是半徑），「高」標在它左邊
+  const hx = x0 - s - 14;
+  return {
+    height: yb + (R - c) + 44,
+    pieces,
+    heightLine: { x: hx, y1: yb - R, y2: yb },
+    notes: [
+      { x: hx - 8, y: yb - R / 2 + 7, text: "高", end: true },
+      { x: WIDTH / 2, y: yb + (R - c) + 32, text: "底：約是周長的一半" },
+    ],
+  };
+}
+
+const { height, pieces, notes, heightLine } = layout === "circle" ? circleDrawing() : stripDrawing();
+---
+
+<svg class="cs-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  {pieces.map((p) => <path class={p.filled ? "cs-piece cs-filled" : "cs-piece"} d={p.d} />)}
+  {heightLine && <line class="cs-guide" x1={heightLine.x} y1={heightLine.y1} x2={heightLine.x} y2={heightLine.y2} />}
+  {notes.map((n) => <text class={n.end ? "cs-label cs-end" : "cs-label"} x={n.x} y={n.y}>{n.text}</text>)}
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.cs-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .cs-piece {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  /* 隔一片塗一片：塗色的是半透明實心，沒塗的只有框線，灰階下仍分得出來；排成一列後正放與倒放也不同 */
+  .cs-filled {
+    fill: var(--accent);
+    fill-opacity: 0.35;
+  }
+  /* 高：--muted 虛線，與 Shape 的輔助線一致 */
+  .cs-guide {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-dasharray: 8 6;
+    stroke-linecap: round;
+  }
+  .cs-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+  /* 放在 .cs-label 之後：同樣的優先權下後寫的贏，「高」才會靠右對齊到虛線左側 */
+  .cs-end {
+    text-anchor: end;
+  }
+</style>

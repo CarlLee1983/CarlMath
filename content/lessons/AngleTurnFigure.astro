@@ -1,0 +1,109 @@
+---
+// 角是「轉了多少」的一次性教具：一條射線從起點（向右）出發逆時針轉，
+// 轉到上方是四分之一圈（90°，塗色的直角），到左方是半圈（180°），到下方是 270°，回到起點是一整圈 360°。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("AngleTurnFigure", title, desc);
+
+const prefix = figureIdPrefix("atf", props);
+
+const WIDTH = 480;
+const HEIGHT = 300;
+const CX = 240;
+const CY = 150;
+const R = 110;
+const ARC_R = 38;
+---
+
+<svg class="atf-fig" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  <defs>
+    <marker id={`${prefix}-head`} viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+      <path class="atf-head" d="M 0 0 L 10 5 L 0 10 Z" />
+    </marker>
+  </defs>
+  <path class="atf-wedge" d={`M ${CX} ${CY} L ${CX + R} ${CY} A ${R} ${R} 0 0 0 ${CX} ${CY - R} Z`} />
+  <circle class="atf-circle" cx={CX} cy={CY} r={R} />
+  <line class="atf-axis" x1={CX - R} y1={CY} x2={CX} y2={CY} />
+  <line class="atf-axis" x1={CX} y1={CY} x2={CX} y2={CY + R} />
+  <line class="atf-ray" x1={CX} y1={CY} x2={CX + R} y2={CY} />
+  <line class="atf-ray" x1={CX} y1={CY} x2={CX} y2={CY - R} />
+  <path class="atf-arc" d={`M ${CX + ARC_R} ${CY} A ${ARC_R} ${ARC_R} 0 0 0 ${CX} ${CY - ARC_R}`} marker-end={`url(#${prefix}-head)`} />
+  <circle class="atf-dot" cx={CX} cy={CY} r="5" />
+  <text class="atf-label" x={CX + 64} y={CY - 48}>直角</text>
+  <text class="atf-label atf-start" x={CX + R + 10} y={CY - 12}>起點</text>
+  <text class="atf-num atf-start" x={CX + R + 10} y={CY + 28}>360°</text>
+  <text class="atf-num" x={CX} y={CY - R - 12}>90°</text>
+  <text class="atf-num atf-end" x={CX - R - 10} y={CY + 8}>180°</text>
+  <text class="atf-num" x={CX} y={CY + R + 28}>270°</text>
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.atf-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 塗色的四分之一圈是實心，另外有「直角」文字，灰階下仍分得出來 */
+  .atf-wedge {
+    fill: var(--accent);
+    fill-opacity: 0.35;
+  }
+  .atf-circle {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 2px;
+  }
+  .atf-axis {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  .atf-ray {
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linecap: round;
+  }
+  .atf-arc {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5px;
+    stroke-linecap: round;
+  }
+  /* 箭頭指出轉的方向（逆時針） */
+  .atf-head {
+    fill: var(--accent);
+  }
+  .atf-dot {
+    fill: var(--fg);
+  }
+  .atf-num {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+  .atf-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+  .atf-start {
+    text-anchor: start;
+  }
+  .atf-end {
+    text-anchor: end;
+  }
+</style>

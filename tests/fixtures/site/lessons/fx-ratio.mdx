@@ -6,6 +6,8 @@ updated: 2026-09-01
 
 import NumberLine from "@figures/NumberLine.astro";
 import FractionBar from "@figures/FractionBar.astro";
+import Shape from "@figures/Shape.astro";
+import UnitGrid from "@figures/UnitGrid.astro";
 
 ## 情境開場
 
@@ -110,6 +112,48 @@ import FractionBar from "@figures/FractionBar.astro";
   <NumberLine title="對齊的數線" desc="0 到 1 的數線，每格是四分之一，在分數條正下方。" from={0} to={1} step="1/4" />
 </Figure>
 
+<Figure caption="直角等腰三角形：直角、45°、虛線的高、等邊記號">
+  <Shape
+    title="直角等腰三角形"
+    desc="頂點 A、B、C 的直角等腰三角形：A 是直角，B 是 45°，C 的角未知；A 到 C 與 A 到 B 兩條邊長度相等，各有一條短斜線，A 到 B 的邊長是 4；從 A 向斜邊畫一條虛線的高，標著高。"
+    polygons={[
+      {
+        vertices: [[0, 0], [4, 0], [0, 4]],
+        names: ["A", "B", "C"],
+        sides: [{ side: 0, label: 4, equal: 1 }, { side: 2, equal: 1 }],
+        angles: [{ at: 0, right: true }, { at: 1, degrees: 45 }, { at: 2, degrees: "?" }],
+      },
+    ]}
+    guides={[{ from: [0, 0], to: [2, 2], label: "高" }]}
+  />
+</Figure>
+
+<Figure caption="平行四邊形：兩組對邊各有平行記號，整塊塗色">
+  <Shape
+    title="平行四邊形"
+    desc="底邊 4 的平行四邊形，上下兩邊各有一個平行箭頭，左右兩邊各有兩個平行箭頭，整塊塗色；從左上頂點向下畫一條虛線的高，標著高，高與底邊相交處有直角記號。"
+    polygons={[
+      {
+        vertices: [[0, 0], [4, 0], [5, 2], [1, 2]],
+        filled: true,
+        sides: [{ side: 0, label: 4, parallel: 1 }, { side: 2, parallel: 1 }, { side: 1, parallel: 2 }, { side: 3, parallel: 2 }],
+      },
+    ]}
+    guides={[{ from: [1, 2], to: [1, 0], label: "高", right: true }]}
+  />
+</Figure>
+
+<Figure caption="兩個圓：半徑與直徑">
+  <Shape
+    title="半徑與直徑"
+    desc="左右兩個圓。左邊的圓畫出一條從圓心向右的半徑，長度是 2；右邊的圓畫出一條通過圓心的水平直徑，長度是 4。"
+    circles={[
+      { center: [0, 0], radius: 2, show: "radius", label: "2" },
+      { center: [6, 0], radius: 2, show: "diameter", label: "4" },
+    ]}
+  />
+</Figure>
+
 ## 推理
 
 兩個分數是不是同一個數，看它們在數線上是不是同一個位置。
@@ -143,3 +187,11 @@ import FractionBar from "@figures/FractionBar.astro";
 ## 下一步
 
 下一個單元把這個想法用在比的關係上。
+
+<Figure caption="塗色的格子是蓋住的面積，數格子就是數面積">
+  <UnitGrid title="長方形塗色" desc="四列五行的方格，左上角塗滿兩列三行的長方形，共六格；上方標著 3，左側標著 2。" rows={4} cols={5} rects={[{ row: 0, col: 0, rows: 2, cols: 3 }]} labels={[{ side: "top", text: 3 }, { side: "left", text: 2 }]} />
+</Figure>
+
+<Figure caption="粗線沿著塗色區的邊界走一圈，就是周長">
+  <UnitGrid title="不規則周長" desc="四列四行的方格，塗了 L 形的五格，粗線沿著塗色區的邊界描出一圈，周長十二格；右側標著周長，底邊標著 3。" rows={4} cols={4} cells={[[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]} perimeter labels={[{ side: "right", text: "周長" }, { side: "bottom", text: 3 }]} />
+</Figure>
