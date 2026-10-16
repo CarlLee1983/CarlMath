@@ -1,5 +1,5 @@
 ---
-// 疊排分數（SVG 片段，只能放在 <svg> 內）：分子、分數線、分母上下排，帶分數的整數部分並排在左。
+// 疊排分數（SVG 片段，只能放在 <svg> 內）：分子、分數線、分母上下排，帶分數的整數部分並排在左，負數的負號在整個分數的最左邊。
 // 數線的刻度標籤與分數條的標籤共用它，兩個教具的分數長得一樣；版面計算在 src/lib/stacked-fraction.ts。
 import { stackedFractionLayout } from "../../lib/stacked-fraction.ts";
 import type { StackedFractionParts } from "../../lib/stacked-fraction.ts";
@@ -15,6 +15,7 @@ const layout = stackedFractionLayout(parts, cx, top);
 ---
 
 <g class="sf">
+  {layout.sign && <text class="sf-sign" x={layout.sign.x} y={layout.sign.y}>{layout.sign.text}</text>}
   {layout.whole && <text class="sf-whole" x={layout.whole.x} y={layout.whole.y}>{layout.whole.text}</text>}
   <text class="sf-num" x={layout.numerator.x} y={layout.numerator.y}>{layout.numerator.text}</text>
   <line class="sf-bar" x1={layout.bar.x1} y1={layout.bar.y} x2={layout.bar.x2} y2={layout.bar.y} />
@@ -22,6 +23,7 @@ const layout = stackedFractionLayout(parts, cx, top);
 </g>
 
 <style>
+  .sf-sign,
   .sf-whole,
   .sf-num,
   .sf-den {

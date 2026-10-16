@@ -3,7 +3,7 @@
  * 位置值是數字（取十進位字面）或 "a/b" 字串，內部一律以約分後的有理數比較。
  */
 import { add, compare, div, isInteger, key, lcm, mul, parseFractionParts, parseRational, rational, sub, toNumber } from "./rational.ts";
-import { isStacked } from "./stacked-fraction.ts";
+import { MINUS, isStacked, stackedFractionWidth, textWidth } from "./stacked-fraction.ts";
 import type { DecimalLabel, FractionLabel, IntegerLabel, MixedLabel } from "./stacked-fraction.ts";
 import type { Rational } from "./rational.ts";
 
@@ -39,21 +39,37 @@ export interface NumberLineScale {
   points: { at: number; label?: string }[];
   jumps: NumberLineMove<number>[];
   spans: NumberLineMove<number>[];
+  /** 數線兩端離 viewBox 邊緣的距離：至少 MIN_MARGIN，端點標籤比較寬時（例如 −1000、−10½）依標籤寬度加大，免得被裁切 */
+  margin: { left: number; right: number };
   /** 是否有疊排標籤（分數或帶分數）；有的話，數線下方要依疊排高度留空間 */
   hasStacked: boolean;
 }
 
 const SUBJECT = "<NumberLine>";
 
+/** 數線兩端離 viewBox 邊緣的最小距離（viewBox 單位） */
+export const MIN_MARGIN = 28;
+const LABEL_GAP = 2; // 端點標籤半寬之外再留的空隙
+
+/** 標籤的估計寬度：純文字用字寬估計，疊排分數用疊排版面（含負號） */
+const labelWidth = (label: TickLabel): number =>
+  isStacked(label)
+    ? stackedFractionWidth({ negative: label.negative, whole: label.kind === "mixed" ? label.whole : undefined, numerator: label.numerator, denominator: label.denominator })
+    : textWidth(label.text);
+const marginFor = (label: TickLabel): number => Math.max(MIN_MARGIN, labelWidth(label) / 2 + LABEL_GAP);
+
+/** 連字號（後面可隔空格）接數字、分數字元（\p{No}）、小寫字母或左括號，看起來是負號或減號；大寫字母之間的連字號（點的名稱 A-B）不算 */
+const HYPHEN_AS_MINUS = /-[ ]*[\d\p{No}a-z(]/u;
+
 /** 有限小數的寫法；分母含 2、5 以外的質因數時寫不出來，回傳 undefined。小數位數上限 15（10 ** 15 以內仍是精確整數），再多視為寫不出來 */
-function decimalText(v: Rational): string | undefined {
+export function decimalText(v: Rational): string | undefined {
   let k = 0;
   while (k < 15 && 10 ** k % v.d !== 0) k++;
   if (10 ** k % v.d !== 0) return undefined;
   const scaled = (v.n * 10 ** k) / v.d;
   const digits = String(Math.abs(scaled)).padStart(k + 1, "0");
   const text = k === 0 ? digits : `${digits.slice(0, -k)}.${digits.slice(-k)}`;
-  return scaled < 0 ? `-${text}` : text;
+  return scaled < 0 ? `${MINUS}${text}` : text;
 }
 
 /** step 與 labelEvery 決定刻度標籤的分母（不約分），字串寫法必須已是最簡分數，免得標籤悄悄變成約分後的分母 */
@@ -101,6 +117,18 @@ export function resolveNumberLine(input: NumberLineInput): NumberLineScale {
     list.map((m, i) => ({ from: onTick(m.from, `${name}[${i}].from`), to: onTick(m.to, `${name}[${i}].to`), label: m.label }));
   const jumpValues = moves("jumps", jumps);
   const spanValues = moves("spans", spans);
+  // 作者寫在標籤裡的負數也要用數學減號，不自動轉換，讓作者看見並改掉
+  const assertMinusSign = (name: string, list: NumberLineMove[] | { label?: string }[]) =>
+    list.forEach((m, i) => {
+      if (m.label && HYPHEN_AS_MINUS.test(m.label)) {
+        throw new Error(
+          `${SUBJECT} 的 ${name}[${i}].label（"${m.label}"）裡的負號或減號要用數學減號「${MINUS}」（U+2212），不要用連字號「-」（連字號後面接數字、分數字元、小寫字母或左括號時，會被當成減號）`,
+        );
+      }
+    });
+  assertMinusSign("points", points);
+  assertMinusSign("jumps", jumps);
+  assertMinusSign("spans", spans);
   const labelCount = [...points, ...jumps, ...spans].filter((m) => m.label).length;
   if (labelCount > 3) throw new Error(`${SUBJECT} 圖內最多三個文字標籤，目前有 ${labelCount} 個`);
 
@@ -121,12 +149,15 @@ export function resolveNumberLine(input: NumberLineInput): NumberLineScale {
   // 分數的分母沿用刻度的分母、不約分：所有刻度的分母都整除 from 與 step 的最小公倍數
   const denominator = lcm(from.d, step.d);
   const labelOf = (v: Rational): TickLabel => {
-    if (isInteger(v)) return { kind: "integer", text: String(v.n) };
+    if (isInteger(v)) return { kind: "integer", text: v.n < 0 ? `${MINUS}${-v.n}` : String(v.n) };
     if (fractionStyle) {
-      const numerator = v.n * (denominator / v.d);
-      const whole = mixed && v.n > v.d ? Math.floor(v.n / v.d) : 0;
-      if (whole === 0) return { kind: "fraction", numerator: String(numerator), denominator: String(denominator) };
-      return { kind: "mixed", whole: String(whole), numerator: String(numerator - whole * denominator), denominator: String(denominator) };
+      // 負分數：負號與分數分開（negative），分子分母、整數部分都用絕對值
+      const negative = v.n < 0 ? { negative: true as const } : {};
+      const abs = Math.abs(v.n);
+      const numerator = abs * (denominator / v.d);
+      const whole = mixed && abs > v.d ? Math.floor(abs / v.d) : 0;
+      if (whole === 0) return { kind: "fraction", ...negative, numerator: String(numerator), denominator: String(denominator) };
+      return { kind: "mixed", ...negative, whole: String(whole), numerator: String(numerator - whole * denominator), denominator: String(denominator) };
     }
     const text = decimalText(v);
     if (text === undefined) throw new Error(`${SUBJECT} 的 step 是數字時，刻度必須能寫成有限小數（${v.n}/${v.d} 不行）`);
@@ -135,6 +166,7 @@ export function resolveNumberLine(input: NumberLineInput): NumberLineScale {
   const numbers = sorted.map((v) => ({ at: at(v), label: labelOf(v) }));
 
   return {
+    margin: { left: marginFor(numbers[0]!.label), right: marginFor(numbers[numbers.length - 1]!.label) },
     ticks: tickValues.map((v) => ({ at: at(v), isZero: v.n === 0 })),
     numbers,
     points: points.map((p, i) => ({ at: at(pointValues[i]!), label: p.label })),

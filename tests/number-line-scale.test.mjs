@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resolveNumberLine } from "../src/lib/number-line-scale.ts";
+import { stackedFractionWidth, textWidth } from "../src/lib/stacked-fraction.ts";
 
 const scale = (props) => resolveNumberLine({ step: 1, ...props });
 // 標籤的純文字寫法：疊排分數寫成 a/b，帶分數寫成 w a/b
@@ -194,4 +195,144 @@ test("分數 step 與 labelEvery 必須寫成最簡分數，否則標籤的分�
   assert.doesNotThrow(() => scale({ from: 0, to: 2, step: "2/1" }));
   // from、to、位置不受限：它們只決定位置，不決定標籤的分母
   assert.doesNotThrow(() => scale({ from: "0/4", to: "4/4", step: "1/4", points: [{ at: "2/4" }] }));
+});
+
+// 負數：負號一律是數學減號 U+2212，不是連字號
+const MINUS = "−";
+
+test("負整數與負小數的標籤用 U+2212，0 沒有負號", () => {
+  assert.deepEqual(shown({ from: -3, to: 3 }), [`${MINUS}3`, `${MINUS}2`, `${MINUS}1`, "0", "1", "2", "3"]);
+  assert.deepEqual(shown({ from: -0.5, to: 0.5, step: 0.25 }), [`${MINUS}0.5`, `${MINUS}0.25`, "0", "0.25", "0.5"]);
+  for (const text of shown({ from: -2, to: 1, step: 0.5 })) assert.ok(!text.includes("-"), text);
+});
+
+test("跨 0 的整數數線：0 的刻度是 isZero，位置依比例", () => {
+  const r = scale({ from: -4, to: 4 });
+  assert.deepEqual(r.ticks.map((t) => t.isZero), [false, false, false, false, true, false, false, false, false]);
+  assert.equal(r.ticks[4].at, 0.5);
+});
+
+test("負分數標籤：負號與分數分開，分子分母為正，分母沿用刻度的分母、不約分", () => {
+  const labels = scale({ from: -1, to: 1, step: "1/4" }).numbers.map((n) => n.label);
+  assert.deepEqual(labels[1], { kind: "fraction", negative: true, numerator: "3", denominator: "4" });
+  assert.deepEqual(labels[2], { kind: "fraction", negative: true, numerator: "2", denominator: "4" });
+  assert.deepEqual(labels[3], { kind: "fraction", negative: true, numerator: "1", denominator: "4" });
+  assert.deepEqual(labels[5], { kind: "fraction", numerator: "1", denominator: "4" });
+  assert.deepEqual(labels[0], { kind: "integer", text: `${MINUS}1` });
+  assert.equal(labels[4].text, "0");
+});
+
+test("跨 0 的分數刻度序列", () => {
+  const signed = scale({ from: -1, to: 1, step: "1/2" }).numbers.map((n) => `${n.label.negative ? "-" : ""}${text(n.label).replace(MINUS, "-")}`);
+  assert.deepEqual(signed, ["-1", "-1/2", "0", "1/2", "1"]);
+  assert.deepEqual(kinds({ from: -1, to: 1, step: "1/2" }), ["integer", "fraction", "integer", "fraction", "integer"]);
+});
+
+test("mixed：絕對值大於 1 的負分數寫成帶分數，負號在整數部分左邊；−1/2 與 −2/2 不變", () => {
+  const labels = scale({ from: -2, to: 0, step: "1/2", mixed: true }).numbers.map((n) => n.label);
+  assert.deepEqual(labels[1], { kind: "mixed", negative: true, whole: "1", numerator: "1", denominator: "2" });
+  assert.deepEqual(labels[2], { kind: "integer", text: `${MINUS}1` });
+  assert.deepEqual(labels[3], { kind: "fraction", negative: true, numerator: "1", denominator: "2" });
+  const quarter = scale({ from: "-3/2", to: -1, step: "1/2", mixed: true }).numbers.map((n) => n.label);
+  assert.deepEqual(quarter[0], { kind: "mixed", negative: true, whole: "1", numerator: "1", denominator: "2" });
+});
+
+test("不開 mixed 時，−3/2 寫成負的假分數", () => {
+  const labels = scale({ from: -2, to: 0, step: "1/2" }).numbers.map((n) => n.label);
+  assert.deepEqual(labels[1], { kind: "fraction", negative: true, numerator: "3", denominator: "2" });
+});
+
+test("負的點落在刻度上，hasStacked 計入負分數", () => {
+  const r = scale({ from: -1, to: 1, step: "1/2", points: [{ at: "-1/2" }] });
+  assert.equal(r.points[0].at, 0.25);
+  assert.equal(r.hasStacked, true);
+  assert.equal(scale({ from: -3, to: 3 }).hasStacked, false);
+});
+
+test("超過 10 段的跨 0 整數數線只標 5 的倍數", () => {
+  assert.deepEqual(shown({ from: -10, to: 10, step: 1 }).map((s) => s.replace(MINUS, "-")), ["-10", "-5", "0", "5", "10"]);
+});
+
+test("正數數線的標籤不變（沒有 negative 欄位）", () => {
+  const labels = scale({ from: 0, to: 2, step: "1/2", mixed: true }).numbers.map((n) => n.label);
+  assert.deepEqual(labels[1], { kind: "fraction", numerator: "1", denominator: "2" });
+  assert.deepEqual(labels[3], { kind: "mixed", whole: "1", numerator: "1", denominator: "2" });
+});
+
+test("points、jumps、spans 的 label 裡連字號後面接數字會丟錯，要求改用 U+2212", () => {
+  const base = { from: -5, to: 5 };
+  const message = (where) =>
+    `<NumberLine> 的 ${where}.label（"-3"）裡的負號或減號要用數學減號「\u2212」（U+2212），不要用連字號「-」（連字號後面接數字、分數字元、小寫字母或左括號時，會被當成減號）`;
+  rejects({ ...base, points: [{ at: 0, label: "-3" }] }, message("points[0]"));
+  rejects({ ...base, jumps: [{ from: 0, to: 1, label: "-3" }] }, message("jumps[0]"));
+  rejects({ ...base, spans: [{ from: 0, to: 1, label: "-3" }] }, message("spans[0]"));
+  rejectsMatch({ ...base, points: [{ at: 0, label: "5 -2" }] }, /U\+2212/);
+});
+
+test("label 用 U+2212 的負號可以通過；連字號後面不是數字的文字不擋", () => {
+  const base = { from: -5, to: 5 };
+  assert.doesNotThrow(() => scale({ ...base, points: [{ at: 0, label: "−3" }], jumps: [{ from: 0, to: 1, label: "5 − 2" }] }));
+  assert.doesNotThrow(() => scale({ ...base, points: [{ at: 0, label: "A-B" }], spans: [{ from: 0, to: 1, label: "路徑 A-B" }] }));
+  assert.doesNotThrow(() => scale({ ...base, points: [{ at: 0, label: "加 4" }], jumps: [{ from: 0, to: 1, label: "5 \u2212 x" }] }));
+});
+
+test("label 裡的連字號（後面可隔空格）接數字、分數字元、小寫字母或左括號都會丟錯", () => {
+  const base = { from: -5, to: 5 };
+  for (const label of ["-x", "-\u00bd", "-\u00bc", "-\u2153", "- 3", "\u22123 - 2", "-(2+1)", "5 - (", "- x", "-3"]) {
+    for (const key of ["points", "jumps", "spans"]) {
+      const item = key === "points" ? { at: 0, label } : { from: 0, to: 1, label };
+      rejectsMatch({ ...base, [key]: [item] }, /U\+2212/);
+    }
+  }
+});
+
+test("大寫字母之間的連字號（點的名稱）不擋", () => {
+  const base = { from: -5, to: 5 };
+  for (const label of ["A-B", "AB-CD", "P - Q"]) assert.doesNotThrow(() => scale({ ...base, points: [{ at: 0, label }] }));
+});
+
+// 端點邊界：左右邊界依端點標籤的實際寬度加大，正數數線維持 28
+const VIEW_WIDTH = 480;
+const fits = (scaleResult, side) => {
+  const label = side === "left" ? scaleResult.numbers[0].label : scaleResult.numbers.at(-1).label;
+  const width = label.kind === "integer" || label.kind === "decimal" ? textWidth(label.text) : stackedFractionWidth({ negative: label.negative, whole: label.whole, numerator: label.numerator, denominator: label.denominator });
+  return scaleResult.margin[side] >= width / 2;
+};
+
+test("既有的正數數線邊界維持 28", () => {
+  for (const props of [
+    { from: 0, to: 10 },
+    { from: 0, to: 1, step: "1/4" },
+    { from: 0, to: 2, step: "1/2", mixed: true },
+    { from: 0, to: 1, step: 0.1 },
+    { from: 0, to: 1000, step: 100 },
+    { from: 10, to: 30, step: 5 },
+    { from: 0, to: 3, step: "1/8" },
+  ]) {
+    assert.deepEqual(scale(props).margin, { left: 28, right: 28 }, JSON.stringify(props));
+  }
+});
+
+test("−1000 的左端點：左邊界加大到放得下標籤，右邊維持 28", () => {
+  const r = scale({ from: -1000, to: 0, step: 100 });
+  assert.ok(r.margin.left > 28);
+  assert.ok(fits(r, "left"));
+  assert.equal(r.margin.right, 28);
+  assert.ok(r.margin.left < VIEW_WIDTH / 4);
+});
+
+test("負帶分數端點 −10½ 與負小數端點 −12.5：邊界含負號寬度", () => {
+  const mixedLine = scale({ from: "-21/2", to: 0, step: "1/2", mixed: true, labelEvery: 1 });
+  assert.ok(mixedLine.margin.left > 28);
+  assert.ok(fits(mixedLine, "left"));
+  const decimalLine = scale({ from: -12.5, to: 0, step: 2.5 });
+  assert.ok(decimalLine.margin.left > 28);
+  assert.ok(fits(decimalLine, "left"));
+});
+
+test("右端點也一樣：兩端各自依標籤寬度", () => {
+  const r = scale({ from: -1000, to: 1000, step: 500 });
+  assert.ok(fits(r, "left") && fits(r, "right"));
+  assert.ok(r.margin.left > r.margin.right);
+  assert.equal(r.margin.right, 28);
 });

@@ -45,3 +45,37 @@ test("isStacked：分數與帶分數要疊排，整數與小數不用", () => {
   assert.equal(isStacked({ kind: "integer", text: "1" }), false);
   assert.equal(isStacked({ kind: "decimal", text: "0.5" }), false);
 });
+
+test("負號畫在整個疊排分數左邊，與分數線同高，不蓋住分數", () => {
+  const l = stackedFractionLayout({ negative: true, numerator: "1", denominator: "2" }, 100, 0);
+  assert.ok(l.sign);
+  assert.equal(l.sign.text, "−");
+  assert.ok(l.sign.x + l.sign.width / 2 <= l.bar.x1);
+  // 文字以基線定位，22px 數字的視覺中心落在分數線高度，與整數部分同一條基線
+  const withWhole = stackedFractionLayout({ negative: true, whole: "1", numerator: "1", denominator: "2" }, 100, 0);
+  assert.equal(l.sign.y, withWhole.sign.y);
+  assert.equal(l.sign.y, withWhole.whole.y);
+  assert.ok(l.sign.y > l.bar.y && l.sign.y < l.denominator.y);
+});
+
+test("帶分數的負號在整數部分左邊，整體（含負號）置中於 cx，寬度含負號", () => {
+  const parts = { negative: true, whole: "1", numerator: "1", denominator: "2" };
+  const l = stackedFractionLayout(parts, 100, 0);
+  assert.ok(l.sign.x < l.whole.x);
+  assert.ok(l.sign.x + l.sign.width / 2 <= l.whole.x - l.whole.width / 2);
+  const left = l.sign.x - l.sign.width / 2;
+  assert.ok(Math.abs(100 - left - (l.bar.x2 - 100)) < 1e-9);
+  assert.equal(l.bar.x2 - left, stackedFractionWidth(parts));
+  assert.ok(stackedFractionWidth(parts) > stackedFractionWidth({ whole: "1", numerator: "1", denominator: "2" }));
+});
+
+test("沒有負號時版面完全不變，也沒有 sign", () => {
+  const l = stackedFractionLayout({ numerator: "1", denominator: "2" }, 100, 50);
+  assert.equal(l.sign, undefined);
+  assert.equal(stackedFractionWidth({ numerator: "1", denominator: "2" }), textWidth("1") + 8);
+});
+
+test("isStacked：帶負號的分數與帶分數也要疊排", () => {
+  assert.equal(isStacked({ kind: "fraction", negative: true, numerator: "1", denominator: "2" }), true);
+  assert.equal(isStacked({ kind: "mixed", negative: true, whole: "1", numerator: "1", denominator: "2" }), true);
+});

@@ -8,6 +8,7 @@ import NumberLine from "@figures/NumberLine.astro";
 import FractionBar from "@figures/FractionBar.astro";
 import Shape from "@figures/Shape.astro";
 import UnitGrid from "@figures/UnitGrid.astro";
+import AreaModel from "@figures/AreaModel.astro";
 
 ## 情境開場
 
@@ -84,6 +85,73 @@ import UnitGrid from "@figures/UnitGrid.astro";
     to={2}
     step="1/4"
     labelEvery="1/2"
+  />
+</Figure>
+
+<Figure caption="跨 0 的整數數線，負號是減號 −">
+  <NumberLine
+    title="跨零整數數線"
+    desc="負四到四的數線，每格是 1，零的刻度加粗。負三有一個點。"
+    from={-4}
+    to={4}
+    points={[{ at: -3 }]}
+  />
+</Figure>
+
+<Figure caption="跨 0 的小數數線">
+  <NumberLine
+    title="跨零小數數線"
+    desc="負一點五到一點五的數線，每格是零點五。負一點五有一個點。"
+    from={-1.5}
+    to={1.5}
+    step={0.5}
+    points={[{ at: -1.5 }]}
+  />
+</Figure>
+
+<Figure caption="負分數：負號在整個分數左邊，分母不約分">
+  <NumberLine
+    title="負分數數線"
+    desc="負一到一的數線，每格是四分之一。負四分之二有一個點，刻度寫成負四分之三、負四分之二、負四分之一、四分之一、四分之二、四分之三。"
+    from={-1}
+    to={1}
+    step="1/4"
+    points={[{ at: "-2/4" }]}
+  />
+</Figure>
+
+<Figure caption="負帶分數：負號在整數部分左邊">
+  <NumberLine
+    title="負帶分數數線"
+    desc="負二到一的數線，每格是二分之一，刻度寫成帶分數。負一又二分之一有一個點，和負二分之三是同一個位置。"
+    from={-2}
+    to={1}
+    step="1/2"
+    mixed
+    points={[{ at: "-3/2" }]}
+  />
+</Figure>
+
+<Figure caption="四位數的負端點：左邊界依標籤寬度加大，不被裁切">
+  <NumberLine
+    title="四位數負端點"
+    desc="負一千到一千的數線，每格是五百。負一千有一個點。"
+    from={-1000}
+    to={1000}
+    step={500}
+    points={[{ at: -1000 }]}
+  />
+</Figure>
+
+<Figure caption="負帶分數的端點：負號也算進寬度">
+  <NumberLine
+    title="負帶分數端點"
+    desc="負十又二分之一到零的數線，只標出每一個整數的位置。"
+    from="-21/2"
+    to={0}
+    step="1/2"
+    mixed
+    labelEvery={5}
   />
 </Figure>
 
@@ -194,4 +262,16 @@ import UnitGrid from "@figures/UnitGrid.astro";
 
 <Figure caption="粗線沿著塗色區的邊界走一圈，就是周長">
   <UnitGrid title="不規則周長" desc="四列四行的方格，塗了 L 形的五格，粗線沿著塗色區的邊界描出一圈，周長十二格；右側標著周長，底邊標著 3。" rows={4} cols={4} cells={[[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]} perimeter labels={[{ side: "right", text: "周長" }, { side: "bottom", text: 3 }]} />
+</Figure>
+
+<Figure caption="橫邊拆成 x 和 2，3 乘 x 的面積要作者自己寫">
+  <AreaModel title="字母面積一列" desc="一個長方形，縱邊是 3，橫邊拆成 x 和 2 兩段，字母 x 的長度只是示意，不按比例。左格面積是 3x，右格面積是 6。" cols={["x", 2]} rows={[3]} areas={[["3x", null]]} />
+</Figure>
+
+<Figure caption="x 加 3 乘 x 加 2 拆成四塊，下排加粗">
+  <AreaModel title="字母面積四格" desc="一個長方形，橫邊拆成 x 和 2，縱邊拆成 x 和 3，分成四塊，字母 x 的長度只是示意，不按比例。上排兩塊是 x 的平方與 2x，下排兩塊是 3x 與 6，下排加粗塗色。" cols={["x", 2]} rows={["x", 3]} areas={[["x²", "2x"], ["3x", null]]} highlightRow={1} />
+</Figure>
+
+<Figure caption="全是字母的邊：橫邊置中，圖高只留到格子底">
+  <AreaModel title="字母面積置中" desc="一個長方形，橫邊拆成 x 和 y，縱邊只有 x，字母的長度只是示意，不按比例。左格面積是 x 的平方，右格面積是 xy。" cols={["x", "y"]} rows={["x"]} areas={[["x²", "xy"]]} />
 </Figure>
