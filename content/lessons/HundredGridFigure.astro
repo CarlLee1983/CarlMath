@@ -1,11 +1,11 @@
 ---
 // 小數位值的一次性教具：百格圖。一個大正方形代表 1，平分成 10 × 10 共 100 小格；
-// 一整直排是 0.1，一小格是 0.01。塗色由左邊的直排開始，一排塗滿才往右，排內由上往下。
-// 最多並排兩張，用來比較兩個小數；每張下方可標一個數。
+// 一整條（直的一行 10 小格）是 0.1，一小格是 0.01。塗色由左邊的條開始，一條塗滿才往右，條內由上往下。
+// 最多並排兩張，用來比較兩個數；每張下方可標一個數或百分率（例如 "65%"）。
 import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
 
 interface Grid {
-  /** 塗幾小格，0–100 的整數（35 就是 3 整排加 5 小格） */
+  /** 塗幾小格，0–100 的整數（35 就是 3 條加 5 小格） */
   shaded: number;
   /** 畫在格子下方的數，例如 "0.35"；練習題不給，不洩漏答案 */
   label?: string;
@@ -46,7 +46,7 @@ const left = (WIDTH - totalWidth) / 2;
 
 const layout = grids.map((g, i) => {
   const x0 = left + i * (SIDE + GAP);
-  // 由左邊的直排開始塗：第 k 小格在第 floor(k / 10) 排、該排由上往下第 k % 10 格
+  // 由左邊的條開始塗：第 k 小格在第 floor(k / 10) 條、該條由上往下第 k % 10 格
   const cells = Array.from({ length: g.shaded }, (_, k) => ({
     x: x0 + Math.floor(k / N) * CELL,
     y: TOP + (k % N) * CELL,

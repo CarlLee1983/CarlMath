@@ -307,6 +307,7 @@ stages:
     coreQuestion: 分數也是數，它在數線上的哪裡？
     prerequisites:
     - unit-fractions
+    - remainders
     - number-line
     family: false
     curriculum108:
@@ -335,6 +336,7 @@ stages:
     coreQuestion: 為什麼 1/2 和 2/4 是同一個數？
     prerequisites:
     - fractions-on-number-line
+    - factors-multiples
     - multiplication-meaning
     family: true
     curriculum108:
@@ -380,6 +382,7 @@ stages:
     prerequisites:
     - equivalent-fractions
     - multi-digit-multiplication
+    - adding-fractions
     family: false
     curriculum108:
       grades:
@@ -387,7 +390,7 @@ stages:
       content:
       - N-5-5
   - id: dividing-fractions
-    title: 分數除法：為什麼顛倒相乘
+    title: 分數除法：為什麼乘以倒數
     coreQuestion: 除以一個分數，為什麼等於乘以它的倒數？
     prerequisites:
     - multiplying-fractions
