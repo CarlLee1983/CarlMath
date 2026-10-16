@@ -724,6 +724,7 @@ stages:
     prerequisites:
     - equation-balance
     - adding-fractions
+    - decimal-operations
     family: false
     curriculum108:
       grades:
@@ -749,6 +750,7 @@ stages:
     coreQuestion: 乘以負數時不等號為什麼要反過來？
     prerequisites:
     - linear-equations
+    - word-problems-equations
     family: false
     curriculum108:
       grades:
@@ -761,6 +763,7 @@ stages:
     coreQuestion: 兩個未知數需要幾個條件才能確定？
     prerequisites:
     - linear-equations
+    - word-problems-equations
     family: false
     curriculum108:
       grades:
