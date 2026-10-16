@@ -35,46 +35,60 @@ interface Piece {
   d: string;
   filled: boolean;
 }
-const pieces: Piece[] = [];
-let height: number;
-let notes: { x: number; y: number; text: string; end?: boolean }[] = [];
-let heightLine: { x: number; y1: number; y2: number } | undefined;
+interface Note {
+  x: number;
+  y: number;
+  text: string;
+  end?: boolean;
+}
+interface Drawing {
+  height: number;
+  pieces: Piece[];
+  notes: Note[];
+  heightLine?: { x: number; y1: number; y2: number };
+}
 
-if (layout === "circle") {
+// 切好的圓：第 0 片的中線朝正上方
+function circleDrawing(): Drawing {
   const cx = WIDTH / 2;
   const cy = 16 + R;
-  height = 16 + 2 * R + 16;
-  // 第 0 片的中線朝正上方
-  for (let k = 0; k < slices; k++) {
+  const pieces = Array.from({ length: slices }, (_, k) => {
     const a0 = -Math.PI / 2 + (k - 0.5) * theta;
     const a1 = a0 + theta;
     const [x0, y0] = [cx + R * Math.cos(a0), cy + R * Math.sin(a0)];
     const [x1, y1] = [cx + R * Math.cos(a1), cy + R * Math.sin(a1)];
-    pieces.push({ d: `M${f(cx)} ${f(cy)} L${f(x0)} ${f(y0)} A${R} ${R} 0 0 1 ${f(x1)} ${f(y1)} Z`, filled: k % 2 === 0 });
-  }
-} else {
+    return { d: `M${f(cx)} ${f(cy)} L${f(x0)} ${f(y0)} A${R} ${R} 0 0 1 ${f(x1)} ${f(y1)} Z`, filled: k % 2 === 0 };
+  });
+  return { height: 16 + 2 * R + 16, pieces, notes: [] };
+}
+
+// 重排成一列：一正一倒交錯
+function stripDrawing(): Drawing {
   const total = (slices + 1) * s;
   const x0 = (WIDTH - total) / 2 + s;
   const TOP_NOTE = 14;
   const yb = TOP_NOTE + R; // 正放那片的圓心（在下方）
-  height = yb + (R - c) + 44;
-  for (let k = 0; k < slices; k++) {
+  const yt = yb - c; // 倒放那片的圓心（在上方）
+  const pieces = Array.from({ length: slices }, (_, k) => {
     const cx = x0 + k * s;
-    if (k % 2 === 0) {
-      pieces.push({ d: `M${f(cx)} ${f(yb)} L${f(cx - s)} ${f(yb - c)} A${R} ${R} 0 0 1 ${f(cx + s)} ${f(yb - c)} Z`, filled: true });
-    } else {
-      const yt = yb - c;
-      pieces.push({ d: `M${f(cx)} ${f(yt)} L${f(cx - s)} ${f(yt + c)} A${R} ${R} 0 0 0 ${f(cx + s)} ${f(yt + c)} Z`, filled: false });
-    }
-  }
+    return k % 2 === 0
+      ? { d: `M${f(cx)} ${f(yb)} L${f(cx - s)} ${f(yb - c)} A${R} ${R} 0 0 1 ${f(cx + s)} ${f(yb - c)} Z`, filled: true }
+      : { d: `M${f(cx)} ${f(yt)} L${f(cx - s)} ${f(yt + c)} A${R} ${R} 0 0 0 ${f(cx + s)} ${f(yt + c)} Z`, filled: false };
+  });
   // 高：整排左側的虛線，從上緣量到下緣（約是半徑），「高」標在它左邊
   const hx = x0 - s - 14;
-  heightLine = { x: hx, y1: yb - R, y2: yb };
-  notes = [
-    { x: hx - 8, y: yb - R / 2 + 7, text: "高", end: true },
-    { x: WIDTH / 2, y: yb + (R - c) + 32, text: "底：約是圓周的一半" },
-  ];
+  return {
+    height: yb + (R - c) + 44,
+    pieces,
+    heightLine: { x: hx, y1: yb - R, y2: yb },
+    notes: [
+      { x: hx - 8, y: yb - R / 2 + 7, text: "高", end: true },
+      { x: WIDTH / 2, y: yb + (R - c) + 32, text: "底：約是圓周的一半" },
+    ],
+  };
 }
+
+const { height, pieces, notes, heightLine } = layout === "circle" ? circleDrawing() : stripDrawing();
 ---
 
 <svg class="cs-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
