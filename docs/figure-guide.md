@@ -6,7 +6,7 @@
 
 ## 先用共用元件
 
-數線一律用 `NumberLine`，小物圓點一律用 `Counters`，等分的長條（分數條）一律用 `FractionBar`，讓這三種圖在全路線長得一樣。它們都放在 `src/components/figures/`，教材以 `@figures/NumberLine.astro`、`@figures/Counters.astro`、`@figures/FractionBar.astro` 匯入。數線與分數條的疊排分數共用同一個內部元件 `StackedFraction`，不由教材直接匯入。共用元件畫不出來的圖，才做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起，並遵守下面每一條規則。
+數線一律用 `NumberLine`，小物圓點一律用 `Counters`，等分的長條（分數條）一律用 `FractionBar`，讓這三種圖在全路線長得一樣。它們都放在 `src/components/figures/`，教材以 `@figures/NumberLine.astro`、`@figures/Counters.astro`、`@figures/FractionBar.astro` 匯入。數線與分數條的疊排分數共用同一個內部元件 `StackedFraction`，不由教材直接匯入；一次性教具需要圖內分數時要匯入它，讓全路線的分數長得一樣。共用元件畫不出來的圖，才做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起，並遵守下面每一條規則。
 
 教具元件只輸出 `<svg>`。圖名下方的說明文字由 `<Figure caption="…">` 負責，不寫在 SVG 裡。
 
@@ -51,7 +51,7 @@
 
 ## 替代文字
 
-- **`<title>`**：10 個字以內的圖名，例如「從 3 跳到 7」。
+- **`<title>`**：10 個字以內的圖名，例如「從 3 跳到 7」；空格也算一個字。
 - **`<desc>`**：用完整句子寫出圖中的數值和對應關係，讓不看圖的讀者也能理解，例如「0 到 10 的數線，每一格是 1。3 有一個點，從 3 往右畫一道弧線跳到 7，弧線上標著加 4。」不要只寫「一條數線」。
 - **`figcaption`**（`<Figure caption>`）：只寫「請注意看什麼」，不和 `desc` 重複。
 
@@ -119,6 +119,10 @@
 - **對齊條件**：版面寬 480、左右各留 28，與 `NumberLine` 相同。沒有任何一條帶 `label` 時，條的左右端對齊數線上 `from`、`to` 的 x 座標，所以分數條放在 0 到 1 的數線正上方（`step` 與 `parts` 相配，例如 `step="1/4"` 配 `parts={4}`）時，等分線與刻度對齊。只要有一條帶 `label`，所有條都會縮短，為右側標籤騰出空間，此時不保證對齊。
 - 不支援：假分數（`shaded` 大於 `parts`）、從中間或任意位置塗色、二維切割（長方形或圓的切法）。這些要另做一次性教具。
 - `<desc>` 用中文讀法寫出份數與塗色數，例如「平分成四份，塗滿三份」，不寫 `3/4`。
+
+## 雙數線
+
+兩個一起變化的量（例如罐數與價錢、時間與水量）用雙數線：同一個 `<Figure>` 裡上下放兩條 `NumberLine`，兩條的 `from` 相同、段數相同，刻度就會上下對齊。每條各自的 `title` 與 `desc` 寫明它代表哪個量，`caption` 說明上下對應。
 
 ## `Counters`
 
