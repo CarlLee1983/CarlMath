@@ -829,6 +829,7 @@ stages:
     prerequisites:
     - factoring
     - square-roots
+    - linear-equations
     family: false
     curriculum108:
       grades:
@@ -841,6 +842,7 @@ stages:
     coreQuestion: 不能因式分解的二次方程式要怎麼解？
     prerequisites:
     - quadratic-equations
+    - irrational-real-line
     family: false
     curriculum108:
       grades:
