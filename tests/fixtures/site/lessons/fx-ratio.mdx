@@ -7,6 +7,7 @@ updated: 2026-09-01
 import NumberLine from "@figures/NumberLine.astro";
 import FractionBar from "@figures/FractionBar.astro";
 import Shape from "@figures/Shape.astro";
+import UnitGrid from "@figures/UnitGrid.astro";
 
 ## 情境開場
 
@@ -114,7 +115,7 @@ import Shape from "@figures/Shape.astro";
 <Figure caption="直角等腰三角形：直角、45°、虛線的高、等邊記號">
   <Shape
     title="直角等腰三角形"
-    desc="頂點 A、B、C 的直角等腰三角形：A 是直角，B 是 45 度，C 的角未知；A 到 C 與 A 到 B 兩條邊長度相等，各有一條短斜線，A 到 B 的邊長是 4；從 A 向斜邊畫一條虛線的高，標著高。"
+    desc="頂點 A、B、C 的直角等腰三角形：A 是直角，B 是 45°，C 的角未知；A 到 C 與 A 到 B 兩條邊長度相等，各有一條短斜線，A 到 B 的邊長是 4；從 A 向斜邊畫一條虛線的高，標著高。"
     polygons={[
       {
         vertices: [[0, 0], [4, 0], [0, 4]],
@@ -186,3 +187,11 @@ import Shape from "@figures/Shape.astro";
 ## 下一步
 
 下一個單元把這個想法用在比的關係上。
+
+<Figure caption="塗色的格子是蓋住的面積，數格子就是數面積">
+  <UnitGrid title="長方形塗色" desc="四列五行的方格，左上角塗滿兩列三行的長方形，共六格；上方標著 3，左側標著 2。" rows={4} cols={5} rects={[{ row: 0, col: 0, rows: 2, cols: 3 }]} labels={[{ side: "top", text: 3 }, { side: "left", text: 2 }]} />
+</Figure>
+
+<Figure caption="粗線沿著塗色區的邊界走一圈，就是周長">
+  <UnitGrid title="不規則周長" desc="四列四行的方格，塗了 L 形的五格，粗線沿著塗色區的邊界描出一圈，周長十二格；右側標著周長，底邊標著 3。" rows={4} cols={4} cells={[[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]} perimeter labels={[{ side: "right", text: "周長" }, { side: "bottom", text: 3 }]} />
+</Figure>

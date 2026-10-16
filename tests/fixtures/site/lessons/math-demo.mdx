@@ -5,7 +5,6 @@ updated: 2026-09-20
 ---
 
 import DemoFigure from "./DemoFigure.astro";
-import UnitGrid from "@figures/UnitGrid.astro";
 
 ## 情境開場
 
@@ -45,10 +44,6 @@ import UnitGrid from "@figures/UnitGrid.astro";
 看圖時請注意兩件事：端點的位置決定了長度，而長度不會是負的，所以我們永遠用較大的減較小的。這個想法是後面所有推理的基礎，請先確定自己能用自己的話說出來。
 
 再補一個生活的例子。從家裡走到學校，不管你是走去還是走回來，路程都是同一個長度。長度只看兩端相差多少，不看你往哪個方向走。
-
-<UnitGrid title="長方形塗色" desc="四列五行的方格，左上角塗滿兩列三行的長方形，共六格；上方標著 3，左側標著 2。" rows={4} cols={5} rects={[{ row: 0, col: 0, rows: 2, cols: 3 }]} labels={[{ side: "top", text: 3 }, { side: "left", text: 2 }]} />
-
-<UnitGrid title="不規則周長" desc="四列四行的方格，塗了 L 形的五格，粗線沿著塗色區的邊界描出一圈，周長十二格；右側標著周長。" rows={4} cols={4} cells={[[0, 0], [1, 0], [2, 0], [2, 1], [2, 2]]} perimeter labels={[{ side: "right", text: "周長" }, { side: "bottom", text: 3 }]} />
 
 ## 推理
 

@@ -451,9 +451,9 @@ test.describe("FractionBar", () => {
   });
 });
 
-// 單位方格 UnitGrid（math-demo fixture）：塗色的格實心 --accent，沒塗的格只有格線；周長外框沿塗色區的實際邊界，用主線。
+// 單位方格 UnitGrid（fx-ratio fixture）：塗色的格實心 --accent，沒塗的格只有格線；周長外框沿塗色區的實際邊界，用主線。
 test.describe("UnitGrid", () => {
-  const gridPath = "/units/math-demo/";
+  const gridPath = "/units/fx-ratio/";
 
   test("長方形塗色：格數、塗色格數與格數標籤，沒有外框", async ({ page }) => {
     await page.goto(gridPath);

@@ -218,3 +218,20 @@ test("輔助線 right：垂足在多邊形的邊內點，多條邊符合時取�
   // 垂足在斜邊上：(0,0)→斜邊 (4,0)-(0,3) 的垂足是 (36/25, 48/25)
   assert.doesNotThrow(() => resolveShape({ polygons: [tri2], guides: [{ from: [0, 0], to: [36 / 25, 48 / 25], right: true }] }));
 });
+
+test("標籤長到圖放不下時丟中文錯誤，指出是哪個標籤、建議縮短或拆圖，不會悄悄把圖翻轉", () => {
+  const long = "一二三四五六七八九十一二三四五六七八九十一二三";
+  throwsWith(tri({ sides: [{ side: 2, label: long }] }), "<Shape>", `「${long}」`, "太長", "縮短", "拆成兩張");
+});
+
+test("names 只能是單一大寫拉丁字母，不能拿來夾帶文字標籤", () => {
+  rejects(tri({ names: ["起點的地方", "B", "C"] }), '<Shape> 的 polygons[0].names[0] 必須是單一大寫拉丁字母（A–Z），目前是 "起點的地方"');
+  rejects(tri({ names: ["A", "b", "C"] }), '<Shape> 的 polygons[0].names[1] 必須是單一大寫拉丁字母（A–Z），目前是 "b"');
+  rejects(tri({ names: ["A", "B", "CD"] }), '<Shape> 的 polygons[0].names[2] 必須是單一大寫拉丁字母（A–Z），目前是 "CD"');
+});
+
+test("degrees 必須是有限數字或 \"?\"，先檢查型別再比對度數", () => {
+  const message = (value) => `<Shape> 的 polygons[0].angles[0].degrees 必須是數字或 "?"，目前是 ${value}`;
+  rejects(tri({ angles: [{ at: 1, degrees: "37" }] }), message('"37"'));
+  rejects(tri({ angles: [{ at: 1, degrees: Number.NaN }] }), message("NaN"));
+});

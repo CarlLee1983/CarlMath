@@ -17,7 +17,7 @@ const rows = Array.from({ length: ROWS + 1 }, (_, i) => i);
   <div class="print-card grid-paper-card">
     <svg viewBox={`0 0 ${COLS} ${ROWS}`} role="img" aria-labelledby="gp-title gp-desc">
       <title id="gp-title">方格紙</title>
-      <desc id="gp-desc">{`${COLS} 欄 ${ROWS} 列的空白方格，共 ${COLS * ROWS} 格。`}</desc>
+      <desc id="gp-desc">{`${ROWS} 列 ${COLS} 行的空白方格，共 ${COLS * ROWS} 格。`}</desc>
       {cols.map((x) => <line class="gp-v" x1={x} y1="0" x2={x} y2={ROWS} />)}
       {rows.map((y) => <line class="gp-h" x1="0" y1={y} x2={COLS} y2={y} />)}
     </svg>

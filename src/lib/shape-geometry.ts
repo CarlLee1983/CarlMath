@@ -3,6 +3,7 @@
  * 作者以抽象座標（y 軸朝上）寫頂點；這裡等比縮放到 viewBox 寬 480、翻轉 y 軸，算出標籤與記號的位置，
  * 並依頂點座標驗證度數標籤（相差超過 1° 就丟錯）。
  */
+import { textWidthAt } from "./stacked-fraction.ts";
 
 /** 抽象座標：[x, y]，y 軸朝上 */
 export type ShapePoint = [number, number];
@@ -106,6 +107,7 @@ const MAX_LETTERS = 4;
 const MAX_NOTES = 3;
 const ANGLE_TOLERANCE = 1; // 度
 const BASE_MARGIN = 24; // 圖形離左右邊界的最小距離
+const MAX_FIT_ROUNDS = 8;
 const EDGE_PAD = 8; // 上下留白
 const NUMBER_FONT = 22;
 const NOTE_FONT = 20;
@@ -123,8 +125,6 @@ const describe = (value: unknown) => (typeof value === "string" ? JSON.stringify
 /** 含數字的標籤是邊長（22），否則是文字標籤（20） */
 const isNumeric = (label: string | number) => typeof label === "number" || /\d/.test(label);
 
-/** 估計文字寬度：中日韓字寬等於字級，其餘約 0.6 倍 */
-const textWidthOf = (text: string, font: number) => [...text].reduce((sum, ch) => sum + (ch.codePointAt(0)! > 0x2e7f ? font : font * 0.6), 0);
 
 const unit = (dx: number, dy: number): Pt => {
   const len = Math.hypot(dx, dy);
@@ -209,6 +209,9 @@ function validate(input: ShapeInput): { polygons: CheckedPolygon[]; circles: Sha
     if (poly.names && poly.names.length !== vertices.length) {
       throw new Error(`${where}.names 必須和 vertices 一樣長（${vertices.length} 個），目前有 ${poly.names.length} 個`);
     }
+    (poly.names ?? []).forEach((name, ni) => {
+      if (typeof name !== "string" || !/^[A-Z]$/.test(name)) throw new Error(`${where}.names[${ni}] 必須是單一大寫拉丁字母（A–Z），目前是 ${describe(name)}`);
+    });
     const last = vertices.length - 1;
     (poly.sides ?? []).forEach((s, si) => {
       if (!isInt(s.side, 0, last)) throw new Error(`${where}.sides[${si}].side 必須是 0 到 ${last} 的邊編號，目前是 ${describe(s.side)}`);
@@ -222,6 +225,9 @@ function validate(input: ShapeInput): { polygons: CheckedPolygon[]; circles: Sha
       if (!isInt(angle.at, 0, last)) throw new Error(`${at}.at 必須是 0 到 ${last} 的頂點編號，目前是 ${describe(angle.at)}`);
       if (angle.right && angle.degrees !== undefined) throw new Error(`${at} 不能同時寫 right 與 degrees`);
       if (!angle.right && angle.degrees === undefined) throw new Error(`${at} 必須有 degrees（數字或 "?"）或 right`);
+      if (angle.degrees !== undefined && angle.degrees !== "?" && !(typeof angle.degrees === "number" && Number.isFinite(angle.degrees))) {
+        throw new Error(`${at}.degrees 必須是數字或 "?"，目前是 ${describe(angle.degrees)}`);
+      }
       const vertex = `頂點 ${angle.at}${poly.names ? `（${poly.names[angle.at]}）` : ""}`;
       const actual = corners[angle.at]!.degrees;
       if (angle.right && Math.abs(actual - 90) > ANGLE_TOLERANCE) {
@@ -229,9 +235,6 @@ function validate(input: ShapeInput): { polygons: CheckedPolygon[]; circles: Sha
       }
       if (typeof angle.degrees === "number" && Math.abs(actual - angle.degrees) > ANGLE_TOLERANCE) {
         throw new Error(`${at}（${vertex}）標了 ${angle.degrees}°，但依座標算出來約是 ${round1(actual)}°，相差超過 ${ANGLE_TOLERANCE}°`);
-      }
-      if (angle.degrees !== undefined && angle.degrees !== "?" && typeof angle.degrees !== "number") {
-        throw new Error(`${at}.degrees 必須是數字或 "?"，目前是 ${describe(angle.degrees)}`);
       }
     });
     return { ...poly, ccw, corners };
@@ -268,117 +271,129 @@ function validate(input: ShapeInput): { polygons: CheckedPolygon[]; circles: Sha
   return { polygons: checked, circles, guides: checkedGuides };
 }
 
+/** 抽象方向 → 畫面方向（y 翻轉） */
+const dir = (d: Pt): Pt => [d[0], -d[1]];
+const labelKind = (label: string | number): [ShapeText["kind"], number] => (isNumeric(label) ? ["length", NUMBER_FONT] : ["note", NOTE_FONT]);
+
+/** 排版時共用的狀態：抽象座標轉畫面座標、縮放比例、結果，與放置標籤的工具 */
+interface Placer {
+  px: (p: ShapePoint) => Pt;
+  s: number;
+  layout: ShapeLayout;
+  /** 標籤放在 p 朝 d 方向，離開標籤自己的半寬半高再加間隙 */
+  addBeside: (kind: ShapeText["kind"], text: string, font: number, p: Pt, d: Pt, gap: number) => void;
+}
+
+function placePolygon({ px, layout, addBeside }: Placer, poly: CheckedPolygon): void {
+  const pts = poly.vertices.map(px);
+  const n = pts.length;
+  layout.polygons.push({ points: pts, filled: poly.filled === true });
+  const minEdge = Math.min(...pts.map((p, i) => Math.hypot(pts[(i + 1) % n]![0] - p[0], pts[(i + 1) % n]![1] - p[1])));
+
+  for (const side of poly.sides ?? []) {
+    const [a, b] = [pts[side.side]!, pts[(side.side + 1) % n]!];
+    const mid: Pt = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
+    const along = unit(b[0] - a[0], b[1] - a[1]);
+    // 抽象座標逆時針時外側在邊方向的右手邊；畫面 y 翻轉後變成 (-ay, ax) 的反向，這裡直接用畫面座標判斷
+    const normal: Pt = poly.ccw ? [-along[1], along[0]] : [along[1], -along[0]];
+    if (side.label !== undefined) {
+      const [kind, font] = labelKind(side.label);
+      addBeside(kind, String(side.label), font, mid, normal, LABEL_GAP);
+    }
+    if (side.equal) {
+      const tick = unit(normal[0] * 0.9 + along[0] * 0.42, normal[1] * 0.9 + along[1] * 0.42);
+      for (let k = 0; k < side.equal; k++) {
+        const c: Pt = [mid[0] + along[0] * (k - (side.equal - 1) / 2) * TICK_GAP, mid[1] + along[1] * (k - (side.equal - 1) / 2) * TICK_GAP];
+        layout.equalMarks.push({ x1: c[0] - (tick[0] * TICK_LENGTH) / 2, y1: c[1] - (tick[1] * TICK_LENGTH) / 2, x2: c[0] + (tick[0] * TICK_LENGTH) / 2, y2: c[1] + (tick[1] * TICK_LENGTH) / 2 });
+      }
+    }
+    if (side.parallel) {
+      // 同組的邊箭頭要同向：統一朝右（垂直的邊朝上）
+      const e: Pt = along[0] > 1e-9 || (Math.abs(along[0]) <= 1e-9 && along[1] < 0) ? along : [-along[0], -along[1]];
+      const p: Pt = [-e[1], e[0]];
+      for (let k = 0; k < side.parallel; k++) {
+        const c: Pt = [mid[0] + e[0] * (k - (side.parallel - 1) / 2) * CHEVRON_GAP, mid[1] + e[1] * (k - (side.parallel - 1) / 2) * CHEVRON_GAP];
+        const tip: Pt = [c[0] + e[0] * 5, c[1] + e[1] * 5];
+        const [arm1, arm2]: [Pt, Pt] = [[c[0] - e[0] * 5 + p[0] * 7, c[1] - e[1] * 5 + p[1] * 7], [c[0] - e[0] * 5 - p[0] * 7, c[1] - e[1] * 5 - p[1] * 7]];
+        layout.parallelMarks.push(`M ${arm1[0]} ${arm1[1]} L ${tip[0]} ${tip[1]} L ${arm2[0]} ${arm2[1]}`);
+      }
+    }
+  }
+
+  for (const angle of poly.angles ?? []) {
+    const corner = poly.corners[angle.at]!;
+    const p = pts[angle.at]!;
+    const [a, b] = [dir(corner.a), dir(corner.b)];
+    if (angle.right) {
+      const size = Math.min(RIGHT_SIZE, minEdge * 0.4);
+      const [pa, pb]: [Pt, Pt] = [[p[0] + a[0] * size, p[1] + a[1] * size], [p[0] + b[0] * size, p[1] + b[1] * size]];
+      layout.rightMarks.push([p, pa, [pa[0] + b[0] * size, pa[1] + b[1] * size], pb]);
+      continue;
+    }
+    const r = Math.min(ARC_RADIUS, minEdge * 0.45);
+    const large = corner.degrees > 180 ? 1 : 0;
+    // 內角從 a 逆時針轉到 b；畫面上看起來仍是逆時針，SVG 的 sweep-flag 為 0
+    layout.arcs.push(`M ${p[0] + a[0] * r} ${p[1] + a[1] * r} A ${r} ${r} 0 ${large} 0 ${p[0] + b[0] * r} ${p[1] + b[1] * r}`);
+    const text = angle.degrees === "?" ? "?" : `${angle.degrees}°`;
+    const phi = Math.atan2(corner.a[1], corner.a[0]) + (corner.degrees * Math.PI) / 360;
+    addBeside("degree", text, NUMBER_FONT, p, dir([Math.cos(phi), Math.sin(phi)]), r + 6);
+  }
+
+  (poly.names ?? []).forEach((name, i) => {
+    const corner = poly.corners[i]!;
+    const phi = Math.atan2(corner.a[1], corner.a[0]) + (corner.degrees * Math.PI) / 360 + Math.PI;
+    addBeside("letter", name, NUMBER_FONT, pts[i]!, dir([Math.cos(phi), Math.sin(phi)]), 8);
+  });
+
+}
+
+function placeCircle({ px, s, layout, addBeside }: Placer, circle: ShapeCircle): void {
+  const [cx, cy] = px(circle.center);
+  const r = circle.radius * s;
+  const segment = circle.show === undefined ? undefined : circle.show === "radius" ? { x1: cx, y1: cy, x2: cx + r, y2: cy } : { x1: cx - r, y1: cy, x2: cx + r, y2: cy };
+  layout.circles.push({ cx, cy, r, ...(segment ? { segment } : {}) });
+  if (circle.label !== undefined && segment) {
+    const [kind, font] = labelKind(circle.label);
+    addBeside(kind, String(circle.label), font, [(segment.x1 + segment.x2) / 2, cy - 4], [0, -1], 10);
+  }
+
+}
+
+function placeGuide({ px, layout, addBeside }: Placer, guide: CheckedGuide): void {
+  const [a, b] = [px(guide.from), px(guide.to)];
+  layout.guides.push({ x1: a[0], y1: a[1], x2: b[0], y2: b[1] });
+  if (guide.footDir) {
+    const along = unit(a[0] - b[0], a[1] - b[1]);
+    const edge = dir(guide.footDir);
+    const size = Math.min(RIGHT_SIZE, Math.hypot(a[0] - b[0], a[1] - b[1]) * 0.4);
+    const [pg, pe]: [Pt, Pt] = [[b[0] + along[0] * size, b[1] + along[1] * size], [b[0] + edge[0] * size, b[1] + edge[1] * size]];
+    layout.rightMarks.push([b, pg, [pg[0] + edge[0] * size, pg[1] + edge[1] * size], pe]);
+  }
+  if (guide.label !== undefined) {
+    const along = unit(b[0] - a[0], b[1] - a[1]);
+    // 標籤放在輔助線偏右（水平線則偏上）的一側
+    const n: Pt = [-along[1], along[0]];
+    const side: Pt = n[0] > 1e-9 || (Math.abs(n[0]) <= 1e-9 && n[1] < 0) ? n : [-n[0], -n[1]];
+    const [kind, font] = labelKind(guide.label);
+    addBeside(kind, String(guide.label), font, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], side, LABEL_GAP);
+  }
+
+}
+
 /** 依縮放比例 s、左邊界 mx、上邊界 top 排出所有圖形與標籤 */
 function place(v: ReturnType<typeof validate>, bounds: { minX: number; maxY: number }, s: number, mx: number, top: number): ShapeLayout {
-  const px = (p: ShapePoint): Pt => [mx + (p[0] - bounds.minX) * s, top + (bounds.maxY - p[1]) * s];
-  // 抽象方向 → 畫面方向（y 翻轉）
-  const dir = (d: Pt): Pt => [d[0], -d[1]];
   const layout: ShapeLayout = { width: WIDTH, height: 0, polygons: [], circles: [], guides: [], arcs: [], rightMarks: [], equalMarks: [], parallelMarks: [], texts: [] };
-
-  /** 標籤中心 c；文字的基線依字級往下移 */
-  const addText = (kind: ShapeText["kind"], text: string, cx: number, cy: number, font: number) => {
-    layout.texts.push({ kind, text, x: cx, y: cy + font * 0.35, cy, width: textWidthOf(text, font) });
+  const addBeside: Placer["addBeside"] = (kind, text, font, p, d, gap) => {
+    const width = textWidthAt(text, font);
+    const off = gap + Math.abs(d[0]) * (width / 2) + Math.abs(d[1]) * (font / 2);
+    const [cx, cy] = [p[0] + d[0] * off, p[1] + d[1] * off];
+    // 文字基線依字級往下移，讓視覺中心落在 cy
+    layout.texts.push({ kind, text, x: cx, y: cy + font * 0.35, cy, width });
   };
-  const labelKind = (label: string | number): [ShapeText["kind"], number] => (isNumeric(label) ? ["length", NUMBER_FONT] : ["note", NOTE_FONT]);
-  /** 標籤放在 p 朝 d 方向，離開標籤自己的半寬半高再加間隙 */
-  const addBeside = (kind: ShapeText["kind"], text: string, font: number, p: Pt, d: Pt, gap: number) => {
-    const w = textWidthOf(text, font);
-    const off = gap + Math.abs(d[0]) * (w / 2) + Math.abs(d[1]) * (font / 2);
-    addText(kind, text, p[0] + d[0] * off, p[1] + d[1] * off, font);
-  };
-
-  for (const poly of v.polygons) {
-    const pts = poly.vertices.map(px);
-    const n = pts.length;
-    layout.polygons.push({ points: pts, filled: poly.filled === true });
-    const minEdge = Math.min(...pts.map((p, i) => Math.hypot(pts[(i + 1) % n]![0] - p[0], pts[(i + 1) % n]![1] - p[1])));
-
-    for (const side of poly.sides ?? []) {
-      const [a, b] = [pts[side.side]!, pts[(side.side + 1) % n]!];
-      const mid: Pt = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2];
-      const along = unit(b[0] - a[0], b[1] - a[1]);
-      // 抽象座標逆時針時外側在邊方向的右手邊；畫面 y 翻轉後變成 (-ay, ax) 的反向，這裡直接用畫面座標判斷
-      const normal: Pt = poly.ccw ? [-along[1], along[0]] : [along[1], -along[0]];
-      if (side.label !== undefined) {
-        const [kind, font] = labelKind(side.label);
-        addBeside(kind, String(side.label), font, mid, normal, LABEL_GAP);
-      }
-      if (side.equal) {
-        const tick = unit(normal[0] * 0.9 + along[0] * 0.42, normal[1] * 0.9 + along[1] * 0.42);
-        for (let k = 0; k < side.equal; k++) {
-          const c: Pt = [mid[0] + along[0] * (k - (side.equal - 1) / 2) * TICK_GAP, mid[1] + along[1] * (k - (side.equal - 1) / 2) * TICK_GAP];
-          layout.equalMarks.push({ x1: c[0] - (tick[0] * TICK_LENGTH) / 2, y1: c[1] - (tick[1] * TICK_LENGTH) / 2, x2: c[0] + (tick[0] * TICK_LENGTH) / 2, y2: c[1] + (tick[1] * TICK_LENGTH) / 2 });
-        }
-      }
-      if (side.parallel) {
-        // 同組的邊箭頭要同向：統一朝右（垂直的邊朝上）
-        const e: Pt = along[0] > 1e-9 || (Math.abs(along[0]) <= 1e-9 && along[1] < 0) ? along : [-along[0], -along[1]];
-        const p: Pt = [-e[1], e[0]];
-        for (let k = 0; k < side.parallel; k++) {
-          const c: Pt = [mid[0] + e[0] * (k - (side.parallel - 1) / 2) * CHEVRON_GAP, mid[1] + e[1] * (k - (side.parallel - 1) / 2) * CHEVRON_GAP];
-          const tip: Pt = [c[0] + e[0] * 5, c[1] + e[1] * 5];
-          const [arm1, arm2]: [Pt, Pt] = [[c[0] - e[0] * 5 + p[0] * 7, c[1] - e[1] * 5 + p[1] * 7], [c[0] - e[0] * 5 - p[0] * 7, c[1] - e[1] * 5 - p[1] * 7]];
-          layout.parallelMarks.push(`M ${arm1[0]} ${arm1[1]} L ${tip[0]} ${tip[1]} L ${arm2[0]} ${arm2[1]}`);
-        }
-      }
-    }
-
-    for (const angle of poly.angles ?? []) {
-      const corner = poly.corners[angle.at]!;
-      const p = pts[angle.at]!;
-      const [a, b] = [dir(corner.a), dir(corner.b)];
-      if (angle.right) {
-        const size = Math.min(RIGHT_SIZE, minEdge * 0.4);
-        const [pa, pb]: [Pt, Pt] = [[p[0] + a[0] * size, p[1] + a[1] * size], [p[0] + b[0] * size, p[1] + b[1] * size]];
-        layout.rightMarks.push([p, pa, [pa[0] + b[0] * size, pa[1] + b[1] * size], pb]);
-        continue;
-      }
-      const r = Math.min(ARC_RADIUS, minEdge * 0.45);
-      const large = corner.degrees > 180 ? 1 : 0;
-      // 內角從 a 逆時針轉到 b；畫面上看起來仍是逆時針，SVG 的 sweep-flag 為 0
-      layout.arcs.push(`M ${p[0] + a[0] * r} ${p[1] + a[1] * r} A ${r} ${r} 0 ${large} 0 ${p[0] + b[0] * r} ${p[1] + b[1] * r}`);
-      const text = angle.degrees === "?" ? "?" : `${angle.degrees}°`;
-      const phi = Math.atan2(corner.a[1], corner.a[0]) + (corner.degrees * Math.PI) / 360;
-      addBeside("degree", text, NUMBER_FONT, p, dir([Math.cos(phi), Math.sin(phi)]), r + 6);
-    }
-
-    (poly.names ?? []).forEach((name, i) => {
-      const corner = poly.corners[i]!;
-      const phi = Math.atan2(corner.a[1], corner.a[0]) + (corner.degrees * Math.PI) / 360 + Math.PI;
-      addBeside("letter", name, NUMBER_FONT, pts[i]!, dir([Math.cos(phi), Math.sin(phi)]), 8);
-    });
-  }
-
-  for (const circle of v.circles) {
-    const [cx, cy] = px(circle.center);
-    const r = circle.radius * s;
-    const segment = circle.show === undefined ? undefined : circle.show === "radius" ? { x1: cx, y1: cy, x2: cx + r, y2: cy } : { x1: cx - r, y1: cy, x2: cx + r, y2: cy };
-    layout.circles.push({ cx, cy, r, ...(segment ? { segment } : {}) });
-    if (circle.label !== undefined && segment) {
-      const [kind, font] = labelKind(circle.label);
-      addBeside(kind, String(circle.label), font, [(segment.x1 + segment.x2) / 2, cy - 4], [0, -1], 10);
-    }
-  }
-
-  for (const guide of v.guides) {
-    const [a, b] = [px(guide.from), px(guide.to)];
-    layout.guides.push({ x1: a[0], y1: a[1], x2: b[0], y2: b[1] });
-    if (guide.footDir) {
-      const along = unit(a[0] - b[0], a[1] - b[1]);
-      const edge = dir(guide.footDir);
-      const size = Math.min(RIGHT_SIZE, Math.hypot(a[0] - b[0], a[1] - b[1]) * 0.4);
-      const [pg, pe]: [Pt, Pt] = [[b[0] + along[0] * size, b[1] + along[1] * size], [b[0] + edge[0] * size, b[1] + edge[1] * size]];
-      layout.rightMarks.push([b, pg, [pg[0] + edge[0] * size, pg[1] + edge[1] * size], pe]);
-    }
-    if (guide.label !== undefined) {
-      const along = unit(b[0] - a[0], b[1] - a[1]);
-      // 標籤放在輔助線偏右（水平線則偏上）的一側
-      const n: Pt = [-along[1], along[0]];
-      const side: Pt = n[0] > 1e-9 || (Math.abs(n[0]) <= 1e-9 && n[1] < 0) ? n : [-n[0], -n[1]];
-      const [kind, font] = labelKind(guide.label);
-      addBeside(kind, String(guide.label), font, [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2], side, LABEL_GAP);
-    }
-  }
+  const placer: Placer = { px: (p) => [mx + (p[0] - bounds.minX) * s, top + (bounds.maxY - p[1]) * s], s, layout, addBeside };
+  v.polygons.forEach((poly) => placePolygon(placer, poly));
+  v.circles.forEach((circle) => placeCircle(placer, circle));
+  v.guides.forEach((guide) => placeGuide(placer, guide));
   return layout;
 }
 
@@ -394,12 +409,16 @@ export function resolveShape(input: ShapeInput): ShapeLayout {
   const spanX = Math.max(...xs) - bounds.minX;
   if (spanX <= 0) throw new Error(`${SUBJECT} 的圖形寬度為 0，無法縮放`);
 
-  // 標籤可能超出圖形的外接範圍：加大左右邊界重排，直到標籤都在 0 到 480 內
+  // 標籤可能超出圖形的外接範圍：加大左右邊界重排，直到標籤都在 0 到 480 內；邊界吃掉一半寬度或重排 8 輪仍放不下就失敗
+  const spillOf = (layout: ShapeLayout) => Math.max(0, ...layout.texts.flatMap((t) => [-(t.x - t.width / 2), t.x + t.width / 2 - WIDTH]));
   let mx = BASE_MARGIN;
   let layout = place(v, bounds, (WIDTH - 2 * mx) / spanX, mx, 0);
-  for (let round = 0; round < 8; round++) {
-    const spill = Math.max(0, ...layout.texts.flatMap((t) => [-(t.x - t.width / 2), t.x + t.width / 2 - WIDTH]));
-    if (spill <= 0) break;
+  for (let round = 0; spillOf(layout) > 0; round++) {
+    const spill = spillOf(layout);
+    if (round === MAX_FIT_ROUNDS || mx + spill >= WIDTH / 2) {
+      const widest = layout.texts.reduce((a, b) => (b.width > a.width ? b : a));
+      throw new Error(`${SUBJECT} 的標籤「${widest.text}」太長，圖放不下；請縮短標籤，或把圖拆成兩張`);
+    }
     mx += spill;
     layout = place(v, bounds, (WIDTH - 2 * mx) / spanX, mx, 0);
   }

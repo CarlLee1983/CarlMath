@@ -2,13 +2,17 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resolveUnitGrid } from "../src/lib/unit-grid.ts";
 
+// cells 是整張方格的每一格（依列、行排序），帶 shaded；這裡取出塗色的格子座標
+const shadedOf = (grid) => grid.cells.filter((c) => c.shaded).map((c) => [c.row, c.col]);
 const rejects = (input, message) => assert.throws(() => resolveUnitGrid(input), (e) => e instanceof Error && e.message === message);
 
 test("合格的方格：沒有塗色時 cells 為空、沒有外框", () => {
   const grid = resolveUnitGrid({ rows: 3, cols: 4 });
   assert.equal(grid.rows, 3);
   assert.equal(grid.cols, 4);
-  assert.deepEqual(grid.cells, []);
+  assert.equal(grid.cells.length, 12);
+  assert.deepEqual(grid.cells[5], { row: 1, col: 1, shaded: false });
+  assert.deepEqual(shadedOf(grid), []);
   assert.equal(grid.outline, undefined);
   assert.deepEqual(grid.labels, []);
 });
@@ -28,7 +32,7 @@ test("超過 12 列 × 10 行、或不是正整數，丟中文錯誤", () => {
 
 test("長方形塗色：cells 依列、行順序列出，從 0 起算、列由上往下", () => {
   const grid = resolveUnitGrid({ rows: 4, cols: 5, rects: [{ row: 1, col: 2, rows: 2, cols: 2 }] });
-  assert.deepEqual(grid.cells, [[1, 2], [1, 3], [2, 2], [2, 3]]);
+  assert.deepEqual(shadedOf(grid), [[1, 2], [1, 3], [2, 2], [2, 3]]);
 });
 
 test("長方形寫法與等價的逐格寫法，塗色結果相同；兩種並用、重疊的格只算一次", () => {
@@ -36,7 +40,8 @@ test("長方形寫法與等價的逐格寫法，塗色結果相同；兩種並�
   const byCells = resolveUnitGrid({ rows: 4, cols: 5, cells: [[1, 2], [0, 0], [0, 1], [0, 2], [1, 0], [1, 1]] });
   assert.deepEqual(byRect.cells, byCells.cells);
   const mixed = resolveUnitGrid({ rows: 4, cols: 5, rects: [{ row: 0, col: 0, rows: 2, cols: 3 }], cells: [[1, 2], [3, 4]] });
-  assert.deepEqual(mixed.cells, [...byRect.cells, [3, 4]]);
+  assert.deepEqual(shadedOf(mixed), [...shadedOf(byRect), [3, 4]]);
+  assert.equal(mixed.cells.length, 20);
 });
 
 test("長方形超出範圍或寫法不合，丟中文錯誤", () => {

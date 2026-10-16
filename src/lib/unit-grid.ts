@@ -55,11 +55,17 @@ export interface UnitGridLabel {
   text: string;
 }
 
+export interface UnitGridCell {
+  row: number;
+  col: number;
+  shaded: boolean;
+}
+
 export interface UnitGrid {
   rows: number;
   cols: number;
-  /** 塗色的格子 [row, col]，不重複，依列、行排序 */
-  cells: [number, number][];
+  /** 整張方格的每一格，依列、行排序，帶是否塗色 */
+  cells: UnitGridCell[];
   /** 塗色區的外接範圍（格線座標）；沒有塗色時是整個方格。標籤置中在這個範圍的邊上 */
   bounds: { row0: number; col0: number; row1: number; col1: number };
   outline: UnitGridOutline | undefined;
@@ -84,7 +90,7 @@ function checkSize(name: "rows" | "cols", value: unknown, max: number): number {
   return value;
 }
 
-function collectCells(rows: number, cols: number, rects: UnitGridRect[], cells: [number, number][]): [number, number][] {
+function collectCells(rows: number, cols: number, rects: UnitGridRect[], cells: [number, number][]): UnitGridCell[] {
   const range = `${rows} 列 × ${cols} 行的方格範圍`;
   const painted = new Set<number>();
   rects.forEach((rect, i) => {
@@ -103,19 +109,19 @@ function collectCells(rows: number, cols: number, rects: UnitGridRect[], cells: 
     if (r < 0 || r >= rows || c < 0 || c >= cols) throw new Error(`${SUBJECT} 的 cells[${i}]（第 ${r} 列、第 ${c} 行）超出 ${range}`);
     painted.add(r * cols + c);
   });
-  return [...painted].sort((a, b) => a - b).map((k) => [Math.floor(k / cols), k % cols]);
+  return Array.from({ length: rows * cols }, (_, k) => ({ row: Math.floor(k / cols), col: k % cols, shaded: painted.has(k) }));
 }
 
 /** 沿塗色區的實際邊界：塗色格與「沒塗或方格外」相鄰的每條單位邊，再把同一直線上相連的合併 */
-function computeOutline(cells: [number, number][]): UnitGridOutline {
-  const painted = new Set(cells.map(([r, c]) => `${r},${c}`));
-  const has = (r: number, c: number) => painted.has(`${r},${c}`);
+function computeOutline(grid: UnitGridCell[], rows: number, cols: number): UnitGridOutline {
+  const has = (r: number, c: number) => r >= 0 && r < rows && c >= 0 && c < cols && grid[r * cols + c]!.shaded;
   // 水平邊以 y（列線）分組、垂直邊以 x（行線）分組，各存沿線的起點座標
   const horizontal = new Map<number, number[]>();
   const vertical = new Map<number, number[]>();
   const add = (map: Map<number, number[]>, line: number, start: number) => map.set(line, [...(map.get(line) ?? []), start]);
   let length = 0;
-  for (const [r, c] of cells) {
+  for (const { row: r, col: c, shaded } of grid) {
+    if (!shaded) continue;
     if (!has(r - 1, c)) add(horizontal, r, c);
     if (!has(r + 1, c)) add(horizontal, r + 1, c);
     if (!has(r, c - 1)) add(vertical, c, r);
@@ -170,25 +176,26 @@ export function resolveUnitGrid(input: UnitGridInput): UnitGrid {
   const rows = checkSize("rows", input.rows, MAX_ROWS);
   const cols = checkSize("cols", input.cols, MAX_COLS);
   const cells = collectCells(rows, cols, input.rects ?? [], input.cells ?? []);
+  const shaded = cells.filter((c) => c.shaded);
   if (input.perimeter !== undefined && typeof input.perimeter !== "boolean") {
     throw new Error(`${SUBJECT} 的 perimeter 必須是 true 或 false`);
   }
-  if (input.perimeter && cells.length === 0) throw new Error(`${SUBJECT} 要描周長外框，必須先有塗色的格子（rects 或 cells）`);
+  if (input.perimeter && shaded.length === 0) throw new Error(`${SUBJECT} 要描周長外框，必須先有塗色的格子（rects 或 cells）`);
   const bounds =
-    cells.length === 0
+    shaded.length === 0
       ? { row0: 0, col0: 0, row1: rows, col1: cols }
       : {
-          row0: Math.min(...cells.map(([r]) => r)),
-          col0: Math.min(...cells.map(([, c]) => c)),
-          row1: Math.max(...cells.map(([r]) => r)) + 1,
-          col1: Math.max(...cells.map(([, c]) => c)) + 1,
+          row0: Math.min(...shaded.map((c) => c.row)),
+          col0: Math.min(...shaded.map((c) => c.col)),
+          row1: Math.max(...shaded.map((c) => c.row)) + 1,
+          col1: Math.max(...shaded.map((c) => c.col)) + 1,
         };
   return {
     rows,
     cols,
     cells,
     bounds,
-    outline: input.perimeter ? computeOutline(cells) : undefined,
+    outline: input.perimeter ? computeOutline(cells, rows, cols) : undefined,
     labels: resolveLabels(input.labels ?? []),
   };
 }

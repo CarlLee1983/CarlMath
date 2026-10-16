@@ -29,12 +29,7 @@ const x0 = (WIDTH - gridWidth) / 2;
 const hasSide = (side: string) => grid.labels.some((l) => l.side === side);
 const y0 = EDGE + (hasSide("top") ? LABEL_ROOM : 0);
 const height = y0 + gridHeight + EDGE + (hasSide("bottom") ? LABEL_ROOM : 0);
-const shaded = new Set(grid.cells.map(([r, c]) => `${r},${c}`));
-const cells = Array.from({ length: grid.rows * grid.cols }, (_, k) => {
-  const row = Math.floor(k / grid.cols);
-  const col = k % grid.cols;
-  return { x: x0 + col * CELL, y: y0 + row * CELL, shaded: shaded.has(`${row},${col}`) };
-});
+const cells = grid.cells.map((c) => ({ x: x0 + c.col * CELL, y: y0 + c.row * CELL, shaded: c.shaded }));
 const px = (x: number) => x0 + x * CELL;
 const py = (y: number) => y0 + y * CELL;
 const outlinePath = grid.outline?.segments.map((s) => `M${px(s.x1)} ${py(s.y1)}L${px(s.x2)} ${py(s.y2)}`).join("");
