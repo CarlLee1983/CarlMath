@@ -735,6 +735,8 @@ stages:
     coreQuestion: 怎麼把一段情境描述變成可以解的方程式？
     prerequisites:
     - linear-equations
+    - ratio
+    - rates-unit-rate
     family: false
     curriculum108:
       grades:
