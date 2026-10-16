@@ -786,6 +786,9 @@ stages:
     prerequisites:
     - square-roots
     - fractions-on-number-line
+    - equivalent-fractions
+    - decimal-operations
+    - algebraic-expressions
     family: false
     curriculum108:
       grades:
