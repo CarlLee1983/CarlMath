@@ -58,12 +58,24 @@ test.describe("AreaModel", () => {
     expect(rects[0]![1]! + rects[0]![3]! + 12).toBe(vh);
   });
 
+  test("缺角格：右下角虛線框、不塗色，格內面積 9，其餘格是實線", async ({ page }) => {
+    await page.goto(areaPath);
+    const svg = figure(page, "字母面積缺角");
+    expect(await svg.locator(".am-block").count()).toBe(4);
+    expect(await svg.locator(".am-missing").count()).toBe(1);
+    const dashed = await svg.locator(".am-block").evaluateAll((els) => els.map((el) => getComputedStyle(el).strokeDasharray !== "none"));
+    expect(dashed).toEqual([false, false, false, true]);
+    expect(await svg.locator(".am-missing").evaluate((el) => getComputedStyle(el).fill)).toBe("none");
+    expect(await svg.locator(".am-missing").evaluate((el) => getComputedStyle(el).strokeWidth)).toBe("2px");
+    expect(await texts(svg.locator(".am-area"))).toEqual(["x²", "3x", "3x", "9"]);
+  });
+
   test("320px 下頁面沒有水平捲軸，每張面積模型都在視窗內", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "narrow", "只在 320px 專案驗證");
     await page.goto(areaPath);
     expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
     const rights = await page.locator("svg.am-fig").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().right));
-    expect(rights).toHaveLength(3);
+    expect(rights).toHaveLength(4);
     for (const right of rights) expect(right).toBeLessThanOrEqual(320);
   });
 
@@ -91,6 +103,10 @@ test.describe("AreaModel", () => {
       expect(await computed(svg.locator(".am-hi"), "fill")).toBe(accent);
       expect(await computed(svg.locator(".am-area"), "fill")).toBe(fg);
       expect(await computed(svg.locator(".am-dim"), "fill")).toBe(fg);
+      // 缺角格的虛線框也是 --fg、不塗色
+      const missing = figure(page, "字母面積缺角").locator(".am-missing");
+      expect(await computed(missing, "stroke")).toBe(fg);
+      expect(await computed(missing, "fill")).toBe("none");
       seen.push(accent);
     }
     expect(seen[0]).not.toBe(seen[1]);

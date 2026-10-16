@@ -295,3 +295,7 @@ import AreaModel from "@figures/AreaModel.astro";
 <Figure caption="全是字母的邊：橫邊置中，圖高只留到格子底">
   <AreaModel title="字母面積置中" desc="一個長方形，橫邊拆成 x 和 y，縱邊只有 x，字母的長度只是示意，不按比例。左格面積是 x 的平方，右格面積是 xy。" cols={["x", "y"]} rows={["x"]} areas={[["x²", "xy"]]} />
 </Figure>
+
+<Figure caption="缺角格：右下角用虛線框，表示還沒有、要補上的一塊">
+  <AreaModel title="字母面積缺角" desc="一個長方形，橫邊拆成 x 和 3，縱邊拆成 x 和 3，字母 x 的長度只是示意，不按比例。左上是 x 的平方，右上與左下都是 3x，右下角是缺的一格，用虛線框表示，面積是 9。" cols={["x", 3]} rows={["x", 3]} areas={[["x²", "3x"], ["3x", null]]} missing={[1, 1]} />
+</Figure>
