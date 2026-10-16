@@ -3,7 +3,7 @@
  * 位置值是數字（取十進位字面）或 "a/b" 字串，內部一律以約分後的有理數比較。
  */
 import { add, compare, div, isInteger, key, lcm, mul, parseFractionParts, parseRational, rational, sub, toNumber } from "./rational.ts";
-import { MINUS, isStacked } from "./stacked-fraction.ts";
+import { MINUS, isStacked, stackedFractionWidth, textWidth } from "./stacked-fraction.ts";
 import type { DecimalLabel, FractionLabel, IntegerLabel, MixedLabel } from "./stacked-fraction.ts";
 import type { Rational } from "./rational.ts";
 
@@ -39,11 +39,24 @@ export interface NumberLineScale {
   points: { at: number; label?: string }[];
   jumps: NumberLineMove<number>[];
   spans: NumberLineMove<number>[];
+  /** 數線兩端離 viewBox 邊緣的距離：至少 MIN_MARGIN，端點標籤比較寬時（例如 −1000、−10½）依標籤寬度加大，免得被裁切 */
+  margin: { left: number; right: number };
   /** 是否有疊排標籤（分數或帶分數）；有的話，數線下方要依疊排高度留空間 */
   hasStacked: boolean;
 }
 
 const SUBJECT = "<NumberLine>";
+
+/** 數線兩端離 viewBox 邊緣的最小距離（viewBox 單位） */
+export const MIN_MARGIN = 28;
+const LABEL_GAP = 2; // 端點標籤半寬之外再留的空隙
+
+/** 標籤的估計寬度：純文字用字寬估計，疊排分數用疊排版面（含負號） */
+const labelWidth = (label: TickLabel): number =>
+  isStacked(label)
+    ? stackedFractionWidth({ negative: label.negative, whole: label.kind === "mixed" ? label.whole : undefined, numerator: label.numerator, denominator: label.denominator })
+    : textWidth(label.text);
+const marginFor = (label: TickLabel): number => Math.max(MIN_MARGIN, labelWidth(label) / 2 + LABEL_GAP);
 
 /** 連字號（後面可隔空格）接數字、分數字元（\p{No}）、小寫字母或左括號，看起來是負號或減號；大寫字母之間的連字號（點的名稱 A-B）不算 */
 const HYPHEN_AS_MINUS = /-[ ]*[\d\p{No}a-z(]/u;
@@ -153,6 +166,7 @@ export function resolveNumberLine(input: NumberLineInput): NumberLineScale {
   const numbers = sorted.map((v) => ({ at: at(v), label: labelOf(v) }));
 
   return {
+    margin: { left: marginFor(numbers[0]!.label), right: marginFor(numbers[numbers.length - 1]!.label) },
     ticks: tickValues.map((v) => ({ at: at(v), isZero: v.n === 0 })),
     numbers,
     points: points.map((p, i) => ({ at: at(pointValues[i]!), label: p.label })),

@@ -406,6 +406,17 @@ test.describe("NumberLine 負數", () => {
     expect(seen[0]).not.toBe(seen[1]);
   });
 
+  test("寬的負端點標籤不被裁切：最左邊的標籤 bbox 在 SVG 範圍內", async ({ page }) => {
+    await page.goto(negativePath);
+    for (const title of ["四位數負端點", "負帶分數端點"]) {
+      const svg = figure(page, title);
+      const svgBox = await svg.evaluate((el) => el.getBoundingClientRect().left);
+      const leftmost = await svg.locator(".nl-num, .sf").evaluateAll((els) => Math.min(...els.map((el) => el.getBoundingClientRect().left)));
+      expect(leftmost, title).toBeGreaterThanOrEqual(svgBox);
+    }
+    expect(await texts(figure(page, "四位數負端點").locator(".nl-num"))).toEqual([`${MINUS}1000`, `${MINUS}500`, "0", "500", "1000"]);
+  });
+
   test("320px 寬沒有水平捲軸，負數數線不超出畫面", async ({ page }, testInfo) => {
     test.skip(testInfo.project.name !== "narrow", "只在 320px 驗證");
     await page.goto(negativePath);

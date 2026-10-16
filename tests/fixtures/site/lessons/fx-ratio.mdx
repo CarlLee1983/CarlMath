@@ -132,6 +132,29 @@ import AreaModel from "@figures/AreaModel.astro";
   />
 </Figure>
 
+<Figure caption="四位數的負端點：左邊界依標籤寬度加大，不被裁切">
+  <NumberLine
+    title="四位數負端點"
+    desc="負一千到一千的數線，每格是五百。負一千有一個點。"
+    from={-1000}
+    to={1000}
+    step={500}
+    points={[{ at: -1000 }]}
+  />
+</Figure>
+
+<Figure caption="負帶分數的端點：負號也算進寬度">
+  <NumberLine
+    title="負帶分數端點"
+    desc="負十又二分之一到零的數線，只標出每一個整數的位置。"
+    from="-21/2"
+    to={0}
+    step="1/2"
+    mixed
+    labelEvery={5}
+  />
+</Figure>
+
 <Figure caption="一條平分成 3 份，塗 2 份">
   <FractionBar title="單條分數條" desc="一條長條平分成三份，從左邊塗滿兩份，是三分之二。" bars={[{ parts: 3, shaded: 2 }]} />
 </Figure>

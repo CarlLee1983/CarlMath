@@ -33,15 +33,14 @@ const { title, desc, from, to, step = 1, labelEvery, mixed, points = [], jumps =
 assertAltText("NumberLine", title, desc);
 
 const scale = resolveNumberLine({ from, to, step, labelEvery, mixed, points, jumps, spans });
-const { ticks, numbers, hasStacked } = scale;
+const { ticks, numbers, hasStacked, margin } = scale;
 
 const prefix = figureIdPrefix("nl", props);
 
-// 版面（viewBox 單位）：左右留邊讓兩端數字不被裁切
+// 版面（viewBox 單位）：左右留邊讓兩端數字不被裁切，邊界由模組依端點標籤的寬度算出
 const WIDTH = 480;
-const MARGIN = 28;
 // 模組回傳的位置都是占整條線的比例（0 到 1）
-const x = (t: number) => MARGIN + t * (WIDTH - 2 * MARGIN);
+const x = (t: number) => margin.left + t * (WIDTH - margin.left - margin.right);
 
 // 垂直方向由軸線往上、往下各自累加所需高度，不留大片空白
 const TICK_HALF = 7;
@@ -82,7 +81,7 @@ const bracketPath = (m: NumberLineMove<number>) => {
       </defs>
     )
   }
-  <line class="nl-axis" x1={MARGIN} y1={axisY} x2={WIDTH - MARGIN} y2={axisY} />
+  <line class="nl-axis" x1={margin.left} y1={axisY} x2={WIDTH - margin.right} y2={axisY} />
   {
     ticks.map((t) => (
       <line

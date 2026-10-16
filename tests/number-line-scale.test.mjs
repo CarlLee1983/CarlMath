@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { resolveNumberLine } from "../src/lib/number-line-scale.ts";
+import { stackedFractionWidth, textWidth } from "../src/lib/stacked-fraction.ts";
 
 const scale = (props) => resolveNumberLine({ step: 1, ...props });
 // 標籤的純文字寫法：疊排分數寫成 a/b，帶分數寫成 w a/b
@@ -288,4 +289,50 @@ test("label 裡的連字號（後面可隔空格）接數字、分數字元、�
 test("大寫字母之間的連字號（點的名稱）不擋", () => {
   const base = { from: -5, to: 5 };
   for (const label of ["A-B", "AB-CD", "P - Q"]) assert.doesNotThrow(() => scale({ ...base, points: [{ at: 0, label }] }));
+});
+
+// 端點邊界：左右邊界依端點標籤的實際寬度加大，正數數線維持 28
+const VIEW_WIDTH = 480;
+const fits = (scaleResult, side) => {
+  const label = side === "left" ? scaleResult.numbers[0].label : scaleResult.numbers.at(-1).label;
+  const width = label.kind === "integer" || label.kind === "decimal" ? textWidth(label.text) : stackedFractionWidth({ negative: label.negative, whole: label.whole, numerator: label.numerator, denominator: label.denominator });
+  return scaleResult.margin[side] >= width / 2;
+};
+
+test("既有的正數數線邊界維持 28", () => {
+  for (const props of [
+    { from: 0, to: 10 },
+    { from: 0, to: 1, step: "1/4" },
+    { from: 0, to: 2, step: "1/2", mixed: true },
+    { from: 0, to: 1, step: 0.1 },
+    { from: 0, to: 1000, step: 100 },
+    { from: 10, to: 30, step: 5 },
+    { from: 0, to: 3, step: "1/8" },
+  ]) {
+    assert.deepEqual(scale(props).margin, { left: 28, right: 28 }, JSON.stringify(props));
+  }
+});
+
+test("−1000 的左端點：左邊界加大到放得下標籤，右邊維持 28", () => {
+  const r = scale({ from: -1000, to: 0, step: 100 });
+  assert.ok(r.margin.left > 28);
+  assert.ok(fits(r, "left"));
+  assert.equal(r.margin.right, 28);
+  assert.ok(r.margin.left < VIEW_WIDTH / 4);
+});
+
+test("負帶分數端點 −10½ 與負小數端點 −12.5：邊界含負號寬度", () => {
+  const mixedLine = scale({ from: "-21/2", to: 0, step: "1/2", mixed: true, labelEvery: 1 });
+  assert.ok(mixedLine.margin.left > 28);
+  assert.ok(fits(mixedLine, "left"));
+  const decimalLine = scale({ from: -12.5, to: 0, step: 2.5 });
+  assert.ok(decimalLine.margin.left > 28);
+  assert.ok(fits(decimalLine, "left"));
+});
+
+test("右端點也一樣：兩端各自依標籤寬度", () => {
+  const r = scale({ from: -1000, to: 1000, step: 500 });
+  assert.ok(fits(r, "left") && fits(r, "right"));
+  assert.ok(r.margin.left > r.margin.right);
+  assert.equal(r.margin.right, 28);
 });
