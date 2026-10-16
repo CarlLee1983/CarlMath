@@ -1,8 +1,8 @@
 ---
 // 平方差的一次性教具：左邊是邊長 a 的正方形，右上角切掉邊長 b 的小正方形（虛線框）；
 // 右邊是剩下的 L 形重拼成的 (a + b) × (a − b) 長方形。
-// 左邊：下方 a × (a − b) 的長方形（淺色），左上 (a − b) × b 的長方形（深色），右上是切掉的 b × b。
-// 右邊：淺色那塊原地不動，深色那塊轉 90° 接到它右邊，寬變成 b、高變成 a − b。
+// 左邊：下方 a × (a − b) 的長方形（純色），左上 (a − b) × b 的長方形（斜線），右上是切掉的 b × b。
+// 右邊：純色那塊原地不動，斜線那塊轉 90° 接到它右邊，寬變成 b、高變成 a − b。
 // 長度以 5 與 2 格畫出，只是示意；圖內的字母長度不代表比例。
 // 圖內 a、b、a + b、a − b 是邊長字母，比照面積模型的例外（docs/figure-guide.md「面積模型的例外」）視同刻度數字，不算文字標籤；
 // 左邊的 b 標在那一列的右側，同時是切掉的小正方形與斜線那塊的邊長 b。
@@ -43,12 +43,12 @@ interface Rect {
 }
 const rects: Rect[] = [
   // 左：下方長方形、左上長方形、切掉的小正方形
-  { x: LX, y: TOP + B, w: A, h: D, cls: "sd-light" },
-  { x: LX, y: TOP, w: D, h: B, cls: "sd-dark", hatch: true },
+  { x: LX, y: TOP + B, w: A, h: D, cls: "sd-plain" },
+  { x: LX, y: TOP, w: D, h: B, cls: "sd-hatched", hatch: true },
   { x: LX + D, y: TOP, w: B, h: B, cls: "sd-cut" },
   // 右：淺色在左、深色轉 90° 接在右邊
-  { x: RX, y: BOTTOM - D, w: A, h: D, cls: "sd-light" },
-  { x: RX + A, y: BOTTOM - D, w: B, h: D, cls: "sd-dark", hatch: true },
+  { x: RX, y: BOTTOM - D, w: A, h: D, cls: "sd-plain" },
+  { x: RX + A, y: BOTTOM - D, w: B, h: D, cls: "sd-hatched", hatch: true },
 ];
 const arrowY = BOTTOM - D / 2;
 ---
@@ -88,13 +88,9 @@ const arrowY = BOTTOM - D / 2;
     stroke-width: 2px;
     stroke-linejoin: round;
   }
-  /* 兩塊剩下的部分以純色與斜線區分；切掉的是不塗色的虛線框（本站的語意：拿掉的或還沒有的） */
-  .sd-light {
-    fill: var(--accent);
-    fill-opacity: 0.2;
-  }
-  /* 斜線那塊：淡底加 --accent 斜線，與淺色那塊的差別是圖樣，不是深淺 */
-  .sd-dark {
+  /* 兩塊剩下的部分底色相同，差別只在 .sd-hatched 多了斜線圖樣；切掉的是不塗色的虛線框（本站的語意：拿掉的或還沒有的） */
+  .sd-plain,
+  .sd-hatched {
     fill: var(--accent);
     fill-opacity: 0.2;
   }
@@ -104,7 +100,7 @@ const arrowY = BOTTOM - D / 2;
   }
   .sd-cut {
     fill: none;
-    stroke-dasharray: 7 5;
+    stroke-dasharray: 8 6;
   }
   .sd-arrow {
     fill: none;
