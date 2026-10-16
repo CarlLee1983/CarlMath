@@ -29,6 +29,7 @@ export type IssueCode =
   | "figure-title-missing"
   | "figure-desc-missing"
   | "figure-color-not-token"
+  | "notation-inequality-sign"
   | "lesson-length-out-of-range";
 
 export interface Issue {

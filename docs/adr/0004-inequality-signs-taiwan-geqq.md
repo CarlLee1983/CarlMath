@@ -1,5 +1,5 @@
 ---
-status: accepted
+status: superseded by 0006
 ---
 
 # 不等號用台灣國中課本的 ≧、≦，不用國際通用的 ≥、≤

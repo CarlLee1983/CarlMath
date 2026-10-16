@@ -1,0 +1,69 @@
+# 教材規則 fixture：不等號（ADR 0006）
+stages:
+- id: stage-a
+  title: 階段甲（x ≦ 3）
+  units:
+  - id: iq-katex
+    title: iq-katex 標題
+    coreQuestion: iq-katex 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [7]
+      content: [A-7-1]
+  - id: iq-char
+    title: iq-char 標題
+    coreQuestion: iq-char 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [7]
+      content: [A-7-1]
+  - id: iq-note
+    title: iq-note 標題
+    coreQuestion: iq-note 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [7]
+      content: [A-7-1]
+  - id: iq-ok
+    title: iq-ok 標題
+    coreQuestion: iq-ok 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [7]
+      content: [A-7-1]
+  - id: iq-map
+    title: iq-map 標題
+    coreQuestion: x ≦ 3 的數有哪些？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [7]
+      content: [A-7-1]
+  - id: iq-mixed
+    title: iq-mixed 標題
+    coreQuestion: iq-mixed 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [7]
+      content: [A-7-1]
+  - id: iq-geq
+    title: iq-geq 標題
+    coreQuestion: iq-geq 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [7]
+      content: [A-7-1]
+  - id: iq-figure
+    title: iq-figure 標題
+    coreQuestion: iq-figure 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [7]
+      content: [A-7-1]
