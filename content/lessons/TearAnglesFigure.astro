@@ -1,0 +1,131 @@
+---
+// 撕角拼平角的一次性教具：上方是三個角分別標 1、2、3 道弧線的三角形（內角 50°、60°、70°），
+// 下方把三個角的尖併在直線上的同一點、邊貼邊，剛好排滿半圈。弧線的道數讓三個角不靠顏色也分得出來。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("TearAnglesFigure", title, desc);
+
+const prefix = figureIdPrefix("tear", props);
+
+const WIDTH = 480;
+const rad = (d: number) => (d * Math.PI) / 180;
+const f = (n: number) => Math.round(n * 10) / 10;
+
+// 三個內角，由正弦定理決定三角形的形狀：A 在左下、B 在右下，邊 AB 長 200
+const ANGLES = [50, 60, 70];
+const AB = 200;
+const AC = (AB * Math.sin(rad(ANGLES[1]))) / Math.sin(rad(ANGLES[2]));
+const A = { x: 140, y: 176 };
+const B = { x: A.x + AB, y: A.y };
+const C = { x: f(A.x + AC * Math.cos(rad(ANGLES[0]))), y: f(A.y - AC * Math.sin(rad(ANGLES[0]))) };
+const corners = [
+  { v: A, p: B, q: C },
+  { v: B, p: C, q: A },
+  { v: C, p: A, q: B },
+];
+
+// 頂點 v 的內角弧：從朝向 p 的方向轉到朝向 q 的方向，走小於 180° 的那一邊
+function cornerArc(v: { x: number; y: number }, p: { x: number; y: number }, q: { x: number; y: number }, r: number) {
+  const a1 = Math.atan2(p.y - v.y, p.x - v.x);
+  const a2 = Math.atan2(q.y - v.y, q.x - v.x);
+  let diff = a2 - a1;
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff < -Math.PI) diff += 2 * Math.PI;
+  const sweep = diff > 0 ? 1 : 0;
+  return `M ${f(v.x + r * Math.cos(a1))} ${f(v.y + r * Math.sin(a1))} A ${r} ${r} 0 0 ${sweep} ${f(v.x + r * Math.cos(a2))} ${f(v.y + r * Math.sin(a2))}`;
+}
+const triangleArcs = corners.flatMap((c, i) => Array.from({ length: i + 1 }, (_, k) => cornerArc(c.v, c.p, c.q, 18 + k * 8)));
+
+// 下方：三個角由右往左依序拼在直線上的同一點 P
+const P = { x: 240, y: 318 };
+const WEDGE_R = 104;
+let start = 0;
+const wedges = ANGLES.map((deg, i) => {
+  const a0 = start;
+  const a1 = start + deg;
+  start = a1;
+  const at = (d: number, r: number) => ({ x: f(P.x + r * Math.cos(rad(d))), y: f(P.y - r * Math.sin(rad(d))) });
+  const s = at(a0, WEDGE_R);
+  const e = at(a1, WEDGE_R);
+  const arcs = Array.from({ length: i + 1 }, (_, k) => {
+    const rr = 18 + k * 8;
+    const p = at(a0, rr);
+    const q = at(a1, rr);
+    return `M ${p.x} ${p.y} A ${rr} ${rr} 0 0 0 ${q.x} ${q.y}`;
+  });
+  const label = at((a0 + a1) / 2, 72);
+  return { d: `M ${P.x} ${P.y} L ${s.x} ${s.y} A ${WEDGE_R} ${WEDGE_R} 0 0 0 ${e.x} ${e.y} Z`, arcs, label, text: `${deg}°` };
+});
+const HEIGHT = 368;
+---
+
+<svg class="tear-fig" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  <polygon class="tear-outline" points={`${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y}`} />
+  {triangleArcs.map((d) => <path class="tear-arc" d={d} />)}
+  {wedges.map((w) => <path class="tear-wedge" d={w.d} />)}
+  <line class="tear-line" x1="40" y1={P.y} x2="440" y2={P.y} />
+  {wedges.flatMap((w) => w.arcs.map((d) => <path class="tear-arc" d={d} />))}
+  {wedges.map((w) => <text class="tear-num" x={w.label.x} y={w.label.y + 7}>{w.text}</text>)}
+  <circle class="tear-dot" cx={P.x} cy={P.y} r="5" />
+  <text class="tear-label" x={P.x} y={P.y + 38}>一直線 = 半圈 = 180°</text>
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.tear-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .tear-outline {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  /* 撕下來的角是半透明實心，外框是細一點的實線；三個角靠弧線的道數區分 */
+  .tear-wedge {
+    fill: var(--accent);
+    fill-opacity: 0.35;
+    stroke: var(--fg);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+  }
+  .tear-line {
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linecap: round;
+  }
+  .tear-arc {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5px;
+    stroke-linecap: round;
+  }
+  .tear-dot {
+    fill: var(--fg);
+  }
+  .tear-num {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+  .tear-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+</style>

@@ -1,0 +1,133 @@
+---
+// 沿三角形走一圈的轉角直覺的一次性教具：內角 50°、60°、70° 的三角形，逆時針從 A 出發走一圈。
+// 每到一個頂點，順著剛走的邊畫虛線延長，再轉到下一條邊，轉的角度是 180° 減去那個內角：130°、120°、110°，
+// 三個轉角加起來是一整圈 360°。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("TurnAroundFigure", title, desc);
+
+const prefix = figureIdPrefix("tur", props);
+
+const WIDTH = 480;
+const rad = (d: number) => (d * Math.PI) / 180;
+const f = (n: number) => Math.round(n * 10) / 10;
+
+const ANGLES = [50, 60, 70];
+const AB = 190;
+const AC = (AB * Math.sin(rad(ANGLES[1]))) / Math.sin(rad(ANGLES[2]));
+const A = { x: 150, y: 232 };
+const B = { x: A.x + AB, y: A.y };
+const C = { x: f(A.x + AC * Math.cos(rad(ANGLES[0]))), y: f(A.y - AC * Math.sin(rad(ANGLES[0]))) };
+const verts = [A, B, C];
+const [VA, VB, VC] = verts;
+
+const unit = (from: { x: number; y: number }, to: { x: number; y: number }) => {
+  const len = Math.hypot(to.x - from.x, to.y - from.y);
+  return { x: (to.x - from.x) / len, y: (to.y - from.y) / len };
+};
+
+// 走的順序 A → B → C → A；在頂點 v 轉角：從「剛走的方向」轉到「下一條邊的方向」
+const walk = [
+  { v: VB, from: VA, next: VC, turn: 180 - ANGLES[1] },
+  { v: VC, from: VB, next: VA, turn: 180 - ANGLES[2] },
+  { v: VA, from: VC, next: VB, turn: 180 - ANGLES[0] },
+].map(({ v, from, next, turn }) => {
+  const d1 = unit(from, v);
+  const d2 = unit(v, next);
+  const a1 = Math.atan2(d1.y, d1.x);
+  const a2 = Math.atan2(d2.y, d2.x);
+  let diff = a2 - a1;
+  while (diff > Math.PI) diff -= 2 * Math.PI;
+  while (diff < -Math.PI) diff += 2 * Math.PI;
+  const r = 40;
+  const mid = a1 + diff / 2;
+  return {
+    ext: { x1: v.x, y1: v.y, x2: f(v.x + d1.x * 70), y2: f(v.y + d1.y * 70) },
+    arc: `M ${f(v.x + r * Math.cos(a1))} ${f(v.y + r * Math.sin(a1))} A ${r} ${r} 0 0 ${diff > 0 ? 1 : 0} ${f(v.x + r * Math.cos(a2))} ${f(v.y + r * Math.sin(a2))}`,
+    label: { x: f(v.x + 72 * Math.cos(mid)), y: f(v.y + 72 * Math.sin(mid)), text: `${turn}°` },
+  };
+});
+
+// 邊中點的箭頭，指出走的方向
+const arrows = [
+  [VA, VB],
+  [VB, VC],
+  [VC, VA],
+].map(([p, q]) => {
+  const d = unit(p, q);
+  const m = { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 };
+  const n = { x: -d.y, y: d.x };
+  const tip = { x: m.x + d.x * 10, y: m.y + d.y * 10 };
+  const l = { x: m.x - d.x * 8 + n.x * 8, y: m.y - d.y * 8 + n.y * 8 };
+  const r = { x: m.x - d.x * 8 - n.x * 8, y: m.y - d.y * 8 - n.y * 8 };
+  return `${f(tip.x)},${f(tip.y)} ${f(l.x)},${f(l.y)} ${f(r.x)},${f(r.y)}`;
+});
+const HEIGHT = 330;
+---
+
+<svg class="tur-fig" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  <polygon class="tur-outline" points={verts.map((p) => `${p.x},${p.y}`).join(" ")} />
+  {walk.map((w) => <line class="tur-ext" x1={w.ext.x1} y1={w.ext.y1} x2={w.ext.x2} y2={w.ext.y2} />)}
+  {walk.map((w) => <path class="tur-arc" d={w.arc} />)}
+  {arrows.map((points) => <polygon class="tur-arrow" points={points} />)}
+  <circle class="tur-dot" cx={VA.x} cy={VA.y} r="6" />
+  <text class="tur-label" x={VA.x - 32} y={VA.y - 4}>起點</text>
+  {walk.map((w) => <text class="tur-num" x={w.label.x} y={w.label.y + 7}>{w.label.text}</text>)}
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.tur-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .tur-outline {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  /* 延長線用虛線，與實線的邊以線型區分 */
+  .tur-ext {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-dasharray: 8 6;
+    stroke-linecap: round;
+  }
+  .tur-arc {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5px;
+    stroke-linecap: round;
+  }
+  .tur-arrow {
+    fill: var(--fg);
+  }
+  .tur-dot {
+    fill: var(--fg);
+  }
+  .tur-num {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+  .tur-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+</style>
