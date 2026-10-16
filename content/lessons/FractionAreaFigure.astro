@@ -1,0 +1,138 @@
+---
+// 分數乘法的一次性教具：一個正方形代表整體 1，直切成 cols 欄、先取左邊 taken 欄（斜線），
+// 再橫切成 rows 列，取上面 rowsTaken 列；兩者重疊的格子實心塗滿，就是「幾分之幾的幾分之幾」。
+// 下緣與左緣的括號標出兩個分數（疊排，視同面積模型的邊長數字）。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+import { STACKED_BAR_OFFSET, STACKED_HEIGHT, stackedFractionWidth } from "../../src/lib/stacked-fraction.ts";
+import StackedFraction from "../../src/components/figures/StackedFraction.astro";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc>；分數用中文讀法 */
+  desc: string;
+  /** 直切成幾欄（第一個分數的分母），1–6 */
+  cols: number;
+  /** 取左邊幾欄（第一個分數的分子），1 到 cols */
+  colsTaken: number;
+  /** 橫切成幾列（第二個分數的分母），1–6 */
+  rows: number;
+  /** 在取到的欄裡，取上面幾列（第二個分數的分子），1 到 rows */
+  rowsTaken: number;
+}
+const props = Astro.props;
+const { title, desc, cols, colsTaken, rows, rowsTaken } = props;
+
+assertAltText("FractionAreaFigure", title, desc);
+for (const [name, value, min, max] of [
+  ["cols", cols, 1, 6],
+  ["rows", rows, 1, 6],
+  ["colsTaken", colsTaken, 1, cols],
+  ["rowsTaken", rowsTaken, 1, rows],
+] as const) {
+  if (!Number.isInteger(value) || value < min || value > max) throw new Error(`<FractionAreaFigure> 的 ${name} 必須是 ${min} 到 ${max} 的整數：${value}`);
+}
+
+const prefix = figureIdPrefix("faf", props);
+
+// 版面（viewBox 單位）：正方形置中，左側留給列的括號與分數，下方留給欄的括號與分數
+const WIDTH = 480;
+const SIDE = 280;
+const LEFT = (WIDTH - SIDE) / 2;
+const TOP = 6;
+const BRACKET_GAP = 14; // 正方形到括號的距離
+const BRACKET_TICK = 8; // 括號兩端短線的長度
+const LABEL_GAP = 10; // 括號到分數的距離
+const colW = SIDE / cols;
+const rowH = SIDE / rows;
+const takenW = colsTaken * colW;
+const takenH = rowsTaken * rowH;
+
+const colLabel = { numerator: String(colsTaken), denominator: String(cols) };
+const rowLabel = { numerator: String(rowsTaken), denominator: String(rows) };
+const showRows = rows > 1;
+
+const bottomY = TOP + SIDE + BRACKET_GAP;
+const colLabelTop = bottomY + LABEL_GAP;
+const leftX = LEFT - BRACKET_GAP;
+const rowLabelCx = leftX - LABEL_GAP - stackedFractionWidth(rowLabel) / 2;
+const rowLabelTop = TOP + takenH / 2 - STACKED_BAR_OFFSET;
+const height = colLabelTop + STACKED_HEIGHT + 6;
+
+const bottomBracket = `M ${LEFT} ${bottomY - BRACKET_TICK} V ${bottomY} H ${LEFT + takenW} V ${bottomY - BRACKET_TICK}`;
+const leftBracket = `M ${leftX + BRACKET_TICK} ${TOP} H ${leftX} V ${TOP + takenH} H ${leftX + BRACKET_TICK}`;
+---
+
+<svg class="faf-fig" viewBox={`0 0 ${WIDTH} ${height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  <defs>
+    <pattern id={`${prefix}-hatch`} width="14" height="14" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line class="faf-hatch-line" x1="0" y1="0" x2="0" y2="14" />
+    </pattern>
+  </defs>
+  {/* 先取的欄：斜線 */}
+  <rect x={LEFT} y={TOP} width={takenW} height={SIDE} fill={`url(#${prefix}-hatch)`} />
+  {/* 重疊的格子：實心 */}
+  {showRows && <rect class="faf-overlap" x={LEFT} y={TOP} width={takenW} height={takenH} />}
+  {
+    Array.from({ length: cols - 1 }, (_, k) => (
+      <line class={k + 1 === colsTaken ? "faf-cut faf-cut-taken" : "faf-cut"} x1={LEFT + (k + 1) * colW} y1={TOP} x2={LEFT + (k + 1) * colW} y2={TOP + SIDE} />
+    ))
+  }
+  {Array.from({ length: rows - 1 }, (_, k) => <line class="faf-cut" x1={LEFT} y1={TOP + (k + 1) * rowH} x2={LEFT + SIDE} y2={TOP + (k + 1) * rowH} />)}
+  <rect class="faf-outline" x={LEFT} y={TOP} width={SIDE} height={SIDE} />
+  <path class="faf-bracket" d={bottomBracket} />
+  <StackedFraction cx={LEFT + takenW / 2} top={colLabelTop} {...colLabel} />
+  {
+    showRows && (
+      <>
+        <path class="faf-bracket" d={leftBracket} />
+        <StackedFraction cx={rowLabelCx} top={rowLabelTop} {...rowLabel} />
+      </>
+    )
+  }
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.faf-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 先取的欄用斜線，重疊的格子實心：灰階下仍分得出三種區域（空白、斜線、實心） */
+  .faf-hatch-line {
+    stroke: var(--muted);
+    stroke-width: 2px;
+  }
+  .faf-overlap {
+    fill: var(--accent);
+  }
+  /* 切線是輔助線，與數線刻度、分數條等分線同色同寬 */
+  .faf-cut {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  /* 先取的欄與其餘部分的分界用主線，讓「取了幾欄」一眼看得出來 */
+  .faf-cut-taken {
+    stroke: var(--fg);
+    stroke-width: 3px;
+  }
+  .faf-outline {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linejoin: round;
+  }
+  .faf-bracket {
+    fill: none;
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+</style>
