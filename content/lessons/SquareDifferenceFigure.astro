@@ -1,0 +1,121 @@
+---
+// 平方差的一次性教具：左邊是邊長 a 的正方形，右上角切掉邊長 b 的小正方形（虛線框）；
+// 右邊是剩下的 L 形重拼成的 (a + b) × (a − b) 長方形。
+// 左邊：下方 a × (a − b) 的長方形（純色），左上 (a − b) × b 的長方形（斜線），右上是切掉的 b × b。
+// 右邊：純色那塊原地不動，斜線那塊轉 90° 接到它右邊，寬變成 b、高變成 a − b。
+// 長度以 5 與 2 格畫出，只是示意；圖內的字母長度不代表比例。
+// 圖內 a、b、a + b、a − b 是邊長字母，比照面積模型的例外（docs/figure-guide.md「面積模型的例外」）視同刻度數字，不算文字標籤；
+// 左邊的 b 標在那一列的右側，同時是切掉的小正方形與斜線那塊的邊長 b。
+// 兩塊以塗色與斜線區分（不只靠透明度，深淺在深色主題下會反過來）；斜線以 <pattern> 畫，id 加前綴。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("SquareDifferenceFigure", title, desc);
+
+const prefix = figureIdPrefix("sd", props);
+
+const WIDTH = 480;
+const HEIGHT = 182;
+const U = 26;
+const A = 5 * U;
+const B = 2 * U;
+const D = A - B;
+const LX = 20;
+const TOP = 34;
+const BOTTOM = TOP + A;
+const RX = 226;
+
+interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  cls: string;
+  hatch?: boolean;
+}
+const rects: Rect[] = [
+  // 左：下方長方形、左上長方形、切掉的小正方形
+  { x: LX, y: TOP + B, w: A, h: D, cls: "sd-plain" },
+  { x: LX, y: TOP, w: D, h: B, cls: "sd-hatched", hatch: true },
+  { x: LX + D, y: TOP, w: B, h: B, cls: "sd-cut" },
+  // 右：淺色在左、深色轉 90° 接在右邊
+  { x: RX, y: BOTTOM - D, w: A, h: D, cls: "sd-plain" },
+  { x: RX + A, y: BOTTOM - D, w: B, h: D, cls: "sd-hatched", hatch: true },
+];
+const arrowY = BOTTOM - D / 2;
+---
+
+<svg class="sd-fig" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  <defs>
+    <pattern id={`${prefix}-hatch`} width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+      <line class="sd-hatch-line" x1="0" y1="0" x2="0" y2="8" />
+    </pattern>
+  </defs>
+  {rects.map((r) => (
+    <>
+      <rect class={`sd-rect ${r.cls}`} x={r.x} y={r.y} width={r.w} height={r.h} />
+      {r.hatch && <rect class="sd-rect sd-hatch" x={r.x} y={r.y} width={r.w} height={r.h} fill={`url(#${prefix}-hatch)`} />}
+    </>
+  ))}
+  <path class="sd-arrow" d={`M178 ${arrowY} L214 ${arrowY} M204 ${arrowY - 9} L214 ${arrowY} L204 ${arrowY + 9}`} />
+  <text class="sd-num" x={LX + A / 2} y={TOP - 10}>a</text>
+  <text class="sd-num sd-start" x={LX + A + 8} y={TOP + B / 2 + 8}>b</text>
+  <text class="sd-num" x={RX + (A + B) / 2} y={BOTTOM - D - 10}>a + b</text>
+  <text class="sd-num sd-start" x={RX + A + B + 8} y={arrowY + 8}>a − b</text>
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.sd-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  .sd-rect {
+    stroke: var(--fg);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+  }
+  /* 兩塊剩下的部分底色相同，差別只在 .sd-hatched 多了斜線圖樣；切掉的是不塗色的虛線框（本站的語意：拿掉的或還沒有的） */
+  .sd-plain,
+  .sd-hatched {
+    fill: var(--accent);
+    fill-opacity: 0.2;
+  }
+  .sd-hatch-line {
+    stroke: var(--accent);
+    stroke-width: 2px;
+  }
+  .sd-cut {
+    fill: none;
+    stroke-dasharray: 8 6;
+  }
+  .sd-arrow {
+    fill: none;
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .sd-num {
+    fill: var(--fg);
+    font-size: 22px;
+    font-style: italic;
+    text-anchor: middle;
+  }
+  .sd-start {
+    text-anchor: start;
+  }
+</style>

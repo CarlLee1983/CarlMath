@@ -223,3 +223,36 @@ test("textRuns 把英文字母切成斜體片段，數字與符號維持正體",
   assert.deepEqual(textRuns("200"), [{ text: "200", italic: false }]);
   assert.deepEqual(textRuns("ab"), [{ text: "ab", italic: true }]);
 });
+
+test("missing 標出缺角格：該格 missing 為 true，其餘為 false，格內仍自動算出數字面積", () => {
+  const model = resolveAreaModel({ cols: ["x", 3], rows: ["x", 3], areas: [["x²", "3x"], ["3x", null]], missing: [1, 1] });
+  assert.deepEqual(model.cells.map((c) => c.missing), [false, false, false, true]);
+  assert.equal(model.cells[3].area, "9");
+  // 含字母的缺角格照 areas 寫
+  const letter = resolveAreaModel({ cols: ["x", 3], rows: ["x", 3], areas: [["x²", "3x"], ["3x", null]], missing: [0, 1] });
+  assert.equal(letter.cells[1].area, "3x");
+  assert.equal(letter.cells[1].missing, true);
+});
+
+test("沒給 missing 時所有格 missing 為 false，其餘輸出與以往相同", () => {
+  const model = resolveAreaModel({ cols: [20, 3], rows: [10, 4] });
+  assert.ok(model.cells.every((c) => c.missing === false));
+  assert.deepEqual(areasOf(model), ["200", "30", "80", "12"]);
+});
+
+test("missing 與 highlightRow 並用：被強調列中的缺角格仍是缺角、不算強調", () => {
+  const model = resolveAreaModel({ cols: [20, 3], rows: [10, 4], highlightRow: 1, missing: [1, 1] });
+  assert.deepEqual(model.cells.map((c) => c.highlighted), [false, false, true, false]);
+  assert.deepEqual(model.cells.map((c) => c.missing), [false, false, false, true]);
+  assert.equal(model.cells[3].area, "12");
+});
+
+test("missing 超出格子範圍或格式不對時丟中文錯誤", () => {
+  const msg = (v, rows, cols) => `<AreaModel> 的 missing 必須是 [列, 行]，列為 0 到 ${rows - 1}、行為 0 到 ${cols - 1} 的整數（目前是 ${rows} 列 × ${cols} 行），目前是 ${JSON.stringify(v)}`;
+  rejects({ cols: [1, 2], rows: [3, 4], missing: [2, 0] }, msg([2, 0], 2, 2));
+  rejects({ cols: [1, 2], rows: [3, 4], missing: [0, 2] }, msg([0, 2], 2, 2));
+  rejects({ cols: [1, 2], rows: [3, 4], missing: [-1, 0] }, msg([-1, 0], 2, 2));
+  rejects({ cols: [1, 2], rows: [3, 4], missing: [0.5, 0] }, msg([0.5, 0], 2, 2));
+  rejects({ cols: [1, 2], rows: [3, 4], missing: [0] }, msg([0], 2, 2));
+  rejects({ cols: [1], rows: [3], missing: 0 }, msg(0, 1, 1));
+});

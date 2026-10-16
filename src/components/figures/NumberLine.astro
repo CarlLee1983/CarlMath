@@ -1,7 +1,7 @@
 ---
 import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
 import { resolveNumberLine } from "../../lib/number-line-scale.ts";
-import type { NumberLineMove, Position } from "../../lib/number-line-scale.ts";
+import type { NumberLineMove, NumberLineRay, Position } from "../../lib/number-line-scale.ts";
 import { STACKED_HEIGHT, isStacked } from "../../lib/stacked-fraction.ts";
 import StackedFraction from "./StackedFraction.astro";
 
@@ -26,13 +26,15 @@ interface Props {
   points?: Point[];
   jumps?: NumberLineMove[];
   spans?: NumberLineMove[];
+  /** 單邊射線（不等式的解）：從 from 往 direction 延伸到數線那一端並帶箭頭；open 為真是空心端點（不含），否則實心（含）。不帶標籤 */
+  rays?: NumberLineRay[];
 }
 const props = Astro.props;
-const { title, desc, from, to, step = 1, labelEvery, mixed, points = [], jumps = [], spans = [] } = props;
+const { title, desc, from, to, step = 1, labelEvery, mixed, points = [], jumps = [], spans = [], rays = [] } = props;
 
 assertAltText("NumberLine", title, desc);
 
-const scale = resolveNumberLine({ from, to, step, labelEvery, mixed, points, jumps, spans });
+const scale = resolveNumberLine({ from, to, step, labelEvery, mixed, points, jumps, spans, rays });
 const { ticks, numbers, hasStacked, margin } = scale;
 
 const prefix = figureIdPrefix("nl", props);
@@ -73,7 +75,7 @@ const bracketPath = (m: NumberLineMove<number>) => {
   <title id={`${prefix}-title`}>{title}</title>
   <desc id={`${prefix}-desc`}>{desc}</desc>
   {
-    scale.jumps.length > 0 && (
+    (scale.jumps.length > 0 || scale.rays.length > 0) && (
       <defs>
         <marker id={`${prefix}-arrow`} viewBox="0 0 10 10" refX="9" refY="5" markerWidth="11" markerHeight="11" markerUnits="userSpaceOnUse" orient="auto">
           <path class="nl-arrow" d="M 0 0 L 10 5 L 0 10 z" />
@@ -102,6 +104,8 @@ const bracketPath = (m: NumberLineMove<number>) => {
       ),
     )
   }
+  {scale.rays.map((r) => <line class="nl-ray" x1={x(r.at)} y1={axisY} x2={x(r.end)} y2={axisY} marker-end={`url(#${prefix}-arrow)`} />)}
+  {scale.rays.map((r) => <circle class={r.open ? "nl-ray-end nl-ray-open" : "nl-ray-end"} cx={x(r.at)} cy={axisY} r="7" />)}
   {scale.points.map((p) => <circle class="nl-point" cx={x(p.at)} cy={axisY} r="7" />)}
   {scale.points.filter((p) => p.label).map((p) => <text class="nl-label" x={x(p.at)} y={axisY - 16}>{p.label}</text>)}
   {scale.jumps.map((j) => <path class="nl-jump" d={jumpPath(j)} marker-end={`url(#${prefix}-arrow)`} />)}
@@ -152,6 +156,18 @@ const bracketPath = (m: NumberLineMove<number>) => {
   }
   .nl-point {
     fill: var(--accent);
+  }
+  .nl-ray {
+    stroke: var(--accent);
+    stroke-width: 5px;
+  }
+  .nl-ray-end {
+    fill: var(--accent);
+    stroke: var(--accent);
+    stroke-width: 3px;
+  }
+  .nl-ray-open {
+    fill: var(--bg);
   }
   .nl-jump {
     fill: none;

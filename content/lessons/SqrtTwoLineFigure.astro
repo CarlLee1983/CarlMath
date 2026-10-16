@@ -1,0 +1,115 @@
+---
+// 無理數的一次性教具：把邊長 1 的正方形對角線，用圓規（以 0 為圓心的圓弧）轉到數線上，落點就是 √2。
+// 座標：0 在 x = X0，1 在 x = X0 + UNIT；正方形以 0 到 1 為底邊，立在數線上方。
+// 對角線長 UNIT × √2，圓弧半徑等於它，從正方形右上角往下轉到數線，落在 X0 + UNIT × √2。
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+
+interface Props {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc> */
+  desc: string;
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("SqrtTwoLineFigure", title, desc);
+
+const prefix = figureIdPrefix("sq", props);
+
+const WIDTH = 480;
+const HEIGHT = 252;
+const X0 = 60;
+const UNIT = 180;
+const TOP = 20;
+const LINE_Y = TOP + UNIT;
+const R = UNIT * Math.SQRT2;
+const landing = X0 + R;
+const f = (n: number) => Math.round(n * 100) / 100;
+
+const corner = { x: X0 + UNIT, y: TOP };
+const arcPath = `M${f(corner.x)} ${f(corner.y)} A${f(R)} ${f(R)} 0 0 1 ${f(landing)} ${LINE_Y}`;
+// 圓弧在落點的切線是垂直向下，箭頭畫在落點正上方
+const arrowPath = `M${f(landing - 8)} ${LINE_Y - 22} L${f(landing)} ${LINE_Y - 10} L${f(landing + 8)} ${LINE_Y - 22}`;
+const ticks = [0, 1, 2].map((n) => ({ n, x: X0 + n * UNIT }));
+---
+
+<svg class="sq-fig" viewBox={`0 0 ${WIDTH} ${HEIGHT}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  <rect class="sq-square" x={X0} y={TOP} width={UNIT} height={UNIT} />
+  <line class="sq-axis" x1="24" y1={LINE_Y} x2="456" y2={LINE_Y} />
+  {ticks.map((t) => <line class={t.n === 0 ? "sq-tick sq-tick-zero" : "sq-tick"} x1={t.x} y1={LINE_Y - (t.n === 0 ? 12 : 8)} x2={t.x} y2={LINE_Y + (t.n === 0 ? 12 : 8)} />)}
+  <line class="sq-diagonal" x1={X0} y1={LINE_Y} x2={corner.x} y2={corner.y} />
+  <path class="sq-arc" d={arcPath} />
+  <path class="sq-arrow" d={arrowPath} />
+  <circle class="sq-point" cx={f(landing)} cy={LINE_Y} r="7" />
+  {ticks.map((t) => <text class="sq-num" x={t.x} y={LINE_Y + 36}>{t.n}</text>)}
+  <text class="sq-num sq-root" x={f(landing)} y={LINE_Y + 36}>√2</text>
+  <text class="sq-label" x="108" y={TOP + 80}>對角線</text>
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.sq-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 單位正方形：淡淡塗 --accent，邊是輔助線 */
+  .sq-square {
+    fill: var(--accent);
+    fill-opacity: 0.15;
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+  }
+  .sq-axis {
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linecap: round;
+  }
+  .sq-tick {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  .sq-tick-zero {
+    stroke: var(--fg);
+    stroke-width: 3px;
+  }
+  /* 對角線是實線，圓弧是帶箭頭的曲線，落點是實心圓，灰階下仍分得出來 */
+  .sq-diagonal {
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linecap: round;
+  }
+  .sq-arc,
+  .sq-arrow {
+    fill: none;
+    stroke: var(--accent);
+    stroke-width: 2.5px;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+  }
+  .sq-point {
+    fill: var(--accent);
+    stroke: var(--fg);
+    stroke-width: 2px;
+  }
+  .sq-num {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+  .sq-root {
+    font-weight: 700;
+  }
+  .sq-label {
+    fill: var(--fg);
+    font-size: 20px;
+    text-anchor: middle;
+  }
+</style>

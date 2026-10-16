@@ -336,3 +336,85 @@ test("右端點也一樣：兩端各自依標籤寬度", () => {
   assert.ok(r.margin.left > r.margin.right);
   assert.equal(r.margin.right, 28);
 });
+
+// 單邊射線 rays：端點必須落在刻度上；射線不帶標籤、不算進標籤上限
+test("沒有 rays 的數線：rays 是空陣列，其餘輸出和原本一樣", () => {
+  const r = scale({ from: 0, to: 2, points: [{ at: 1, label: "中" }] });
+  assert.deepEqual(r.rays, []);
+  const { rays, ...rest } = r;
+  assert.deepEqual(rest, {
+    margin: { left: 28, right: 28 },
+    ticks: [
+      { at: 0, isZero: true },
+      { at: 0.5, isZero: false },
+      { at: 1, isZero: false },
+    ],
+    numbers: [
+      { at: 0, label: { kind: "integer", text: "0" } },
+      { at: 0.5, label: { kind: "integer", text: "1" } },
+      { at: 1, label: { kind: "integer", text: "2" } },
+    ],
+    points: [{ at: 0.5, label: "中" }],
+    jumps: [],
+    spans: [],
+    hasStacked: false,
+  });
+});
+
+test("向右的空心射線：端點在比例位置，延伸到數線右端（1）", () => {
+  const r = scale({ from: -4, to: 4, rays: [{ from: 2, direction: "right", open: true }] });
+  assert.deepEqual(r.rays, [{ at: 0.75, end: 1, direction: "right", open: true }]);
+});
+
+test("向左的實心射線：延伸到數線左端（0）", () => {
+  const r = scale({ from: -4, to: 4, rays: [{ from: -1, direction: "left", open: false }] });
+  assert.deepEqual(r.rays, [{ at: 0.375, end: 0, direction: "left", open: false }]);
+});
+
+test("端點可以寫分數、可以是負數，內部以有理數比較", () => {
+  const r = scale({
+    from: -2,
+    to: 2,
+    step: "1/2",
+    rays: [
+      { from: "-1/2", direction: "right", open: false },
+      { from: "2/4", direction: "left", open: true },
+    ],
+  });
+  assert.deepEqual(r.rays.map((x) => x.at), [0.375, 0.625]);
+});
+
+test("射線端點不在刻度上、超出範圍：丟中文錯誤", () => {
+  rejects({ from: 0, to: 4, rays: [{ from: 1.5, direction: "right", open: true }] }, "<NumberLine> 的 rays[0].from（1.5）必須落在範圍內的刻度上");
+  rejects({ from: 0, to: 4, rays: [{ from: 5, direction: "right", open: true }] }, "<NumberLine> 的 rays[0].from（5）必須落在範圍內的刻度上");
+  rejects(
+    {
+      from: 0,
+      to: 4,
+      rays: [
+        { from: 1, direction: "right", open: true },
+        { from: "1/2", direction: "left", open: true },
+      ],
+    },
+    '<NumberLine> 的 rays[1].from（"1/2"）必須落在範圍內的刻度上',
+  );
+});
+
+test("direction 只接受 left 與 right，open 必須是布林", () => {
+  rejects({ from: 0, to: 4, rays: [{ from: 1, direction: "up", open: true }] }, '<NumberLine> 的 rays[0].direction（"up"）只能是 "left" 或 "right"');
+  rejects({ from: 0, to: 4, rays: [{ from: 1, direction: "right" }] }, "<NumberLine> 的 rays[0].open 必須是 true 或 false");
+});
+
+test("射線的端點已在數線盡頭、沒有可延伸的長度：丟錯", () => {
+  rejects({ from: 0, to: 4, rays: [{ from: 4, direction: "right", open: true }] }, "<NumberLine> 的 rays[0] 從數線的右端點往右，沒有可延伸的長度");
+  rejects({ from: 0, to: 4, rays: [{ from: 0, direction: "left", open: false }] }, "<NumberLine> 的 rays[0] 從數線的左端點往左，沒有可延伸的長度");
+});
+
+test("射線不帶標籤，不算進三個標籤的上限，也不增加要標的刻度", () => {
+  const props = { from: -4, to: 4, points: [{ at: 0, label: "甲" }], jumps: [{ from: 0, to: 1, label: "乙" }], spans: [{ from: 0, to: 1, label: "丙" }] };
+  const ray = { from: 2, direction: "right", open: true };
+  const withRay = scale({ ...props, rays: [ray] });
+  assert.equal(withRay.rays.length, 1);
+  assert.deepEqual(withRay.numbers, scale(props).numbers);
+  rejectsMatch({ ...props, points: [...props.points, { at: 1, label: "丁" }], rays: [ray] }, /最多三個文字標籤，目前有 4 個/);
+});

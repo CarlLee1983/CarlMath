@@ -17,6 +17,8 @@ export interface AreaModelInput {
   cellText?: "product" | "expression";
   /** 要強調的那一列（0 起算）：這一列的格加粗框並淡淡塗色 */
   highlightRow?: number;
+  /** 缺角格 `[列, 行]`（0 起算）：該格畫成虛線框、不塗色，格內照常寫面積，表示「還沒有、要補上」的一塊；與 highlightRow 並用時以缺角為準 */
+  missing?: [number, number];
 }
 
 export interface AreaModelSegment {
@@ -45,6 +47,8 @@ export interface AreaModelCell {
   textX: number;
   textY: number;
   highlighted: boolean;
+  /** 缺角格：虛線框、不塗色；缺角格的 highlighted 一律為 false */
+  missing: boolean;
 }
 
 export interface AreaModelLayout {
@@ -185,6 +189,14 @@ export function resolveAreaModel(input: AreaModelInput): AreaModelLayout {
   if (highlightRow !== undefined && !(Number.isInteger(highlightRow) && highlightRow >= 0 && highlightRow < rowSegs.length)) {
     throw new Error(`${SUBJECT} 的 highlightRow 必須是 0 到 ${rowSegs.length - 1} 的整數（rows 有 ${rowSegs.length} 段），目前是 ${JSON.stringify(highlightRow)}`);
   }
+  const { missing } = input;
+  if (missing !== undefined) {
+    const ok = Array.isArray(missing) && missing.length === 2 && Number.isInteger(missing[0]) && Number.isInteger(missing[1]) &&
+      missing[0] >= 0 && missing[0] < rowSegs.length && missing[1] >= 0 && missing[1] < colSegs.length;
+    if (!ok) {
+      throw new Error(`${SUBJECT} 的 missing 必須是 [列, 行]，列為 0 到 ${rowSegs.length - 1}、行為 0 到 ${colSegs.length - 1} 的整數（目前是 ${rowSegs.length} 列 × ${colSegs.length} 行），目前是 ${JSON.stringify(missing)}`);
+    }
+  }
   const cellText = input.cellText ?? "product";
   if (cellText !== "product" && cellText !== "expression") {
     throw new Error(`${SUBJECT} 的 cellText 必須是 "product" 或 "expression"，目前是 ${JSON.stringify(cellText)}`);
@@ -225,6 +237,7 @@ export function resolveAreaModel(input: AreaModelInput): AreaModelLayout {
         if (given === null) throw new Error(`${where}的格含字母，必須在 areas[${r}][${c}] 給面積字串（如 "3x"）`);
         area = given;
       }
+      const isMissing = missing !== undefined && missing[0] === r && missing[1] === c;
       const col = cols[c]!;
       const row = rows[r]!;
       const usable = col.size - 2 * TEXT_PAD;
@@ -242,7 +255,8 @@ export function resolveAreaModel(input: AreaModelInput): AreaModelLayout {
         area,
         textX: col.start + col.size / 2,
         textY: row.start + row.size / 2 + BASELINE_SHIFT,
-        highlighted: r === highlightRow,
+        highlighted: r === highlightRow && !isMissing,
+        missing: isMissing,
       };
     }),
   );

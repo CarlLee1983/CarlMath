@@ -1,0 +1,109 @@
+---
+import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
+import { resolveBalanceScale } from "../../lib/balance-scale.ts";
+import type { BalanceScaleInput } from "../../lib/balance-scale.ts";
+
+interface Props extends BalanceScaleInput {
+  /** 圖的標題（必填，≤10 個字元），會成為 <title> */
+  title: string;
+  /** 圖的文字說明（必填），會成為 <desc>；要寫出兩邊各有幾個盒子與砝碼、拿掉了什麼、是否平衡 */
+  desc: string;
+}
+const props = Astro.props;
+const { title, desc } = props;
+
+assertAltText("BalanceScale", title, desc);
+const scale = resolveBalanceScale(props);
+
+const prefix = figureIdPrefix("bs", props);
+
+const { beam, pivot, base, size, panWidth } = scale;
+const half = size / 2;
+const glyphDrop = 8; // 字級 22 的基線落在物件中心下方
+---
+
+<svg class="bs-fig" viewBox={`0 0 ${scale.width} ${scale.height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  <line class="bs-frame" x1={pivot.x} y1={pivot.y} x2={pivot.x} y2={base.y} />
+  <line class="bs-frame" x1={base.x1} y1={base.y} x2={base.x2} y2={base.y} />
+  <line class="bs-frame" x1={beam.x1} y1={beam.y1} x2={beam.x2} y2={beam.y2} />
+  <circle class="bs-pivot" cx={pivot.x} cy={pivot.y} r="6" />
+  {
+    scale.pans.map((pan) => {
+      const x1 = pan.cx - panWidth / 2;
+      const x2 = pan.cx + panWidth / 2;
+      return (
+        <g>
+          <line class="bs-string" x1={pan.cx} y1={pan.endY} x2={pan.cx} y2={pan.hangerY} />
+          <line class="bs-string" x1={x1} y1={pan.hangerY} x2={x2} y2={pan.hangerY} />
+          <line class="bs-string" x1={x1} y1={pan.hangerY} x2={x1} y2={pan.plateY} />
+          <line class="bs-string" x1={x2} y1={pan.hangerY} x2={x2} y2={pan.plateY} />
+          <line class="bs-frame" x1={x1} y1={pan.plateY} x2={x2} y2={pan.plateY} />
+          {pan.items.map((item) => {
+            const cls = item.removed ? "bs-item bs-removed" : "bs-item";
+            return (
+              <>
+                {item.kind === "x" ? (
+                  <rect class={cls} x={item.cx - half} y={item.cy - half} width={size} height={size} />
+                ) : (
+                  <circle class={cls} cx={item.cx} cy={item.cy} r={half} />
+                )}
+                <text class={item.kind === "x" ? "bs-sym bs-var" : "bs-sym"} x={item.cx} y={item.cy + glyphDrop}>
+                  {item.kind === "x" ? "x" : "1"}
+                </text>
+              </>
+            );
+          })}
+        </g>
+      );
+    })
+  }
+</svg>
+
+<style>
+  /* 選擇器多疊一層屬性，優先於 lesson.css 的 figure.fig svg { max-width: 100% }，寬螢幕上才會停在 32rem */
+  svg.bs-fig[role="img"] {
+    display: block;
+    width: 100%;
+    max-width: 32rem;
+    height: auto;
+    margin: 0 auto;
+  }
+  /* 橫樑、支柱、底座與秤盤底線是主線 */
+  .bs-frame {
+    stroke: var(--fg);
+    stroke-width: 3px;
+    stroke-linecap: round;
+  }
+  .bs-pivot {
+    fill: var(--fg);
+  }
+  /* 吊繩與吊桿是輔助線 */
+  .bs-string {
+    stroke: var(--muted);
+    stroke-width: 2px;
+    stroke-linecap: round;
+  }
+  /* 在盤上的物件：淡塗 --accent；拿掉的只有虛線框、不塗色（虛線框 = 拿掉的或還沒有的） */
+  .bs-item {
+    fill: var(--accent);
+    fill-opacity: 0.22;
+    stroke: var(--fg);
+    stroke-width: 2px;
+    stroke-linejoin: round;
+  }
+  .bs-removed {
+    fill: none;
+    stroke-dasharray: 8 6;
+  }
+  /* 物件內的符號視同刻度數字（字級 22），x 用斜體 SVG 文字 */
+  .bs-sym {
+    fill: var(--fg);
+    font-size: 22px;
+    text-anchor: middle;
+  }
+  .bs-var {
+    font-style: italic;
+  }
+</style>

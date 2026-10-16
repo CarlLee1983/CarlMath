@@ -29,7 +29,7 @@ const labels = [
 <svg class="am-fig" viewBox={`0 0 ${model.width} ${model.height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
   <title id={`${prefix}-title`}>{title}</title>
   <desc id={`${prefix}-desc`}>{desc}</desc>
-  {model.cells.map((c) => <rect class={c.highlighted ? "am-block am-hi" : "am-block"} x={c.x} y={c.y} width={c.w} height={c.h} />)}
+  {model.cells.map((c) => <rect class={c.missing ? "am-block am-missing" : c.highlighted ? "am-block am-hi" : "am-block"} x={c.x} y={c.y} width={c.w} height={c.h} />)}
   {labels.map((l) => <text class={l.cls} x={l.x} y={l.y}>{l.runs.map((r) => (r.italic ? <tspan class="am-var">{r.text}</tspan> : r.text))}</text>)}
 </svg>
 
@@ -54,6 +54,10 @@ const labels = [
     fill-opacity: 0.22;
     stroke: var(--accent);
     stroke-width: 3px;
+  }
+  /* 缺角格：虛線框、不塗色，語意是「拿掉的或還沒有的」；線寬與一般格相同，靠線型區分 */
+  .am-missing {
+    stroke-dasharray: 8 6;
   }
   /* 邊長與格內面積視同刻度數字（字級 22） */
   .am-dim,

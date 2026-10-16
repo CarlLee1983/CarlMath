@@ -754,3 +754,85 @@ test.describe("Shape", () => {
     expect(seen[0]).not.toBe(seen[1]);
   });
 });
+
+// 數線的單邊射線 rays（fx-ratio fixture）：粗線 5px 用 --accent、帶箭頭；空心端點填背景色、實心端點填 --accent，兩者都有 --accent 框。
+test.describe("NumberLine 單邊射線", () => {
+  const rayPath = "/units/fx-ratio/";
+  const open = (page: Page) => figure(page, "x 大於 2");
+  const closed = (page: Page) => figure(page, "x 小於等於負一");
+  const style = (locator: Locator, prop: "stroke" | "fill" | "strokeWidth") => locator.first().evaluate((el, p) => getComputedStyle(el)[p], prop);
+
+  test("空心向右：端點在 2 的刻度上，射線從端點延伸到數線右端並帶箭頭", async ({ page }) => {
+    await page.goto(rayPath);
+    const svg = open(page);
+    expect(await svg.locator(".nl-ray").count()).toBe(1);
+    expect(await svg.locator(".nl-ray-end").count()).toBe(1);
+    expect(await svg.locator(".nl-ray-end.nl-ray-open").count()).toBe(1);
+    const ticks = nums(await attrs(svg.locator(".nl-tick"), "x1"));
+    const ray = svg.locator(".nl-ray");
+    // 刻度由 −3 到 5，2 是第 6 個（索引 5）
+    expect(Number(await ray.getAttribute("x1"))).toBeCloseTo(ticks[5]!, 5);
+    expect(Number(await ray.getAttribute("x2"))).toBeCloseTo(ticks[ticks.length - 1]!, 5);
+    expect(Number(await svg.locator(".nl-ray-end").getAttribute("cx"))).toBeCloseTo(ticks[5]!, 5);
+    expect(await ray.getAttribute("marker-end")).toMatch(/^url\(#.+-arrow\)$/);
+    expect(await svg.locator("marker").count()).toBe(1);
+    // 射線不帶標籤
+    expect(await svg.locator(".nl-label").count()).toBe(0);
+  });
+
+  test("實心向左：端點在 −1 的刻度上，射線延伸到數線左端，端點不是空心", async ({ page }) => {
+    await page.goto(rayPath);
+    const svg = closed(page);
+    expect(await svg.locator(".nl-ray-end").count()).toBe(1);
+    expect(await svg.locator(".nl-ray-open").count()).toBe(0);
+    const ticks = nums(await attrs(svg.locator(".nl-tick"), "x1"));
+    const ray = svg.locator(".nl-ray");
+    expect(Number(await ray.getAttribute("x1"))).toBeCloseTo(ticks[2]!, 5);
+    expect(Number(await ray.getAttribute("x2"))).toBeCloseTo(ticks[0]!, 5);
+  });
+
+  test("線寬 5px、比主線 3px 粗；端點外框 3px", async ({ page }) => {
+    await page.goto(rayPath);
+    for (const svg of [open(page), closed(page)]) {
+      expect(await style(svg.locator(".nl-ray"), "strokeWidth")).toBe("5px");
+      expect(await style(svg.locator(".nl-axis"), "strokeWidth")).toBe("3px");
+      expect(await style(svg.locator(".nl-ray-end"), "strokeWidth")).toBe("3px");
+    }
+  });
+
+  test("主題切換：射線與端點外框用 --accent，空心填 --bg、實心填 --accent，淺色與深色各自隨主題切換", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "desktop", "以 emulateMedia 切換淺深色，只跑一次");
+    await page.goto(rayPath);
+    const token = (name: string) =>
+      page.evaluate((n) => {
+        const probe = document.createElement("div");
+        document.body.append(probe);
+        probe.style.color = `var(${n})`;
+        const color = getComputedStyle(probe).color;
+        probe.remove();
+        return color;
+      }, name);
+    const seen: string[] = [];
+    for (const scheme of ["light", "dark"] as const) {
+      await page.emulateMedia({ colorScheme: scheme });
+      const [bg, accent] = [await token("--bg"), await token("--accent")];
+      for (const svg of [open(page), closed(page)]) {
+        expect(await style(svg.locator(".nl-ray"), "stroke")).toBe(accent);
+        expect(await style(svg.locator(".nl-ray-end"), "stroke")).toBe(accent);
+      }
+      expect(await style(open(page).locator(".nl-ray-end"), "fill")).toBe(bg);
+      expect(await style(closed(page).locator(".nl-ray-end"), "fill")).toBe(accent);
+      seen.push(bg);
+    }
+    expect(seen[0]).not.toBe(seen[1]);
+  });
+
+  test("320px 下頁面沒有水平捲軸，兩條射線數線都在視窗內", async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== "narrow", "只在 320px 專案驗證");
+    await page.goto(rayPath);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)).toBe(0);
+    for (const svg of [open(page), closed(page)]) {
+      expect(await svg.evaluate((el) => el.getBoundingClientRect().right)).toBeLessThanOrEqual(320);
+    }
+  });
+});
