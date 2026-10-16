@@ -480,7 +480,7 @@ $$
 教材檔裡唯一允許的陳述是教具元件的 import。上面六個 MDX 元件不必 import；教材不得有任何 `export`，也不得 import 教具以外的東西，例如其他元件、資料檔或函式庫。教具的 import 只有兩種合格寫法，一律是預設 import：
 
 - **一次性教具**：從同目錄的 `./<主題>Figure.astro` 匯入。匯入名稱必須以 `Figure` 結尾，而且不能剛好叫 `Figure`，以免和 `<Figure>` 元件撞名。
-- **共用教具**：用路徑別名 `@figures/<元件名>.astro` 匯入 `src/components/figures/` 下的元件，例如 `NumberLine`、`Counters`。匯入名稱必須和元件檔名相同。別名在 `tsconfig.json` 的 `paths` 設定，寫法不隨教材所在的目錄深度改變。
+- **共用教具**：用路徑別名 `@figures/<元件名>.astro` 匯入 `src/components/figures/` 下的元件，例如 `NumberLine`、`Counters`、`BalanceScale`。匯入名稱必須和元件檔名相同。別名在 `tsconfig.json` 的 `paths` 設定，寫法不隨教材所在的目錄深度改變。
 
 合格的寫法如下：
 

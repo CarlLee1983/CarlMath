@@ -1,12 +1,12 @@
 # 教具繪製規範
 
-本文件是繪製 CarlMath 教具的依據，讀者是之後新增教具的站主與 agent。內容涵蓋 SVG 的結構、版面尺寸、色票語意、替代文字、共用元件 `NumberLine`、`Counters`、`FractionBar`、`Shape`、`UnitGrid` 與 `AreaModel` 的參數，以及發布前的驗收。教具在教材裡怎麼用（配文字說明、表徵數量、import 寫法）屬於[內容撰寫規範](content-guide.md)，本文件不重述。
+本文件是繪製 CarlMath 教具的依據，讀者是之後新增教具的站主與 agent。內容涵蓋 SVG 的結構、版面尺寸、色票語意、替代文字、共用元件 `NumberLine`、`Counters`、`FractionBar`、`Shape`、`UnitGrid`、`AreaModel` 與 `BalanceScale` 的參數，以及發布前的驗收。教具在教材裡怎麼用（配文字說明、表徵數量、import 寫法）屬於[內容撰寫規範](content-guide.md)，本文件不重述。
 
 單一版面與封閉色盤是 [ADR 0002：教具採單一版面與封閉色盤](adr/0002-figures-single-layout-closed-palette.md) 的決定：教具是數線、點陣、積木這類幾何規則的圖，等比縮放就能讀，所以只畫一份 SVG；顏色只用閱讀頁的色票 token，讓同一個顏色在全路線意思一致，深色模式也不必逐圖處理。代價是每張圖的文字量與寬度受限，複雜的圖必須拆開。
 
 ## 先用共用元件
 
-數線一律用 `NumberLine`，小物圓點一律用 `Counters`，等分的長條（分數條）一律用 `FractionBar`，多邊形、角與圓一律用 `Shape`，單位方格一律用 `UnitGrid`，長方形面積模型（把乘法或分配律拆成幾塊）一律用 `AreaModel`，讓這六種圖在全路線長得一樣。它們都放在 `src/components/figures/`，教材以 `@figures/NumberLine.astro`、`@figures/Counters.astro`、`@figures/FractionBar.astro`、`@figures/Shape.astro`、`@figures/UnitGrid.astro`、`@figures/AreaModel.astro` 匯入。數線與分數條的疊排分數共用同一個內部元件 `StackedFraction`，不由教材直接匯入；一次性教具需要圖內分數時要匯入它，讓全路線的分數長得一樣。共用元件畫不出來的圖，才做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起，並遵守下面每一條規則。
+數線一律用 `NumberLine`，小物圓點一律用 `Counters`，等分的長條（分數條）一律用 `FractionBar`，多邊形、角與圓一律用 `Shape`，單位方格一律用 `UnitGrid`，長方形面積模型（把乘法或分配律拆成幾塊）一律用 `AreaModel`，方程式的天平（x 盒子與 1 的砝碼、失衡、兩邊拿掉）一律用 `BalanceScale`，讓這七種圖在全路線長得一樣。它們都放在 `src/components/figures/`，教材以 `@figures/NumberLine.astro`、`@figures/Counters.astro`、`@figures/FractionBar.astro`、`@figures/Shape.astro`、`@figures/UnitGrid.astro`、`@figures/AreaModel.astro`、`@figures/BalanceScale.astro` 匯入。數線與分數條的疊排分數共用同一個內部元件 `StackedFraction`，不由教材直接匯入；一次性教具需要圖內分數時要匯入它，讓全路線的分數長得一樣。共用元件畫不出來的圖，才做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起，並遵守下面每一條規則。
 
 教具元件只輸出 `<svg>`。圖名下方的說明文字由 `<Figure caption="…">` 負責，不寫在 SVG 裡。
 
@@ -248,6 +248,37 @@
 - **虛線框的語意**：全站統一為「拿掉的或還沒有的」，`AreaModel` 的缺角格用它表示還沒有、要補上的一塊（`BalanceScale` 用同一種虛線框表示拿掉的物件）。缺角格的虛線框是寬 2 的 `--fg`、不塗色，與實線格只差線型，所以 `desc` 必須說明哪一格是缺的與它的面積（例如「右下角是缺的一格，用虛線框表示，面積是 9」）。
 - **版面**：viewBox 寬 480，橫邊總寬 400，高度依縱邊段數決定。字母段橫向固定 120、縱向固定 70。橫邊全是字母段時總寬不到 400，整排置中；縱邊全是字母段時圖高只算到格子底，不留空白。
 - `<desc>` 寫出每一段的長度與每一格的面積，強調列要說明是哪一列，字母段要寫明不按比例（desc 必須原文含「不按比例」，其他說法如「不依比例」不算）。
+
+## `BalanceScale`
+
+方程式的天平一律用 `BalanceScale`：左右兩個秤盤，各放 x 盒子（方形、內寫斜體 x）與 1 的砝碼（圓形、內寫 1），可以畫成平衡、某一邊較重，以及兩邊同時拿掉物件。版面計算與驗證在 `src/lib/balance-scale.ts`，元件只畫 SVG。
+
+```mdx
+<Figure caption="兩邊同時拿掉 3 個砝碼，天平仍然平衡">
+  <BalanceScale
+    title="拿掉砝碼"
+    desc="天平原本左盤有 1 個 x 盒子和 3 個 1 的砝碼，右盤有 5 個 1 的砝碼；兩邊各拿掉 3 個砝碼，拿掉的畫成虛線框，剩下左盤 1 個 x 盒子、右盤 2 個砝碼，兩邊仍然平衡。"
+    left={{ x: 1, units: 3 }}
+    right={{ x: 0, units: 5 }}
+    removed={{ left: { units: 3 }, right: { units: 3 } }}
+  />
+</Figure>
+```
+
+| 參數 | 說明 |
+| --- | --- |
+| `title`、`desc` | 必填，見「替代文字」 |
+| `left`、`right` | 必填，每盤 `{ x, units }`：x 盒子與 1 的砝碼的個數，都是 0 以上的整數 |
+| `tilt` | `"left"` 或 `"right"`，表示那一邊較重、往下傾斜；不給時畫成平衡，其他值 build 失敗 |
+| `removed` | 每盤拿掉的物件 `{ left?: { x?, units? }, right?: { x?, units? } }`，沒寫的視為 0 |
+
+- **上限**：每盤至少 1 個物件，合計（x 盒子加砝碼，含被拿掉的）最多 10 個，超過、不是 0 以上的整數或一盤沒有物件時 build 失敗。一盤每排 5 個，超過 5 個換排。
+- **`tilt` 只表示哪邊較重**：傾斜角固定（10°），不依物件數量計算，所以 `tilt` 要由作者依等式兩邊的實際輕重自己指定，元件不會檢查它與個數是否相符。
+- **`removed`**：拿掉的物件仍留在原位，畫成虛線框（`stroke-dasharray`）、不塗色，框內的 x 或 1 照舊；數量超過該盤原有的數量 build 失敗。每種物件拿掉的排在同類最後面。虛線框在本站的語意統一為「拿掉的或還沒有的」，`AreaModel` 的缺角格同此。
+- **畫法**：x 盒子是方形、砝碼是圓形，盤上的物件淡塗 `--accent`、框線是寬 2 的 `--fg`；符號字級 22，視同刻度數字，不算文字標籤，x 用斜體 SVG 文字。橫樑、支柱、底座與秤盤底線是主線（寬 3、`--fg`），吊繩與吊桿是輔助線（寬 2、`--muted`）。viewBox 寬 480，高度依物件排數決定。
+- **灰階下的區別**：靠形狀（盒子與砝碼）、虛實線（在盤上與拿掉的）與傾斜方向，不只靠顏色。
+- 只畫係數與常數都是正整數的方程式；負數與分數不進天平。
+- `<desc>` 必須寫出兩邊各有幾個盒子與砝碼、拿掉了什麼、天平是否平衡（失衡時寫哪一邊較重），不只寫「一個天平」。
 
 ## 雙數線
 

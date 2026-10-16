@@ -9,6 +9,7 @@ import FractionBar from "@figures/FractionBar.astro";
 import Shape from "@figures/Shape.astro";
 import UnitGrid from "@figures/UnitGrid.astro";
 import AreaModel from "@figures/AreaModel.astro";
+import BalanceScale from "@figures/BalanceScale.astro";
 
 ## 情境開場
 
@@ -298,4 +299,16 @@ import AreaModel from "@figures/AreaModel.astro";
 
 <Figure caption="缺角格：右下角用虛線框，表示還沒有、要補上的一塊">
   <AreaModel title="字母面積缺角" desc="一個長方形，橫邊拆成 x 和 3，縱邊拆成 x 和 3，字母 x 的長度只是示意，不按比例。左上是 x 的平方，右上與左下都是 3x，右下角是缺的一格，用虛線框表示，面積是 9。" cols={["x", 3]} rows={["x", 3]} areas={[["x²", "3x"], ["3x", null]]} missing={[1, 1]} />
+</Figure>
+
+<Figure caption="兩盤一樣重，天平平衡">
+  <BalanceScale title="平衡的天平" desc="平衡的天平，左盤有 2 個 x 盒子和 3 個 1 的砝碼，右盤有 7 個 1 的砝碼，兩邊一樣重，沒有拿掉任何東西。" left={{ x: 2, units: 3 }} right={{ x: 0, units: 7 }} />
+</Figure>
+
+<Figure caption="左盤比較重，天平往左傾斜">
+  <BalanceScale title="往左傾的天平" desc="左邊較重的天平，左盤有 1 個 x 盒子和 4 個 1 的砝碼，右盤有 2 個 1 的砝碼，左邊往下傾斜，沒有拿掉任何東西。" left={{ x: 1, units: 4 }} right={{ x: 0, units: 2 }} tilt="left" />
+</Figure>
+
+<Figure caption="兩邊同時拿掉 3 個砝碼，虛線框是拿掉的">
+  <BalanceScale title="拿掉砝碼" desc="天平原本左盤有 1 個 x 盒子和 3 個 1 的砝碼，右盤有 5 個 1 的砝碼；兩邊各拿掉 3 個砝碼，拿掉的畫成虛線框，剩下左盤 1 個 x 盒子、右盤 2 個砝碼，兩邊仍然平衡。" left={{ x: 1, units: 3 }} right={{ x: 0, units: 5 }} removed={{ left: { units: 3 }, right: { units: 3 } }} />
 </Figure>
