@@ -22,3 +22,17 @@ test("坐標圖保留四個點名額度，拒絕超量、重複與象限圖混�
   assert.throws(() => resolveCoordPlane({ ...base, id: "" }), /id/);
   assert.doesNotThrow(() => resolveCoordPlane({ ...base, quadrants: true }));
 });
+
+test("線段端點沿用坐標範圍，輔助線旗標與象限模式不得混用", () => {
+  const base = { id: "segments", xRange: [-3, 3], yRange: [-3, 3] };
+  for (const segments of [
+    [{ from: [NaN, 1], to: [1, 2] }],
+    [{ from: [0], to: [1, 2] }],
+    Array.from({ length: 13 }, () => ({ from: [0, 0], to: [1, 1] })),
+    [{ from: [0, 0], to: [4, 0] }],
+    [{ from: [0, 0], to: [1, Infinity] }],
+    [{ from: [0, 0], to: [1, 1], auxiliary: "yes" }],
+  ]) assert.throws(() => resolveCoordPlane({ ...base, segments }), /segments/);
+  assert.throws(() => resolveCoordPlane({ ...base, quadrants: true, segments: [{ from: [0, 0], to: [1, 1] }] }), /quadrants/);
+  assert.doesNotThrow(() => resolveCoordPlane({ ...base, segments: [{ from: [-0.5, 0], to: [1, 1], auxiliary: true }] }));
+});

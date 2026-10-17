@@ -20,6 +20,7 @@ const { origin: o } = layout;
   <polyline class="cp-axis" points={`${o.x - 6},${layout.top - 2} ${o.x},${layout.top - 10} ${o.x + 6},${layout.top - 2}`} />
   {layout.xTicks.map((t) => <line class="cp-tick" x1={t.x} x2={t.x} y1={o.y - 4} y2={o.y + 4} />)}
   {layout.yTicks.map((t) => <line class="cp-tick" x1={o.x - 4} x2={o.x + 4} y1={t.y} y2={t.y} />)}
+  {layout.segments.map((s) => <line class:list={["cp-segment", { "cp-auxiliary": s.auxiliary }]} x1={s.from.x} y1={s.from.y} x2={s.to.x} y2={s.to.y} />)}
   {layout.points.map((p) => <circle class="cp-point" cx={p.x} cy={p.y} r="5" />)}
   {layout.texts.map((t) => <text class={`cp-text cp-${t.kind}`} x={t.x} y={t.y}>{t.text}</text>)}
 </svg>
@@ -28,6 +29,8 @@ const { origin: o } = layout;
   .cp-grid { stroke: var(--line); stroke-width: 2px; stroke-linecap: round; }
   .cp-axis { fill: none; stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
   .cp-tick { stroke: var(--muted); stroke-width: 2px; stroke-linecap: round; }
+  .cp-segment { stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; }
+  .cp-auxiliary { stroke: var(--muted); stroke-width: 2px; stroke-dasharray: 8 6; }
   .cp-point { fill: var(--accent); }
   .cp-text { fill: var(--fg); font-size: 22px; text-anchor: middle; }
   .cp-name { font-weight: 600; }
