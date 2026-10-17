@@ -898,6 +898,7 @@ stages:
     prerequisites:
     - proportion
     - triangle-angle-sum
+    - polygon-area
     family: false
     curriculum108:
       grades:
