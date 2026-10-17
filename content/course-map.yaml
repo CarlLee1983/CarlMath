@@ -915,8 +915,9 @@ stages:
     title: 函數是對應關係
     coreQuestion: 「一個輸入只對應一個輸出」為什麼值得特別命名？
     prerequisites:
-    - variables
     - coordinate-plane
+    - linear-inequalities
+    - irrational-real-line
     family: false
     curriculum108:
       grades:
