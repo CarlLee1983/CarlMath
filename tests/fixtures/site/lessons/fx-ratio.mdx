@@ -4,6 +4,7 @@ description: 一般篇的 fixture 頁，示範分數、小數、帶分數數線�
 updated: 2026-09-01
 ---
 
+import CoordPlane from "@figures/CoordPlane.astro";
 import NumberLine from "@figures/NumberLine.astro";
 import FractionBar from "@figures/FractionBar.astro";
 import Shape from "@figures/Shape.astro";
@@ -311,4 +312,15 @@ import BalanceScale from "@figures/BalanceScale.astro";
 
 <Figure caption="兩邊同時拿掉 3 個砝碼，虛線框是拿掉的">
   <BalanceScale title="拿掉砝碼" desc="天平原本左盤有 1 個 x 盒子和 3 個 1 的砝碼，右盤有 5 個 1 的砝碼；兩邊各拿掉 3 個砝碼，拿掉的畫成虛線框，剩下左盤 1 個 x 盒子、右盤 2 個砝碼，兩邊仍然平衡。" left={{ x: 1, units: 3 }} right={{ x: 0, units: 5 }} removed={{ left: { units: 3 }, right: { units: 3 } }} />
+</Figure>
+
+
+<Figure caption="四個象限各有自己的區域">
+  <CoordPlane id="fixture-quadrants" title="四象限" desc="兩軸每格 1，右上、左上、左下、右下依序是第一、第二、第三、第四象限，軸不屬於象限。" xRange={[-3,3]} yRange={[-3,3]} quadrants />
+</Figure>
+<Figure caption="軸上的點與格線之間的點">
+  <CoordPlane id="fixture-points-one" title="軸與分數點" desc="每格 1；A 在原點，B 在橫軸右方 2 格，C 在原點右方半格、上方半格，D 在原點左方 2 格、下方 1 格。" xRange={[-3,3]} yRange={[-3,3]} points={[{at:[0,0],name:"A"},{at:[2,0],name:"B"},{at:[0.5,0.5],name:"C"},{at:[-2,-1],name:"D"}]} />
+</Figure>
+<Figure caption="相同幾何與替代文字使用另一個穩定識別名">
+  <CoordPlane id="fixture-points-two" title="軸與分數點" desc="每格 1；A 在原點，B 在橫軸右方 2 格，C 在原點右方半格、上方半格，D 在原點左方 2 格、下方 1 格。" xRange={[-3,3]} yRange={[-3,3]} points={[{at:[0,0],name:"A"},{at:[2,0],name:"B"},{at:[0.5,0.5],name:"C"},{at:[-2,-1],name:"D"}]} />
 </Figure>

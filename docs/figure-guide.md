@@ -1,12 +1,12 @@
 # 教具繪製規範
 
-本文件是繪製 CarlMath 教具的依據，讀者是之後新增教具的站主與 agent。內容涵蓋 SVG 的結構、版面尺寸、色票語意、替代文字、共用元件 `NumberLine`、`Counters`、`FractionBar`、`Shape`、`UnitGrid`、`AreaModel` 與 `BalanceScale` 的參數，以及發布前的驗收。教具在教材裡怎麼用（配文字說明、表徵數量、import 寫法）屬於[內容撰寫規範](content-guide.md)，本文件不重述。
+本文件是繪製 CarlMath 教具的依據，讀者是之後新增教具的站主與 agent。內容涵蓋 SVG 的結構、版面尺寸、色票語意、替代文字、共用元件 `NumberLine`、`Counters`、`FractionBar`、`Shape`、`UnitGrid`、`AreaModel`、`BalanceScale` 與 `CoordPlane` 的參數，以及發布前的驗收。教具在教材裡怎麼用（配文字說明、表徵數量、import 寫法）屬於[內容撰寫規範](content-guide.md)，本文件不重述。
 
 單一版面與封閉色盤是 [ADR 0002：教具採單一版面與封閉色盤](adr/0002-figures-single-layout-closed-palette.md) 的決定：教具是數線、點陣、積木這類幾何規則的圖，等比縮放就能讀，所以只畫一份 SVG；顏色只用閱讀頁的色票 token，讓同一個顏色在全路線意思一致，深色模式也不必逐圖處理。代價是每張圖的文字量與寬度受限，複雜的圖必須拆開。
 
 ## 先用共用元件
 
-數線一律用 `NumberLine`，小物圓點一律用 `Counters`，等分的長條（分數條）一律用 `FractionBar`，多邊形、角與圓一律用 `Shape`，單位方格一律用 `UnitGrid`，長方形面積模型（把乘法或分配律拆成幾塊）一律用 `AreaModel`，方程式的天平（x 盒子與 1 的砝碼、失衡、兩邊拿掉）一律用 `BalanceScale`，讓這七種圖在全路線長得一樣。它們都放在 `src/components/figures/`，教材以 `@figures/NumberLine.astro`、`@figures/Counters.astro`、`@figures/FractionBar.astro`、`@figures/Shape.astro`、`@figures/UnitGrid.astro`、`@figures/AreaModel.astro`、`@figures/BalanceScale.astro` 匯入。數線與分數條的疊排分數共用同一個內部元件 `StackedFraction`，不由教材直接匯入；一次性教具需要圖內分數時要匯入它，讓全路線的分數長得一樣。共用元件畫不出來的圖，才做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起，並遵守下面每一條規則。
+數線一律用 `NumberLine`，小物圓點一律用 `Counters`，等分的長條（分數條）一律用 `FractionBar`，多邊形、角與圓一律用 `Shape`，單位方格一律用 `UnitGrid`，長方形面積模型（把乘法或分配律拆成幾塊）一律用 `AreaModel`，方程式的天平（x 盒子與 1 的砝碼、失衡、兩邊拿掉）一律用 `BalanceScale`，坐標點與象限一律用 `CoordPlane`，讓這些圖在全路線長得一樣。它們都放在 `src/components/figures/`，教材以 `@figures/NumberLine.astro`、`@figures/Counters.astro`、`@figures/FractionBar.astro`、`@figures/Shape.astro`、`@figures/UnitGrid.astro`、`@figures/AreaModel.astro`、`@figures/BalanceScale.astro` 匯入。數線與分數條的疊排分數共用同一個內部元件 `StackedFraction`，不由教材直接匯入；一次性教具需要圖內分數時要匯入它，讓全路線的分數長得一樣。共用元件畫不出來的圖，才做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起，並遵守下面每一條規則。
 
 教具元件只輸出 `<svg>`。圖名下方的說明文字由 `<Figure caption="…">` 負責，不寫在 SVG 裡。
 
@@ -35,7 +35,7 @@
 
 ### 坐標圖的標記（CoordPlane 撰寫約定）
 
-本節記錄坐標階段已定案的繪圖規則；`CoordPlane` 元件與參數尚待該階段實作，元件邊界沿用 ADR 0005。
+本節記錄坐標階段已定案的繪圖規則；`CoordPlane` 元件邊界沿用 ADR 0005，實際參數見下方 `CoordPlane` 一節。
 
 - 軸名 x、y、原點 O 與刻度數字是基本標記，不計入每圖三個文字標籤的額度。
 - 原點只顯示一個 O，不重複顯示兩軸的 0。O、鄰近刻度與點名須錯開，不能靠縮小字級解決重疊。
@@ -192,6 +192,37 @@
 - 不支援：座標軸與格線（ADR 0003；坐標平面與函數圖形另用專用元件，見 [ADR 0005](adr/0005-coordinate-figures-family-components.md)）、比例尺、**刻意不按比例的角**。`Shape` 不開度數驗證的例外，刻意不按比例的角（例如誇大的示意角）要做成一次性教具。
 - 也不支援：弧或曲邊的多邊形、圓的填色、圓上的弦與切線。需要時另做一次性教具。
 - `<desc>` 寫出頂點、邊長、角度與記號對應的邊與角，例如「A 到 C 與 A 到 B 兩條邊長度相等」，不只寫「一個三角形」。
+
+## `CoordPlane`
+
+坐標平面的點與象限用 `CoordPlane`；沒有坐標軸的幾何示意仍用 `Shape`。教材明確以 `import CoordPlane from "@figures/CoordPlane.astro";` 匯入，不是內建教材元件。範圍與標記驗證在 `src/lib/coord-plane.ts`，元件只輸出 SVG。
+
+```mdx
+<Figure caption="A 在原點右方、上方">
+  <CoordPlane
+    id="first-location"
+    title="兩個數定位"
+    desc="每格 1；A 位於原點右方 2 格、上方 1 格。"
+    xRange={[-3, 3]}
+    yRange={[-3, 3]}
+    points={[{ at: [2, 1], name: "A" }]}
+  />
+</Figure>
+```
+
+| 參數 | 說明 |
+| --- | --- |
+| `id` | 必填，穩定的作者識別名：小寫英文字母開頭，後接小寫英文字母、數字或連字號。同一頁每個實例必須不同，即使圖形、圖名與替代文字完全相同也要分別命名。識別名納入決定性雜湊，連到每張圖自己的 title、desc，不用隨機值或全域計數器 |
+| `title`、`desc` | 必填，沿用共用替代文字檢查；title 最多 10 個字元 |
+| `xRange`、`yRange` | 必填，各為 `[最小值, 最大值]`；兩端有限、嚴格遞增且包含 0，跨度各為 2 到 8（含端點）。端點與點都可用有限小數表示分數位置 |
+| `points` | 點陣列，每個 `{ at: [橫坐標, 縱坐標], name? }`，最多 12 點；坐標須在範圍內，最多 4 個點名。name 為 O 以外的單一大寫英文字母，同圖不得重複；不寫 name 就只畫點 |
+| `quadrants` | 預設 false；true 時固定顯示四個中文象限名，兩軸都須有正負範圍，且不能給任何 points，避免疊加點名或解題資訊 |
+
+- 橫軸向右、縱軸向上為正；兩軸等比例。繪圖區兩方向至多 360，單位長至少 45，整數格線每格 1；分數點位在格線之間，不新增分數格線。只有一個 O，兩軸不再標 0。主線寬 3、格線與刻度寬 2，點用 accent 實心圓，數字與點名字級 22、象限文字 20，不靠縮字塞入。
+- 點名依固定的 8 個相鄰位置依序嘗試，預留 O、軸名、刻度數字、所有點及先放入的點名的保守字框。放不下時 build 以點名提示拆圖或調整範圍；四象限名也須避讓基本標記，正負範圍過度不平衡時 build 失敗。此為有限候選的簡單排版，不保證所有密集輸入都有位置。
+- 目前不接受自由說明文字，請寫在正文或 Figure 說明中；每圖最多 3 個說明標籤的規範仍適用，不為本元件開放任意圖層。線段由兩點距離教材的實際需求擴充。
+- 無效識別名、範圍、坐標、點名、超量、象限混用或無法避讓都會在 build 失敗，不會裁掉資料或縮小字級。作者仍須檢查真正的中文字型字框及手機可讀性。同頁識別名的唯一性是作者責任，fixture 驗證同圖不同 id 的關聯。
+- 讀點練習的 desc 寫相對原點的方向與格數，不寫待求數對或象限答案；必要的格數與每格單位仍要完整提供。
 
 ## `UnitGrid`
 
