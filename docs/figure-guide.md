@@ -1,12 +1,12 @@
 # 教具繪製規範
 
-本文件是繪製 CarlMath 教具的依據，讀者是之後新增教具的站主與 agent。內容涵蓋 SVG 的結構、版面尺寸、色票語意、替代文字、共用元件 `NumberLine`、`Counters`、`FractionBar`、`Shape`、`UnitGrid`、`AreaModel`、`BalanceScale` 與 `CoordPlane` 的參數，以及發布前的驗收。教具在教材裡怎麼用（配文字說明、表徵數量、import 寫法）屬於[內容撰寫規範](content-guide.md)，本文件不重述。
+本文件是繪製 CarlMath 教具的依據，讀者是之後新增教具的站主與 agent。內容涵蓋 SVG 的結構、版面尺寸、色票語意、替代文字、共用元件 `NumberLine`、`Counters`、`FractionBar`、`Shape`、`UnitGrid`、`AreaModel`、`BalanceScale`、`CoordPlane` 與 `FunctionGraph` 的參數，以及發布前的驗收。教具在教材裡怎麼用（配文字說明、表徵數量、import 寫法）屬於[內容撰寫規範](content-guide.md)，本文件不重述。
 
 單一版面與封閉色盤是 [ADR 0002：教具採單一版面與封閉色盤](adr/0002-figures-single-layout-closed-palette.md) 的決定：教具是數線、點陣、積木這類幾何規則的圖，等比縮放就能讀，所以只畫一份 SVG；顏色只用閱讀頁的色票 token，讓同一個顏色在全路線意思一致，深色模式也不必逐圖處理。代價是每張圖的文字量與寬度受限，複雜的圖必須拆開。
 
 ## 先用共用元件
 
-數線一律用 `NumberLine`，小物圓點一律用 `Counters`，等分的長條（分數條）一律用 `FractionBar`，多邊形、角與圓一律用 `Shape`，單位方格一律用 `UnitGrid`，長方形面積模型（把乘法或分配律拆成幾塊）一律用 `AreaModel`，方程式的天平（x 盒子與 1 的砝碼、失衡、兩邊拿掉）一律用 `BalanceScale`，坐標點與象限一律用 `CoordPlane`，讓這些圖在全路線長得一樣。它們都放在 `src/components/figures/`，教材以 `@figures/NumberLine.astro`、`@figures/Counters.astro`、`@figures/FractionBar.astro`、`@figures/Shape.astro`、`@figures/UnitGrid.astro`、`@figures/AreaModel.astro`、`@figures/BalanceScale.astro` 匯入。數線與分數條的疊排分數共用同一個內部元件 `StackedFraction`，不由教材直接匯入；一次性教具需要圖內分數時要匯入它，讓全路線的分數長得一樣。共用元件畫不出來的圖，才做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起，並遵守下面每一條規則。
+數線一律用 `NumberLine`，小物圓點一律用 `Counters`，等分的長條（分數條）一律用 `FractionBar`，多邊形、角與圓一律用 `Shape`，單位方格一律用 `UnitGrid`，長方形面積模型（把乘法或分配律拆成幾塊）一律用 `AreaModel`，方程式的天平（x 盒子與 1 的砝碼、失衡、兩邊拿掉）一律用 `BalanceScale`，坐標點與象限一律用 `CoordPlane`，函數曲線一律用 `FunctionGraph`，讓這些圖在全路線長得一樣。它們都放在 `src/components/figures/`，教材以 `@figures/NumberLine.astro`、`@figures/Counters.astro`、`@figures/FractionBar.astro`、`@figures/Shape.astro`、`@figures/UnitGrid.astro`、`@figures/AreaModel.astro`、`@figures/BalanceScale.astro` 匯入。數線與分數條的疊排分數共用同一個內部元件 `StackedFraction`，不由教材直接匯入；一次性教具需要圖內分數時要匯入它，讓全路線的分數長得一樣。共用元件畫不出來的圖，才做成一次性的 `<主題>Figure.astro`，和該單元的教材放在一起，並遵守下面每一條規則。
 
 教具元件只輸出 `<svg>`。圖名下方的說明文字由 `<Figure caption="…">` 負責，不寫在 SVG 裡。
 
@@ -225,6 +225,43 @@
 - 目前不接受自由說明文字，請寫在正文或 Figure 說明中；每圖最多 3 個說明標籤的規範仍適用，不為本元件開放任意圖層。實線段是寬 3 的 fg 主線；auxiliary 線段為寬 2 的 muted 虛線（8、6），以線型區分，不只靠顏色。三角形或其他坐標圖形逐邊寫成線段，不另提供多邊形或通用圖層。desc 須交代端點及輔助線的角色，不能把輔助路程誤稱為待求的直線距離。
 - 無效識別名、範圍、點或線段坐標、auxiliary、點名、超量、象限混用或無法避讓都會在 build 失敗，不會裁掉資料或縮小字級。作者仍須檢查真正的中文字型字框及手機可讀性。同頁識別名的唯一性是作者責任，fixture 驗證同圖不同 id 的關聯。
 - 讀點練習的 desc 寫相對原點的方向與格數，不寫待求數對或象限答案；必要的格數與每格單位仍要完整提供。
+
+## `FunctionGraph`
+
+函數曲線使用 `FunctionGraph`，依 ADR 0005 與坐標幾何用的 `CoordPlane` 分開。資料驗證、解析裁切與標記配置由 `src/lib/function-graph.ts` 負責，元件只輸出 SVG。本版每圖一個常數或一次函數，不接受 JavaScript 函式、運算式字串或其他函數族；比較多個函數時拆圖。
+
+```mdx
+import FunctionGraph from "@figures/FunctionGraph.astro";
+
+<Figure caption="起始水量 3 公升，每分鐘增加 2 公升">
+  <FunctionGraph
+    id="tank-function"
+    title="時間與水量"
+    desc="橫軸每刻度 1 分鐘，縱軸每刻度 2 公升。直線從 0、3 到 3、9，兩端是實心圓；A 位於 2、7。"
+    xRange={[-1,4]}
+    yRange={[-1,10]}
+    yStep={2}
+    fn={{linear:[2,3]}}
+    domain={{from:0,to:3,openFrom:false,openTo:false}}
+    points={[{at:[2,7],name:"A"}]}
+  />
+</Figure>
+```
+
+| 參數 | 說明 |
+| --- | --- |
+| `id`、`title`、`desc` | 必填，沿用 CoordPlane 的穩定識別名與共用替代文字契約。每個實例的 id 在同頁必須不同，參數共同產生決定性雜湊；title 最多 10 字 |
+| `xRange`、`yRange` | 各為兩個有限數的嚴格遞增範圍，必須包含 0；兩軸可不同比例，**不是函數的定義域** |
+| `xStep`、`yStep` | 預設 1，須為正安全整數；刻度位於它的整數倍，每軸最多 8 個刻度間隔（包含 0 所在位置），數字最多 4 位。密集時增加間距或拆圖，不能縮字；desc 明寫各軸刻度單位 |
+| `fn` | 恰好一個族：`{linear:[a,b]}` 表示一次函數，兩個係數必須有限且 a 非零；`{constant:c}` 表示常數函數，c 必須有限。零係數不寫 linear |
+| `domain` | 省略表示全體實數。提供時四欄必填：`{from,to,openFrom,openTo}`，有限端點是數字，無界端用 `null`；openFrom/openTo 必須是布林值，true 為開放。null 端必須 true。from 小於 to；相等時僅雙閉合法，表示單點域 |
+| `points` | 選填，最多 12 個 `{at:[x,y],name?}`。必須在視窗、定義域與函數曲線上，不能在開放端點畫實心標記。曲線數值核對的容差為相對誤差 1e−10（以 1 為尺度下限）與縱軸跨度的 1e−8 倍兩者較小值，避免放大視窗後標記明顯離線。最多 4 個不重複點名，為 O 以外的單一大寫字母 |
+
+- 固定寬 480，繪圖區 360 × 360；兩軸獨立換算單位長，**不畫格線**。主角曲線用 fg 主線，刻度用 muted，點與端點用 accent；空心端點填 bg，以空／實心區分開閉，不只靠顏色。文字 22、主線寬 3、刻度寬 2。原點只標 O，不重複兩個 0。
+- 一次與常數函數以解析式求視窗交點，不用稀疏取樣。曲線可裁切；只有原定義域的有限端點位於畫面時才畫端點圈，視窗邊界本身不產生端點圈。真端點恰好落在邊界仍完整顯示；單點域畫一個實心點，與重合的 points 去重。軸箭頭表示坐標軸方向，曲線本身不加箭頭；有無延伸由 domain 與 desc 說明。
+- 原點、軸名、刻度與點名都預留保守字框，避開曲線、軸線、所有點及端點。不同端點或點標記互相遮擋時也拒絕建置；固定候選位置放不下就拒絕建置；作者仍須檢查實際字框及窄螢幕。點名的額度沿用坐標圖，沒有任意圖層或自由說明文字。
+- 非法族、係數、範圍、端點、標記及過密刻度均拒絕建置。有限資料若在計算時溢位、比例無法可靠表示，或視窗內沒有可見圖形，也明確拒絕。錯誤包含 `<FunctionGraph>`、作者 id 與欄位，例如 `points[0].at 不在函數曲線上`、`domain.from`、`xStep 刻度過密`；缺替代文字沿用 `必須有 title`／`必須有 desc`。
+- 教材必須明確 import，不是內建元件；沿用合法教具 import、允許清單與檔案存在性驗證，不另建一份註冊表。題圖只標已知資料，待求式子、函數值與解法留在收合答案。
 
 ## `UnitGrid`
 
