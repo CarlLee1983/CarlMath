@@ -860,6 +860,7 @@ stages:
     coreQuestion: 怎麼用兩個數精確說出平面上的一個位置？
     prerequisites:
     - negative-numbers
+    - fractions-on-number-line
     family: false
     curriculum108:
       grades:
@@ -871,7 +872,9 @@ stages:
     coreQuestion: 直角三角形的三邊為什麼有 a²+b²=c² 的關係？
     prerequisites:
     - square-roots
-    - area-perimeter
+    - polynomial-multiplication
+    - polygon-area
+    - triangle-angle-sum
     family: false
     curriculum108:
       grades:
@@ -884,6 +887,7 @@ stages:
     prerequisites:
     - pythagorean-theorem
     - coordinate-plane
+    - absolute-value
     family: false
     curriculum108:
       grades:
@@ -896,6 +900,7 @@ stages:
     prerequisites:
     - proportion
     - triangle-angle-sum
+    - polygon-area
     family: false
     curriculum108:
       grades:
