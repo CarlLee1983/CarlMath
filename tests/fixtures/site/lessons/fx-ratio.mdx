@@ -4,6 +4,7 @@ description: 一般篇的 fixture 頁，示範分數、小數、帶分數數線�
 updated: 2026-09-01
 ---
 
+import FunctionGraph from "@figures/FunctionGraph.astro";
 import CoordPlane from "@figures/CoordPlane.astro";
 import NumberLine from "@figures/NumberLine.astro";
 import FractionBar from "@figures/FractionBar.astro";
@@ -242,6 +243,19 @@ import BalanceScale from "@figures/BalanceScale.astro";
       { center: [6, 0], radius: 2, show: "diameter", label: "4" },
     ]}
   />
+</Figure>
+
+<Figure caption="開閉端點與不同比例">
+  <FunctionGraph id="fixture-domain" title="受限定義域" desc="橫軸每刻度 1，縱軸每刻度 2。直線從負二、負三的空心端點到 2、5 的實心端點，A 在 1、3。" xRange={[-3,3]} yRange={[-4,8]} yStep={2} fn={{linear:[2,1]}} domain={{from:-2,to:2,openFrom:true,openTo:false}} points={[{at:[1,3],name:"A"}]} />
+</Figure>
+<Figure caption="視窗邊緣不代表定義域端點">
+  <FunctionGraph id="fixture-clipped" title="視窗裁切" desc="兩軸每刻度 1。直線每向右 1 上升 2，通過原點，定義域是全體實數。" xRange={[-3,3]} yRange={[-3,3]} fn={{linear:[2,0]}} />
+</Figure>
+<Figure caption="同圖不同識別名">
+  <FunctionGraph id="fixture-clipped-copy" title="視窗裁切" desc="兩軸每刻度 1。直線每向右 1 上升 2，通過原點，定義域是全體實數。" xRange={[-3,3]} yRange={[-3,3]} fn={{linear:[2,0]}} />
+</Figure>
+<Figure caption="常數函數與無界端">
+  <FunctionGraph id="fixture-constant" title="水平函數圖" desc="兩軸每刻度 1。輸入大於或等於負一時輸出都是 2，負一處是實心端點，往右沒有端點。" xRange={[-3,3]} yRange={[-3,3]} fn={{constant:2}} domain={{from:-1,to:null,openFrom:false,openTo:true}} points={[{at:[1,2],name:"B"}]} />
 </Figure>
 
 ## 推理

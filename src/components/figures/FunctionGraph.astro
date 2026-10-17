@@ -1,0 +1,35 @@
+---
+import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
+import { resolveFunctionGraph, type FunctionGraphInput } from "../../lib/function-graph.ts";
+interface Props extends FunctionGraphInput { title: string; desc: string }
+const props = Astro.props;
+assertAltText("FunctionGraph", props.title, props.desc);
+const layout = resolveFunctionGraph(props);
+const prefix = figureIdPrefix("fg", props);
+const { origin: o } = layout;
+---
+<svg class="fg-fig" viewBox={`0 0 ${layout.width} ${layout.height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{props.title}</title>
+  <desc id={`${prefix}-desc`}>{props.desc}</desc>
+  <line class="fg-axis" x1={layout.left - 10} x2={layout.right + 10} y1={o.y} y2={o.y} />
+  <line class="fg-axis" x1={o.x} x2={o.x} y1={layout.bottom + 10} y2={layout.top - 10} />
+  <polyline class="fg-axis" points={`${layout.right + 2},${o.y - 6} ${layout.right + 10},${o.y} ${layout.right + 2},${o.y + 6}`} />
+  <polyline class="fg-axis" points={`${o.x - 6},${layout.top - 2} ${o.x},${layout.top - 10} ${o.x + 6},${layout.top - 2}`} />
+  {layout.xTicks.map((t) => <line class="fg-tick" x1={t.x} x2={t.x} y1={o.y - 4} y2={o.y + 4} />)}
+  {layout.yTicks.map((t) => <line class="fg-tick" x1={o.x - 4} x2={o.x + 4} y1={t.y} y2={t.y} />)}
+  {layout.curve && <line class="fg-curve" x1={layout.curve.from.x} y1={layout.curve.from.y} x2={layout.curve.to.x} y2={layout.curve.to.y} />}
+  {layout.points.map((p) => <circle class="fg-point" cx={p.x} cy={p.y} r="5" />)}
+  {layout.endpoints.map((p) => <circle class:list={["fg-endpoint", { "fg-open": p.open }]} cx={p.x} cy={p.y} r="6" />)}
+  {layout.texts.map((t) => <text class={`fg-text fg-${t.kind}`} x={t.x} y={t.y}>{t.text}</text>)}
+</svg>
+<style>
+  svg.fg-fig[role="img"] { display: block; width: 100%; max-width: 32rem; height: auto; margin: 0 auto; }
+  .fg-axis { fill: none; stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
+  .fg-tick { stroke: var(--muted); stroke-width: 2px; stroke-linecap: round; }
+  .fg-curve { stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; }
+  .fg-point { fill: var(--accent); }
+  .fg-endpoint { fill: var(--accent); stroke: var(--accent); stroke-width: 3px; }
+  .fg-open { fill: var(--bg); }
+  .fg-text { fill: var(--fg); font-size: 22px; text-anchor: middle; }
+  .fg-name { font-weight: 600; }
+</style>
