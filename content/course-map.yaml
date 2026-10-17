@@ -887,6 +887,7 @@ stages:
     prerequisites:
     - pythagorean-theorem
     - coordinate-plane
+    - absolute-value
     family: false
     curriculum108:
       grades:

@@ -324,3 +324,7 @@ import BalanceScale from "@figures/BalanceScale.astro";
 <Figure caption="相同幾何與替代文字使用另一個穩定識別名">
   <CoordPlane id="fixture-points-two" title="軸與分數點" desc="每格 1；A 在原點，B 在橫軸右方 2 格，C 在原點右方半格、上方半格，D 在原點左方 2 格、下方 1 格。" xRange={[-3,3]} yRange={[-3,3]} points={[{at:[0,0],name:"A"},{at:[2,0],name:"B"},{at:[0.5,0.5],name:"C"},{at:[-2,-1],name:"D"}]} />
 </Figure>
+
+<Figure caption="斜邊與兩條輔助直角邊">
+  <CoordPlane id="fixture-distance" title="距離直角三角形" desc="每格 1。A 的坐標是橫負二、縱負一；B 是橫 2、縱 2；C 是橫 2、縱負一。A 到 B 用實線連接；A 到 C 的水平線和 C 到 B 的垂直線為虛線輔助線，在 C 交成直角。" xRange={[-3,3]} yRange={[-2,3]} points={[{at:[-2,-1],name:"A"},{at:[2,2],name:"B"},{at:[2,-1],name:"C"}]} segments={[{from:[-2,-1],to:[2,2]},{from:[-2,-1],to:[2,-1],auxiliary:true},{from:[2,-1],to:[2,2],auxiliary:true}]} />
+</Figure>
