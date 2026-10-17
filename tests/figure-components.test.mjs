@@ -17,6 +17,7 @@ test("共用教具目錄有 NumberLine、Counters、FractionBar、Shape、UnitGr
   assert.ok(names.includes(join(dir, "Counters.astro")), names.join(", "));
   assert.ok(names.includes(join(dir, "FractionBar.astro")), names.join(", "));
   assert.ok(names.includes(join(dir, "Shape.astro")), names.join(", "));
+  assert.ok(names.includes(join(dir, "CoordPlane.astro")), names.join(", "));
   assert.ok(names.includes(join(dir, "UnitGrid.astro")), names.join(", "));
   assert.ok(names.includes(join(dir, "AreaModel.astro")), names.join(", "));
   assert.ok(names.includes(join(dir, "BalanceScale.astro")), names.join(", "));

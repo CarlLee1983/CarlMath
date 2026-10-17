@@ -860,6 +860,7 @@ stages:
     coreQuestion: 怎麼用兩個數精確說出平面上的一個位置？
     prerequisites:
     - negative-numbers
+    - fractions-on-number-line
     family: false
     curriculum108:
       grades:

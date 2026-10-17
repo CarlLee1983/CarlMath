@@ -1,0 +1,35 @@
+---
+import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
+import { resolveCoordPlane } from "../../lib/coord-plane.ts";
+import type { CoordPlaneInput } from "../../lib/coord-plane.ts";
+interface Props extends CoordPlaneInput { title: string; desc: string }
+const props = Astro.props;
+assertAltText("CoordPlane", props.title, props.desc);
+const layout = resolveCoordPlane(props);
+const prefix = figureIdPrefix("cp", props);
+const { origin: o } = layout;
+---
+<svg class="cp-fig" viewBox={`0 0 ${layout.width} ${layout.height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{props.title}</title>
+  <desc id={`${prefix}-desc`}>{props.desc}</desc>
+  {layout.xTicks.map((t) => <line class="cp-grid" x1={t.x} x2={t.x} y1={layout.top} y2={layout.bottom} />)}
+  {layout.yTicks.map((t) => <line class="cp-grid" x1={layout.left} x2={layout.right} y1={t.y} y2={t.y} />)}
+  <line class="cp-axis" x1={layout.left - 10} x2={layout.right + 10} y1={o.y} y2={o.y} />
+  <line class="cp-axis" x1={o.x} x2={o.x} y1={layout.bottom + 10} y2={layout.top - 10} />
+  <polyline class="cp-axis" points={`${layout.right + 2},${o.y - 6} ${layout.right + 10},${o.y} ${layout.right + 2},${o.y + 6}`} />
+  <polyline class="cp-axis" points={`${o.x - 6},${layout.top - 2} ${o.x},${layout.top - 10} ${o.x + 6},${layout.top - 2}`} />
+  {layout.xTicks.map((t) => <line class="cp-tick" x1={t.x} x2={t.x} y1={o.y - 4} y2={o.y + 4} />)}
+  {layout.yTicks.map((t) => <line class="cp-tick" x1={o.x - 4} x2={o.x + 4} y1={t.y} y2={t.y} />)}
+  {layout.points.map((p) => <circle class="cp-point" cx={p.x} cy={p.y} r="5" />)}
+  {layout.texts.map((t) => <text class={`cp-text cp-${t.kind}`} x={t.x} y={t.y}>{t.text}</text>)}
+</svg>
+<style>
+  svg.cp-fig[role="img"] { display: block; width: 100%; max-width: 32rem; height: auto; margin: 0 auto; }
+  .cp-grid { stroke: var(--line); stroke-width: 2px; stroke-linecap: round; }
+  .cp-axis { fill: none; stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
+  .cp-tick { stroke: var(--muted); stroke-width: 2px; stroke-linecap: round; }
+  .cp-point { fill: var(--accent); }
+  .cp-text { fill: var(--fg); font-size: 22px; text-anchor: middle; }
+  .cp-name { font-weight: 600; }
+  .cp-quadrant { font-size: 20px; }
+</style>
