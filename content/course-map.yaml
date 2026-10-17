@@ -871,7 +871,9 @@ stages:
     coreQuestion: 直角三角形的三邊為什麼有 a²+b²=c² 的關係？
     prerequisites:
     - square-roots
-    - area-perimeter
+    - polynomial-multiplication
+    - polygon-area
+    - triangle-angle-sum
     family: false
     curriculum108:
       grades:
