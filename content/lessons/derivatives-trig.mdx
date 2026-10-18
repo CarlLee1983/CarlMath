@@ -45,11 +45,11 @@ $\sin(x+h)=\sin x\cos h+\cos x\sin h$。
 把高度隨轉角變化的圖，和水平位置隨轉角變化的圖放在相同刻度下比較。第一張曲線上升最快的地方，第二張高度最大；第一張轉為下降前的頂部，第二張恰好通過橫軸。
 
 <Figure caption="正弦的高度圖；請觀察零點與最高點附近的斜率">
-  <FunctionGraph id="trig-derivative-sin" title="正弦高度" desc="橫軸以弧度表示角度，從負圓周率到兩倍圓周率；縱軸從負二到二。曲線為正弦函數，通過原點，在二分之圓周率處高度為一且切線水平。" fn={{sin:[1,1]}} xRange={[-Math.PI,2*Math.PI]} xPiStep={1} yRange={[-2,2]} />
+  <FunctionGraph id="trig-derivative-sin" title="正弦高度" desc="橫軸以弧度表示角度，從負圓周率到 2 倍圓周率，刻度間隔為圓周率；縱軸從負二到 2，刻度間隔為 1。曲線為正弦函數，通過原點，在二分之圓周率處高度為 1 且切線水平。" fn={{sin:[1,1]}} xRange={[-Math.PI,2*Math.PI]} xPiStep={1} yRange={[-2,2]} />
 </Figure>
 
 <Figure caption="同尺度的餘弦圖；它的高度對應上一圖的斜率">
-  <FunctionGraph id="trig-derivative-cos" title="餘弦高度" desc="橫軸以弧度表示角度，從負圓周率到兩倍圓周率；縱軸從負二到二。曲線為餘弦函數，在零處高度為一，在二分之圓周率處高度為零，在圓周率處高度為負一。" fn={{cos:[1,1]}} xRange={[-Math.PI,2*Math.PI]} xPiStep={1} yRange={[-2,2]} />
+  <FunctionGraph id="trig-derivative-cos" title="餘弦高度" desc="橫軸以弧度表示角度，從負圓周率到 2 倍圓周率，刻度間隔為圓周率；縱軸從負二到 2，刻度間隔為 1。曲線為餘弦函數，在 0 處高度為 1，在二分之圓周率處高度為 0，在圓周率處高度為負一。" fn={{cos:[1,1]}} xRange={[-Math.PI,2*Math.PI]} xPiStep={1} yRange={[-2,2]} />
 </Figure>
 
 現在用 $y=\sin x$ 表示第一張圖。若斜率真由 $\cos x$ 給出，則零點斜率是一，最高點斜率是零。圖形只幫忙提出猜想；有限幾個點吻合，不能取代所有實數輸入的推導。
