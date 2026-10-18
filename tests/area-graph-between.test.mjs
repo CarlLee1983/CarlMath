@@ -65,3 +65,18 @@ test("字框避開兩條真曲線與兩曲線間陰影，包括跨極值區域",
     }
   }
 });
+test("虛線第二曲線在頂點精確分成兩段並覆蓋完整可見視窗",()=>{
+  const out=resolve(actual), curves=out.secondGraph.quadraticCurves;
+  assert.equal(curves.length,2);
+  assert.deepEqual(curves[0],{from:{x:60,y:174},control:{x:120,y:294},to:{x:180,y:294}});
+  assert.deepEqual(curves[0].to,curves[1].from);
+  assert.ok(Math.abs(curves[1].control.x-(180+60*Math.SQRT2))<1e-10);
+  assert.equal(curves[1].control.y,294);
+  assert.ok(Math.abs(curves[1].to.x-(180+120*Math.SQRT2))<1e-10);
+  assert.ok(Math.abs(curves[1].to.y-54)<1e-10);
+  for(const c of curves)for(let i=0;i<=64;i++){
+    const t=i/64,x=(1-t)**2*c.from.x+2*(1-t)*t*c.control.x+t*t*c.to.x;
+    const y=(1-t)**2*c.from.y+2*(1-t)*t*c.control.y+t*t*c.to.y;
+    assert.ok(Math.abs(y-(294-120*((x-180)/120)**2))<1e-10);
+  }
+});
