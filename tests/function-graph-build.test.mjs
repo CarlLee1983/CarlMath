@@ -84,3 +84,21 @@ test("對數正反對照與遞減圖的 SVG 保留自然域且不畫 y 軸端點
   });
   assert.equal(status, 0, output);
 });
+
+test("三角 SVG 使用有界 M/L 路徑與 π 刻度，保留峰谷點且無假端點", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const { status, output } = buildWith("tests/fixtures/function-trig", (outDir) => {
+    const html = readFileSync(join(outDir, "units/broken/index.html"), "utf8");
+    const curves = html.match(/<path\b[^>]*class="fg-curve"[^>]*>/g) ?? [];
+    assert.equal(curves.length, 3);
+    for (const path of curves) {
+      assert.match(path, /d="M [^"]+ L [^"]+"/);
+      assert.doesNotMatch(path, /NaN|Infinity| Q | C /);
+    }
+    for (const label of ["−π", "π", "2π"]) assert.equal((html.match(new RegExp(">" + label + "</text>", "g")) ?? []).length, 3);
+    assert.equal((html.match(/class="fg-endpoint"/g) ?? []).length, 0);
+    assert.equal((html.match(/class="fg-point"/g) ?? []).length, 6);
+  });
+  assert.equal(status, 0, output);
+});

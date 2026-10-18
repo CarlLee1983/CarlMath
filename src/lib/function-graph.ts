@@ -1,5 +1,5 @@
 export type GraphRange = [number, number];
-export type GraphFunction = { linear: [number, number] } | { constant: number } | { quadratic: [number, number, number] } | { cubic: [number, number, number, number] } | { exponential: [number] } | { logarithmic: [number] };
+export type GraphFunction = { linear: [number, number] } | { constant: number } | { quadratic: [number, number, number] } | { cubic: [number, number, number, number] } | { exponential: [number] } | { logarithmic: [number] } | { sin: [number, number] } | { cos: [number, number] };
 export interface GraphDomain { from: number | null; to: number | null; openFrom: boolean; openTo: boolean }
 export interface FunctionGraphInput {
   id: string;
@@ -8,6 +8,7 @@ export interface FunctionGraphInput {
   fn: GraphFunction;
   domain?: GraphDomain;
   xStep?: number;
+  xPiStep?: number;
   yStep?: number;
   points?: { at: GraphRange; name?: string }[];
 }
@@ -22,7 +23,8 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     }
   }
   const fn = input.fn;
-  if (!fn || typeof fn !== "object" || Array.isArray(fn) || Object.keys(fn).length !== 1) fail("fn 必須只宣告一個函數族 constant、linear、quadratic、cubic、exponential 或 logarithmic");
+  if (!fn || typeof fn !== "object" || Array.isArray(fn) || Object.keys(fn).length !== 1) fail("fn 必須只宣告一個函數族 constant、linear、quadratic、cubic、exponential、logarithmic、sin 或 cos");
+  let trig: { kind: "sin" | "cos"; amplitude: number; frequency: number } | undefined;
   let logarithmic: number | undefined;
   let logarithmicBase: number | undefined;
   let exponential: number | undefined;
@@ -31,7 +33,12 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   let q = 0;
   let a = 0;
   let b = 0;
-  if ("linear" in fn) {
+  if ("sin" in fn || "cos" in fn) {
+    const kind = "sin" in fn ? "sin" : "cos";
+    const coefficients = "sin" in fn ? fn.sin : fn.cos;
+    if (!Array.isArray(coefficients) || coefficients.length !== 2 || !coefficients.every(Number.isFinite) || coefficients[0] === 0 || coefficients[1] <= 0) fail("fn.sin/cos 必須是 [非零有限振幅, 正有限頻率]");
+    trig = { kind, amplitude: coefficients[0], frequency: coefficients[1] };
+  } else if ("linear" in fn) {
     if (!Array.isArray(fn.linear) || fn.linear.length !== 2 || !fn.linear.every(Number.isFinite) || fn.linear[0] === 0) fail("fn.linear 必須是 [非零有限係數, 有限常數項]；零係數請用 constant");
     [a, b] = fn.linear;
   } else if ("quadratic" in fn) {
@@ -52,7 +59,7 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     if (!Number.isFinite(logarithmic) || logarithmic === 0) fail("fn.logarithmic 的底數無法可靠表示");
   } else if ("constant" in fn && Number.isFinite(fn.constant)) {
     b = fn.constant;
-  } else fail("fn 只接受 constant、linear、quadratic、cubic、exponential 或 logarithmic 的有限係數");
+  } else fail("fn 只接受 constant、linear、quadratic、cubic、exponential、logarithmic、sin 或 cos 的有限係數");
   const domain = input.domain === undefined ? { from: null, to: null, openFrom: true, openTo: true } : input.domain;
   if (!domain || typeof domain !== "object") fail("domain 必須有 from、to、openFrom、openTo");
   for (const [end, open] of [["from", "openFrom"], ["to", "openTo"]] as const) {
@@ -74,12 +81,26 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     if (values.some((v) => Math.abs(v) > 9999)) fail(`${key} 刻度最多 4 位數，請改用較大的單位`);
     return values;
   };
-  const xTicks = ticks(input.xRange, input.xStep ?? 1, "xStep");
+  if (input.xPiStep !== undefined && (!trig || input.xStep !== undefined)) fail("xPiStep 僅供 sin/cos 使用且不可與 xStep 並用");
+  const piMultiples = input.xPiStep === undefined ? undefined : ticks([input.xRange[0] / Math.PI, input.xRange[1] / Math.PI], input.xPiStep, "xPiStep");
+  const xTicks = piMultiples ? piMultiples.map((n) => n * Math.PI) : ticks(input.xRange, input.xStep ?? 1, "xStep");
   const yTicks = ticks(input.yRange, input.yStep ?? 1, "yStep");
   const points = input.points ?? [];
   if (!Array.isArray(points) || points.length > 12) fail("points 最多 12 個；過密請拆圖");
   const names = new Set<string>();
   const evaluate = (x: number) => {
+    if (trig) {
+      const phase = trig.frequency * x;
+      const error = Math.abs(trig.amplitude) * 64 * Number.EPSILON * Math.max(1, Math.abs(phase));
+      if (!Number.isFinite(phase) || !Number.isFinite(error) || error > (input.yRange[1] - input.yRange[0]) * 1e-10) fail("fn.sin/cos 的相位或函數值數值精度不足");
+      const quarter = Math.round(phase / (Math.PI / 2));
+      const exactQuarter = Number.isSafeInteger(quarter) && Math.abs(phase - quarter * (Math.PI / 2)) <= 8 * Number.EPSILON * Math.max(1, Math.abs(phase));
+      const index = ((quarter % 4) + 4) % 4;
+      const value = exactQuarter ? (trig.kind === "sin" ? [0, 1, 0, -1][index]! : [1, 0, -1, 0][index]!) : Math[trig.kind](phase);
+      const y = trig.amplitude * value;
+      if (!Number.isFinite(y)) fail("fn.sin/cos 的函數值溢位");
+      return y;
+    }
     if (logarithmic !== undefined) {
       if (!(x > 0)) fail("fn.logarithmic 的天然定義域為 x > 0");
       let y = Math.log(x) / logarithmic;
@@ -150,8 +171,77 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   const logarithmicErrorBounds: number[] = [];
   let exponentialCurve: GraphPoint[] | undefined;
   const exponentialErrorBounds: number[] = [];
+  const trigCurves: GraphPoint[][] = [];
+  const trigErrorBounds: number[][] = [];
+  const trigIntervals: GraphRange[] = [];
   let curve: { from: GraphPoint; to: GraphPoint } | undefined;
-  if (logarithmic !== undefined) {
+  if (trig) {
+    const quarterWidth = Math.PI / (2 * trig.frequency);
+    const periodPixels = (2 * Math.PI / trig.frequency) * xUnit;
+    if (!Number.isFinite(quarterWidth) || quarterWidth <= 0 || !Number.isFinite(periodPixels) || periodPixels < 45) fail("fn.sin/cos 的週期不可可靠表示或過密；每週期至少 45 viewBox 單位");
+    if (start > end) fail("domain 與視窗內沒有可見圖形");
+    evaluate(start); evaluate(end);
+    const first = Math.ceil(start / quarterWidth), last = Math.floor(end / quarterWidth);
+    if (![first, last].every(Number.isSafeInteger) || last - first > 34) fail("fn.sin/cos 的相位切點無法可靠表示");
+    const cuts = [start, end, ...points.map((p) => p.at[0])];
+    for (let k = first; k <= last; k++) {
+      const x = k * quarterWidth;
+      if (x > start && x < end) cuts.push(x);
+    }
+    const sorted = [...new Set(cuts)].sort((u, v) => u - v);
+    const inside = (x: number) => evaluate(x) >= ymin && evaluate(x) <= ymax;
+    const root = (lo: number, hi: number, target: number) => {
+      if (evaluate(lo) === target) return lo;
+      if (evaluate(hi) === target) return hi;
+      const rising = evaluate(hi) > evaluate(lo);
+      for (let i = 0; i < 160; i++) {
+        const mid = lo + (hi - lo) / 2, y = evaluate(mid);
+        if (Math.abs(y - target) <= (ymax - ymin) * 1e-12 && (hi - lo) * xUnit <= 1e-8) return mid;
+        if (mid === lo || mid === hi) {
+          if (Math.abs(y - target) * yUnit <= 1e-7) return mid;
+          fail("fn.sin/cos 與視窗交點數值精度不足");
+        }
+        if ((y < target) === rising) lo = mid; else hi = mid;
+      }
+      return fail("fn.sin/cos 與視窗交點無法收斂");
+    };
+    for (let i = 1; i < sorted.length; i++) {
+      let lo = sorted[i - 1]!, hi = sorted[i]!;
+      const yl = evaluate(lo), yh = evaluate(hi);
+      if (Math.max(yl, yh) < ymin || Math.min(yl, yh) > ymax) continue;
+      if (yl < ymin || yl > ymax) lo = root(lo, hi, yl < ymin ? ymin : ymax);
+      if (yh < ymin || yh > ymax) hi = root(sorted[i - 1]!, hi, yh < ymin ? ymin : ymax);
+      if (lo < hi) trigIntervals.push([lo, hi]);
+    }
+    for (const x of sorted) if (inside(x) && !(x === from && domain.openFrom) && !(x === to && domain.openTo)
+      && !trigIntervals.some(([lo, hi]) => x >= lo && x <= hi)) trigIntervals.push([x, x]);
+    trigIntervals.sort((u, v) => u[0] - v[0]);
+    if (!trigIntervals.length) fail("domain 與視窗內沒有可見圖形");
+    let count = 0;
+    if (from !== to) for (const [lo, hi] of trigIntervals) {
+      const nodes: GraphPoint[] = [project(lo, evaluate(lo))], bounds: number[] = [];
+      const subdivide = (u: number, v: number, depth: number) => {
+        const phaseWidth = (v - u) * trig!.frequency;
+        const error = phaseWidth * phaseWidth * Math.abs(trig!.amplitude) * yUnit / 8 * (1 + 64 * Number.EPSILON) + 1e-6;
+        if (!Number.isFinite(error)) fail("fn.sin/cos 的近似誤差溢位");
+        if (error <= 0.1) {
+          if (++count > 4096) fail("fn.sin/cos 近似段數過多");
+          const p = project(v, evaluate(v));
+          if (u !== v && p.x === nodes[nodes.length - 1]!.x) fail("fn.sin/cos 的曲線寬度數值精度不足");
+          nodes.push(p); bounds.push(error); return;
+        }
+        const mid = u + (v - u) / 2;
+        if (depth >= 64 || mid === u || mid === v) fail("fn.sin/cos 無法達到近似誤差界");
+        subdivide(u, mid, depth + 1); subdivide(mid, v, depth + 1);
+      };
+      subdivide(lo, hi, 0);
+      const previous = trigCurves[trigCurves.length - 1];
+      const previousEnd = previous?.[previous.length - 1];
+      if (previousEnd && previousEnd.x === nodes[0]!.x && previousEnd.y === nodes[0]!.y) {
+        previous!.push(...nodes.slice(1)); trigErrorBounds[trigErrorBounds.length - 1]!.push(...bounds);
+      } else { trigCurves.push(nodes); trigErrorBounds.push(bounds); }
+    }
+  } else if (logarithmic !== undefined) {
     const roots = [Math.pow(logarithmicBase!, ymin), Math.pow(logarithmicBase!, ymax)];
     if (!roots.every((x) => Number.isFinite(x) && x > 0) || roots[0] === roots[1]) fail("fn.logarithmic 與視窗交點溢位、下溢或數值精度不足");
     for (const [i, root] of roots.entries()) {
@@ -364,7 +454,7 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     { x: origin.x - 18, y: origin.y + 28, text: "O", kind: "axis" },
     { x: right + 25, y: origin.y + 7, text: "x", kind: "axis" },
     { x: origin.x, y: top - 24, text: "y", kind: "axis" },
-    ...xTicks.map((v): GraphText => ({ x: project(v, 0).x, y: origin.y + 28, text: format(v), kind: "tick", axis: "x" })),
+    ...xTicks.map((v, i): GraphText => ({ x: project(v, 0).x, y: origin.y + 28, text: piMultiples ? (piMultiples[i] === -1 ? "−π" : piMultiples[i] === 1 ? "π" : format(piMultiples[i]!) + "π") : format(v), kind: "tick", axis: "x" })),
     ...yTicks.map((v): GraphText => ({ x: origin.x - 25, y: project(0, v).y + 7, text: format(v), kind: "tick", axis: "y" })),
   ];
   const markerBoxes = [...endpoints, ...resolvedPoints].map((p) => ({ left: p.x - 8, right: p.x + 8, top: p.y - 8, bottom: p.y + 8 }));
@@ -373,6 +463,14 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     { left: origin.x - 2, right: origin.x + 2, top: top - 10, bottom: bottom + 10 },
   ];
   const approximateCrossesBox = (box: Box) => {
+    if (trig) return trigIntervals.some(([start, end]) => {
+      const lo = Math.max(start, xmin + (box.left - 2 - left) / xUnit);
+      const hi = Math.min(end, xmin + (box.right + 2 - left) / xUnit);
+      if (lo > hi) return false;
+      // Each retained interval lies within a quarter period and is monotone.
+      const ys = [project(lo, evaluate(lo)).y, project(hi, evaluate(hi)).y];
+      return Math.min(...ys) <= box.bottom + 2.1 && Math.max(...ys) >= box.top - 2.1;
+    });
     if (!exponentialCurve && !logarithmicCurve) return false;
     const lo = Math.max(start, xmin + (box.left - 2 - left) / xUnit);
     const hi = Math.min(end, xmin + (box.right + 2 - left) / xUnit);
@@ -410,7 +508,7 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     if (!label) fail(`points 點名 ${p.name} 無法避讓，請調整範圍或拆圖`);
     texts.push(label!);
   }
-  return { width, height, left, right, top, bottom, origin, curve, quadraticCurves, cubicCurves, exponentialCurve, exponentialErrorBounds, logarithmicCurve, logarithmicErrorBounds, vertex, endpoints, points: visiblePoints, texts,
+  return { width, height, left, right, top, bottom, origin, curve, trigCurves, trigErrorBounds, quadraticCurves, cubicCurves, exponentialCurve, exponentialErrorBounds, logarithmicCurve, logarithmicErrorBounds, vertex, endpoints, points: visiblePoints, texts,
     xTicks: xTicks.map((v) => project(v, 0)), yTicks: yTicks.map((v) => project(0, v)) };
 
 }

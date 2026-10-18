@@ -155,6 +155,12 @@ $$
     points={[{at:[1,0]},{at:[2,-1],name:"A"},{at:[4,-2]}]}
   />
 
+<FunctionGraph id="trig-sine-wave" title="角度對應高度" desc="橫軸表示弧度，以圓周率為刻度間隔，範圍從負圓周率到 2 倍圓周率；縱軸每刻度差 1。正弦曲線經過原點，A 在橫坐標二分之圓周率、高度 1，B 在橫坐標二分之三圓周率、高度負一。圖形向兩側繼續延伸，視窗不是定義域端點。" xRange={[-Math.PI,2*Math.PI]} yRange={[-2,2]} xPiStep={1} fn={{sin:[1,1]}} points={[{at:[Math.PI/2,1],name:"A"},{at:[3*Math.PI/2,-1],name:"B"}]} />
+
+<FunctionGraph id="trig-cosine-wave" title="角度對應水平位置" desc="橫軸表示弧度，刻度間隔為圓周率；縱軸每刻度差 1。餘弦曲線的 A 在 (0, 1)，B 在橫坐標圓周率、高度負一，橫坐標 2 倍圓周率時回到高度 1。兩側繼續延伸，沒有有限定義域端點。" xRange={[-Math.PI,2*Math.PI]} yRange={[-2,2]} xPiStep={1} fn={{cos:[1,1]}} points={[{at:[0,1],name:"A"},{at:[Math.PI,-1],name:"B"}]} />
+
+<FunctionGraph id="trig-scaled-wave" title="更高也更密的波" desc="橫軸為弧度，以圓周率為刻度間隔；縱軸每刻度差 1。曲線是 2 乘正弦的 2 倍輸入，A 在橫坐標四分之圓周率、高度 2，B 在橫坐標四分之三圓周率、高度負二；每隔圓周率重複，向兩側延伸。" xRange={[-Math.PI,2*Math.PI]} yRange={[-3,3]} xPiStep={1} fn={{sin:[2,2]}} points={[{at:[Math.PI/4,2],name:"A"},{at:[3*Math.PI/4,-2],name:"B"}]} />
+
 ## 下一步
 
 接著學比大小。
