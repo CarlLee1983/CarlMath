@@ -22,6 +22,7 @@ const { origin: o } = layout;
   {layout.cubicCurves.map((c) => <path class="fg-curve" d={`M ${c.from.x} ${c.from.y} C ${c.control1.x} ${c.control1.y} ${c.control2.x} ${c.control2.y} ${c.to.x} ${c.to.y}`} />)}
   {layout.exponentialCurve && <path class="fg-curve" d={layout.exponentialCurve.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ")} />}
   {layout.logarithmicCurve && <path class="fg-curve" d={layout.logarithmicCurve.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ")} />}
+  {layout.trigCurves.map((curve) => <path class="fg-curve" d={curve.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ")} />)}
   {layout.points.map((p) => <circle class="fg-point" cx={p.x} cy={p.y} r="5" />)}
   {layout.endpoints.map((p) => <circle class:list={["fg-endpoint", { "fg-open": p.open }]} cx={p.x} cy={p.y} r="6" />)}
   {layout.texts.map((t) => <text class={`fg-text fg-${t.kind}`} x={t.x} y={t.y}>{t.text}</text>)}
