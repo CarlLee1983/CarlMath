@@ -444,3 +444,37 @@ import FunctionGraph from "@figures/FunctionGraph.astro";
 | 320px 寬 | 數字與標籤讀得清楚，沒有水平捲軸 | 同左 |
 
 自動檢查只涵蓋機器能判斷的部分：fixture 教具的結構、線寬與字級、主題切換時的顏色，以及 320px 沒有水平捲軸（`tests/figures.spec.ts`）。圖是否真的讀得清楚，只能靠人看。
+## `AreaGraph`
+
+積分塗色與黎曼和使用 `@figures/AreaGraph.astro`，依 ADR 0005 與 `FunctionGraph` 分開。每圖一個一次或二次函數，基線固定 y=0；不接受雙曲線、任意分割或 JavaScript 函式。
+
+| 參數 | 規則 |
+| --- | --- |
+| `id`、`title`、`desc` | 沿用 FunctionGraph 的穩定 id、10 字內短標題與必填替代文字 |
+| `xRange`、`yRange`、`xStep`、`yStep` | 沿用有限、含原點視窗與正整數刻度，最多 8 段；固定 480 寬、360×360 繪圖區，兩軸可不等比例，沒有格線 |
+| `fn` | 僅 `{linear:[a,b]}` 或 `{quadratic:[a,b,c]}`；全部係數有限，最高次係數非零。曲線沿用解析裁切與精確線段／Q Bézier |
+| `integrationRange` | 必填有限嚴格遞增 `[a,b]`，在 xRange 內。整個積分區間上的曲線（含二次頂點）必須位於 yRange，否則拒絕，不能裁掉面積 |
+| `rectangles` | 選填 `{count:n,sample:"left"或"right"}`，n 為 1–32 正安全整數。等分積分區間並由函數算取樣高度；每條投影至少 8 viewBox 單位，非零高度至少 1 單位。無任意分割或中點模式 |
+
+- 不提供 domain 或 points；積分區間不是函數定義域，沒有端點圓，區間外真曲線仍延伸到視窗邊界。
+- 省略 rectangles 時，沿解析零點分成正負塗色區，每區用精確曲線連回 y=0 閉合；二次曲線不採取樣折線面積。負區加斜紋，不只靠顏色區分，desc 也說明 x 軸下方貢獻負值。雙根只相切，不誤判正負交換。
+- 有 rectangles 時只填長條，保留原函數的 fg 主線作對照；高度明確取每個等分區間左端或右端。負長條向下、零高長條不畫假面積。跨零的長條仍按所選端點取值，不偷換成曲線的正負分區。
+- 塗色為 accent、透明度 0.22，長條邊界 accent 2、真曲線 fg 3、文字 22。字框避開真曲線、長條完整矩形或曲線塗色區；完整函數區間內的二次極值也參與避讓。端點、根、積分值、投影的溢位或數值精度不足拒絕，不讓圖外區域誤填。
+- 元件可供測試核對有向積分與長條和，但不自動把數值答案寫在題圖。desc 必須說明函數、區間、軸單位、取樣方式與長條數，或正負塗色語意。
+
+```mdx
+import AreaGraph from "@figures/AreaGraph.astro";
+
+<AreaGraph
+  id="area-left-four"
+  title="四條左端取樣"
+  desc="兩軸每刻度差 1。曲線為 x 的平方，積分區間從 0 到 2，等分成四條，每條高度取左端函數值。淡色長條是近似面積，深色曲線是原函數；首條高度為 0，不畫假面積。"
+  xRange={[-0.5,2.5]}
+  yRange={[-0.5,4.5]}
+  fn={{quadratic:[1,0,0]}}
+  integrationRange={[0,2]}
+  rectangles={{count:4,sample:"left"}}
+/>
+```
+
+右端圖只改 sample；細分圖改 count=8。正負示例用 `fn={{linear:[1,0]}}`、`integrationRange={[-1,2]}`、兩軸 `[-2,3]`，省略 rectangles；下方負區有斜紋。左右、粗細比較拆成同尺度圖。

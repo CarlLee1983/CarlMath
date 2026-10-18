@@ -1,0 +1,33 @@
+---
+unit: broken
+description: 確認面積圖的精確區域與黎曼和 SVG。
+updated: 2026-10-18
+---
+import AreaGraph from "@figures/AreaGraph.astro";
+
+## 情境開場
+broken 的核心問題？
+## 暖身
+回想原點。
+## 直覺
+<AreaGraph id="area-4-left" title="4條左端取樣" desc="" xRange={[-0.5,2.5]} yRange={[-0.5,4.5]} fn={{quadratic:[1,0,0]}} integrationRange={[0,2]} rectangles={{count:4,sample:"left"}} />
+
+<AreaGraph id="area-4-right" title="4條右端取樣" desc="橫軸與縱軸每刻度差 1。函數是 x 的平方，積分區間為 0 到 2，等分成 4 條，每條高度取右端的函數值；淡色長條表示近似面積，深色曲線是原函數。零高長條不額外畫面積，區間外曲線仍延伸。" xRange={[-0.5,2.5]} yRange={[-0.5,4.5]} fn={{quadratic:[1,0,0]}} integrationRange={[0,2]} rectangles={{count:4,sample:"right"}} />
+
+<AreaGraph id="area-8-left" title="8條左端取樣" desc="橫軸與縱軸每刻度差 1。函數是 x 的平方，積分區間為 0 到 2，等分成 8 條，每條高度取左端的函數值；淡色長條表示近似面積，深色曲線是原函數。零高長條不額外畫面積，區間外曲線仍延伸。" xRange={[-0.5,2.5]} yRange={[-0.5,4.5]} fn={{quadratic:[1,0,0]}} integrationRange={[0,2]} rectangles={{count:8,sample:"left"}} />
+
+<AreaGraph id="area-8-right" title="8條右端取樣" desc="橫軸與縱軸每刻度差 1。函數是 x 的平方，積分區間為 0 到 2，等分成 8 條，每條高度取右端的函數值；淡色長條表示近似面積，深色曲線是原函數。零高長條不額外畫面積，區間外曲線仍延伸。" xRange={[-0.5,2.5]} yRange={[-0.5,4.5]} fn={{quadratic:[1,0,0]}} integrationRange={[0,2]} rectangles={{count:8,sample:"right"}} />
+
+<AreaGraph id="area-signed-linear" title="上下兩塊面積" desc="兩軸每刻度差 1。直線 y 等於 x，積分區間從負一到 2。x 軸上方淡色區貢獻正值，下方加斜紋區貢獻負值，積分是兩者的有向總和，不把下方區域改成正值；畫框不是函數端點。" xRange={[-2,3]} yRange={[-2,3]} fn={{linear:[1,0]}} integrationRange={[-1,2]} />
+## 推理
+原點在兩軸交會處。
+## 範例
+畫出原點。
+## 常見迷思
+原點不屬於象限。
+## 練習
+判斷位置。
+## 提取題
+原點是什麼？
+## 下一步
+接著比較位置。
