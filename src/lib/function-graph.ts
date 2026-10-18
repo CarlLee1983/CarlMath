@@ -1,5 +1,5 @@
 export type GraphRange = [number, number];
-export type GraphFunction = { linear: [number, number] } | { constant: number } | { quadratic: [number, number, number] } | { cubic: [number, number, number, number] };
+export type GraphFunction = { linear: [number, number] } | { constant: number } | { quadratic: [number, number, number] } | { cubic: [number, number, number, number] } | { exponential: [number] };
 export interface GraphDomain { from: number | null; to: number | null; openFrom: boolean; openTo: boolean }
 export interface FunctionGraphInput {
   id: string;
@@ -22,7 +22,9 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     }
   }
   const fn = input.fn;
-  if (!fn || typeof fn !== "object" || Array.isArray(fn) || Object.keys(fn).length !== 1) fail("fn 必須只宣告一個函數族 constant、linear、quadratic 或 cubic");
+  if (!fn || typeof fn !== "object" || Array.isArray(fn) || Object.keys(fn).length !== 1) fail("fn 必須只宣告一個函數族 constant、linear、quadratic、cubic 或 exponential");
+  let exponential: number | undefined;
+  let exponentialBase: number | undefined;
   let cubic = 0;
   let q = 0;
   let a = 0;
@@ -36,9 +38,14 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   } else if ("cubic" in fn) {
     if (!Array.isArray(fn.cubic) || fn.cubic.length !== 4 || !fn.cubic.every(Number.isFinite) || fn.cubic[0] === 0) fail("fn.cubic 必須是 [非零有限三次係數, 有限二次係數, 有限一次係數, 有限常數項]");
     [cubic, q, a, b] = fn.cubic;
+  } else if ("exponential" in fn) {
+    if (!Array.isArray(fn.exponential) || fn.exponential.length !== 1 || !Number.isFinite(fn.exponential[0]) || fn.exponential[0] <= 0 || fn.exponential[0] === 1) fail("fn.exponential 必須是 [正有限且不等於 1 的底數]；底數 1 請用 constant");
+    exponentialBase = fn.exponential[0];
+    exponential = Math.log(exponentialBase);
+    if (!Number.isFinite(exponential) || exponential === 0) fail("fn.exponential 的底數無法可靠表示");
   } else if ("constant" in fn && Number.isFinite(fn.constant)) {
     b = fn.constant;
-  } else fail("fn 只接受 constant、linear、quadratic 或 cubic 的有限係數");
+  } else fail("fn 只接受 constant、linear、quadratic、cubic 或 exponential 的有限係數");
   const domain = input.domain === undefined ? { from: null, to: null, openFrom: true, openTo: true } : input.domain;
   if (!domain || typeof domain !== "object") fail("domain 必須有 from、to、openFrom、openTo");
   for (const [end, open] of [["from", "openFrom"], ["to", "openTo"]] as const) {
@@ -62,6 +69,13 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   if (!Array.isArray(points) || points.length > 12) fail("points 最多 12 個；過密請拆圖");
   const names = new Set<string>();
   const evaluate = (x: number) => {
+    if (exponential !== undefined) {
+      const exponent = exponential * x, y = Math.pow(exponentialBase!, x);
+      // This numerical budget is separate from the interpolation remainder.
+      const error = 64 * Number.EPSILON * Math.max(1, Math.abs(exponent)) * y;
+      if (![exponent, y, error].every(Number.isFinite) || y <= 0 || error > (input.yRange[1] - input.yRange[0]) * 1e-10) fail("fn.exponential 的函數值溢位、下溢或數值精度不足，請調整底數或單位");
+      return y;
+    }
     if (cubic !== 0) {
       const terms = [cubic * x * x * x, q * x * x, a * x, b];
       const y = ((cubic * x + q) * x + a) * x + b;
@@ -108,8 +122,53 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   let start = Math.max(from, xmin), end = Math.min(to, xmax);
   const quadraticCurves: QuadraticCurve[] = [];
   const cubicCurves: CubicCurve[] = [];
+  let exponentialCurve: GraphPoint[] | undefined;
+  const exponentialErrorBounds: number[] = [];
   let curve: { from: GraphPoint; to: GraphPoint } | undefined;
-  if (cubic !== 0) {
+  if (exponential !== undefined) {
+    if (ymax <= 0) fail("fn.exponential 在視窗內沒有可見圖形，請調整範圍");
+    const boundary = Math.log(ymax) / exponential;
+    if (!Number.isFinite(boundary)) fail("fn.exponential 與視窗交點的數值精度不足");
+    if (boundary >= start && boundary <= end && Math.abs(evaluate(boundary) - ymax) > (ymax - ymin) * 1e-10) fail("fn.exponential 與視窗交點的數值精度不足");
+    // Preserve exact finite domain/window endpoints (e.g. 3²=9) when logarithm
+    // roundoff puts the inverse boundary a few ulps on the wrong side.
+    if (exponential > 0) {
+      if (Math.pow(exponentialBase!, end) > ymax) end = Math.min(end, boundary);
+    } else if (Math.pow(exponentialBase!, start) > ymax) start = Math.max(start, boundary);
+    if (start > end || (start === end && ((start === from && domain.openFrom) || (end === to && domain.openTo)))) fail("domain 與視窗內沒有可見圖形，請調整範圍");
+    const lowY = Math.min(evaluate(start), evaluate(end));
+    // Do not silently flatten, truncate, or clamp an indistinguishable tail to y=0.
+    if (lowY * yUnit < 4) fail("fn.exponential 曲線距 x 軸不足 4 個 viewBox 單位，請縮短橫軸範圍或放大縱軸比例");
+    if (from !== to) {
+      const projectedStart = project(start, evaluate(start)), projectedEnd = project(end, evaluate(end));
+      exponentialCurve = [projectedStart];
+      // Exact marked x values become interpolation nodes unless indistinguishable
+      // from an existing window endpoint at this projection precision.
+      const cuts = [...new Set([start, ...points.map((p) => p.at[0]).filter((x) => x > start && x < end
+        && project(x, 0).x > projectedStart.x && project(x, 0).x < projectedEnd.x), end])].sort((x, y) => x - y);
+      const append = (u: number, v: number, depth: number) => {
+        const y0 = evaluate(u), y1 = evaluate(v), h = v - u;
+        // Linear-interpolation remainder: h² max|f''| / 8; f''=log(base)² f.
+        // The extra 1e-6 SVG units reserve room for the guarded floating calculations.
+        const bound = (h * exponential!) ** 2 * Math.max(y0, y1) * yUnit / 8 * (1 + 64 * Number.EPSILON) + 1e-6;
+        if (!Number.isFinite(bound)) fail("fn.exponential 的近似誤差界無法可靠計算");
+        const first = project(u, y0), last = project(v, y1);
+        if (![first.x, first.y, last.x, last.y].every(Number.isFinite) || (u !== v && first.x === last.x)) fail("fn.exponential 的投影數值精度不足");
+        if (bound <= 0.1) {
+          if (exponentialErrorBounds.length >= 4096) fail("fn.exponential 近似超過 4096 段，請調整範圍");
+          exponentialCurve!.push(last);
+          exponentialErrorBounds.push(bound);
+          return;
+        }
+        const mid = u + (v - u) / 2;
+        if (depth >= 64 || mid === u || mid === v) fail("fn.exponential 無法在近似誤差上限內可靠細分");
+        append(u, mid, depth + 1);
+        append(mid, v, depth + 1);
+      };
+      for (let i = 1; i < cuts.length; i++) append(cuts[i - 1]!, cuts[i]!, 0);
+      if (start === end) append(start, end, 0);
+    }
+  } else if (cubic !== 0) {
     if (start > end) fail("domain 與視窗內沒有可見圖形，請調整範圍");
     const numericalFailure = () => fail("fn.cubic 的交點或導函數數值精度不足，請調整係數或單位");
     const stationary = quadraticRoots(3 * cubic, 2 * q, a, numericalFailure).filter((x) => x > start && x < end);
@@ -218,6 +277,7 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   const endpoints: { x: number; y: number; open: boolean }[] = [];
   for (const [x, open] of [[domain.from, domain.openFrom], [domain.to, domain.openTo]] as const) {
     if (x === null || x < xmin || x > xmax) continue;
+    if (exponential !== undefined && (x < start || x > end)) continue;
     const y = evaluate(x);
     if (!Number.isFinite(y)) fail("domain 端點的函數值超出可可靠計算的範圍");
     if (y < ymin || y > ymax) continue;
@@ -246,13 +306,24 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     { left: left - 10, right: right + 10, top: origin.y - 2, bottom: origin.y + 2 },
     { left: origin.x - 2, right: origin.x + 2, top: top - 10, bottom: bottom + 10 },
   ];
+  const exponentialCrossesBox = (box: Box) => {
+    if (!exponentialCurve) return false;
+    const lo = Math.max(start, xmin + (box.left - 2 - left) / xUnit);
+    const hi = Math.min(end, xmin + (box.right + 2 - left) / xUnit);
+    if (lo > hi) return false;
+    const y0 = project(lo, evaluate(lo)).y, y1 = project(hi, evaluate(hi)).y;
+    // Monotonicity gives the complete true y range; expand by the 0.1-unit
+    // approximation allowance to cover both the function and rendered polyline.
+    return Math.min(y0, y1) <= box.bottom + 2.1 && Math.max(y0, y1) >= box.top - 2.1;
+  };
   const fits = (t: GraphText, other: GraphText[]) => {
     const box = textBox(t);
     return box.left >= 4 && box.right <= width - 4 && box.top >= 4 && box.bottom <= height - 4
       && ![...other.map(textBox), ...markerBoxes, ...axisBoxes].some((b) => overlaps(box, b))
       && (!curve || !crossesBox(curve, box))
       && !quadraticCurves.some((segment) => quadraticCrossesBox(segment, box))
-      && !cubicCurves.some((segment) => cubicCrossesBox(segment, box, () => fail("fn.cubic 的標記避讓數值精度不足")));
+      && !cubicCurves.some((segment) => cubicCrossesBox(segment, box, () => fail("fn.cubic 的標記避讓數值精度不足")))
+      && !exponentialCrossesBox(box);
   };
   // Include endpoints and all axis names in avoidance, not just curve/tick intersections.
   for (let i = 0; i < texts.length; i++) {
@@ -273,7 +344,7 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     if (!label) fail(`points 點名 ${p.name} 無法避讓，請調整範圍或拆圖`);
     texts.push(label!);
   }
-  return { width, height, left, right, top, bottom, origin, curve, quadraticCurves, cubicCurves, vertex, endpoints, points: visiblePoints, texts,
+  return { width, height, left, right, top, bottom, origin, curve, quadraticCurves, cubicCurves, exponentialCurve, exponentialErrorBounds, vertex, endpoints, points: visiblePoints, texts,
     xTicks: xTicks.map((v) => project(v, 0)), yTicks: yTicks.map((v) => project(0, v)) };
 
 }

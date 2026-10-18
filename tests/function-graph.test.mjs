@@ -232,3 +232,108 @@ test("教材三次相切與穿越保持正確，A/B/O 與所有刻度避讓曲�
     assert.ok(!(p.x >= text.x - w - 2 && p.x <= text.x + w + 2 && p.y >= text.y - 25 && p.y <= text.y + 7), `曲線穿過 ${text.text}`);
   }
 });
+
+const expBase = { id: "exponential-test", xRange: [-3, 3], yRange: [-1, 5], fn: { exponential: [2] } };
+
+test("指數族嚴格驗證正且非1的單個底數，常數1另用constant", () => {
+  for (const exponential of [[], [2, 3], [0], [-2], [1], [NaN], [Infinity], "2"]) {
+    assert.throws(() => resolveFunctionGraph({ ...expBase, fn: { exponential } }), /fn.exponential/);
+  }
+  assert.throws(() => resolveFunctionGraph({ ...expBase, fn: { exponential: [2], constant: 1 } }), /fn/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, fn: { exp: [2] } }), /fn/);
+  assert.doesNotThrow(() => resolveFunctionGraph({ ...expBase, fn: { constant: 1 } }));
+  for (const base of [1 + Number.EPSILON, 1 - Number.EPSILON]) {
+    const graph = resolveFunctionGraph({ ...expBase, fn: { exponential: [base] } });
+    assert.ok(graph.exponentialCurve.length >= 2);
+    assert.ok(graph.exponentialErrorBounds.every((b) => b <= 0.1));
+  }
+});
+
+test("指數近似的每段都有0.1 SVG單位以下解析誤差界，原函數標點成為節點", () => {
+  for (const base of [2, 0.5]) {
+    const sign = base > 1 ? 1 : -1;
+    const graph = resolveFunctionGraph({ ...expBase, fn: { exponential: [base] }, points: [{ at: [0, 1], name: "A" }, { at: [sign, 2] }, { at: [sign * 2, 4] }] });
+    assert.equal(graph.curve, undefined);
+    assert.deepEqual(graph.quadraticCurves, []);
+    assert.deepEqual(graph.cubicCurves, []);
+    assert.deepEqual(graph.endpoints, []);
+    assert.equal(graph.exponentialErrorBounds.length, graph.exponentialCurve.length - 1);
+    assert.ok(graph.exponentialErrorBounds.length < 4096);
+    for (const point of graph.points) assert.ok(graph.exponentialCurve.some((p) => p.x === point.x && Math.abs(p.y - point.y) < 1e-10));
+    for (let i = 1; i < graph.exponentialCurve.length; i++) {
+      const p0 = graph.exponentialCurve[i - 1], p1 = graph.exponentialCurve[i];
+      const u = (p0.x - 60) / 60 - 3, v = (p1.x - 60) / 60 - 3;
+      const analytical = (v - u) ** 2 * Math.log(base) ** 2 * Math.max(base ** u, base ** v) * 60 / 8;
+      assert.ok(analytical <= graph.exponentialErrorBounds[i - 1] + 1e-12);
+      assert.ok(graph.exponentialErrorBounds[i - 1] <= 0.1);
+      assert.ok(p0.x < p1.x && p0.y <= graph.origin.y - 4 && p1.y <= graph.origin.y - 4);
+      for (let j = 0; j <= 40; j++) {
+        const t = j / 40, x = u + (v - u) * t;
+        const exactY = 54 + (5 - base ** x) * 60;
+        const lineY = p0.y + (p1.y - p0.y) * t;
+        assert.ok(Math.abs(lineY - exactY) <= graph.exponentialErrorBounds[i - 1] + 1e-9);
+        assert.ok(lineY <= exactY + 1e-9); // Convex function: interpolating chord lies above it in mathematical y.
+      }
+    }
+  }
+});
+
+test("增減指數圖互為縱軸鏡像，解析裁至y=5且不製造端點", () => {
+  const increase = resolveFunctionGraph(expBase);
+  const decrease = resolveFunctionGraph({ ...expBase, fn: { exponential: [0.5] } });
+  near(increase.exponentialCurve.at(-1).x, 240 + 60 * Math.log2(5));
+  near(increase.exponentialCurve.at(-1).y, 54);
+  near(decrease.exponentialCurve[0].x, 240 - 60 * Math.log2(5));
+  near(decrease.exponentialCurve[0].y, 54);
+  near(increase.exponentialCurve[0].y, 54 + (5 - 1 / 8) * 60);
+  assert.equal(increase.exponentialCurve.length, decrease.exponentialCurve.length);
+  for (const [i, p] of increase.exponentialCurve.entries()) {
+    const mirror = decrease.exponentialCurve.at(-i - 1);
+    near(p.x + mirror.x, 480);
+    near(p.y, mirror.y);
+  }
+  assert.deepEqual(increase.endpoints, []);
+  assert.deepEqual(decrease.endpoints, []);
+});
+
+test("指數有限域開閉、單點域與邊界真端點保留，反解浮點不吞掉3²=9", () => {
+  const graph = resolveFunctionGraph({ ...expBase, domain: { from: -1, to: 2, openFrom: true, openTo: false }, points: [{ at: [2, 4], name: "B" }] });
+  assert.deepEqual(graph.endpoints, [{ x: 180, y: 324, open: true }, { x: 360, y: 114, open: false }]);
+  assert.deepEqual(graph.points, []);
+  const descending = resolveFunctionGraph({ ...expBase, fn: { exponential: [0.5] }, domain: { from: -2, to: 1, openFrom: false, openTo: true } });
+  assert.deepEqual(descending.endpoints, [{ x: 120, y: 114, open: false }, { x: 300, y: 324, open: true }]);
+  const single = resolveFunctionGraph({ ...expBase, domain: { from: 0, to: 0, openFrom: false, openTo: false } });
+  assert.equal(single.exponentialCurve, undefined);
+  assert.deepEqual(single.endpoints, [{ x: 240, y: 294, open: false }]);
+  const edge = resolveFunctionGraph({ ...expBase, yRange: [0, 9], yStep: 2, fn: { exponential: [3] }, domain: { from: 0, to: 2, openFrom: true, openTo: false } });
+  assert.deepEqual(edge.endpoints.at(-1), { x: 360, y: 54, open: false });
+});
+
+test("指數開放端唯一接觸與無交集拒絕，點須核對真函數且微尺度容差不可放寬", () => {
+  assert.throws(() => resolveFunctionGraph({ ...expBase, yRange: [0, 4], domain: { from: 2, to: 3, openFrom: true, openTo: false } }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, yRange: [-5, 0] }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, domain: { from: 10, to: null, openFrom: false, openTo: true } }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, domain: { from: 0, to: 2, openFrom: true, openTo: false }, points: [{ at: [0, 1] }] }), /points/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, points: [{ at: [1, 2.01] }] }), /points.*曲線/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, xRange: [-36, 0], xStep: 6, yRange: [-1e-11, 1e-10], domain: { from: -36, to: -34, openFrom: false, openTo: false }, points: [{ at: [-35, 2 ** -35 + 5e-12] }] }), /points.*曲線/);
+});
+
+test("指數尾巴不足4 SVG單位、下溢或極端數值會拒絕而非夾到x軸", () => {
+  assert.throws(() => resolveFunctionGraph({ ...expBase, xRange: [-6, 0] }), /距 x 軸不足 4/);
+  for (const base of [Number.MIN_VALUE, Number.MAX_VALUE]) assert.throws(() => resolveFunctionGraph({ ...expBase, fn: { exponential: [base] } }), /fn.exponential/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, fn: { exponential: [Number.MAX_VALUE] }, points: [{ at: [2, 2] }] }), /fn.exponential.*溢位/);
+});
+
+test("指數標籤同時避開真曲線與有界近似折線", () => {
+  for (const base of [2, 0.5]) {
+    const graph = resolveFunctionGraph({ ...expBase, fn: { exponential: [base] }, points: [{ at: [0, 1], name: "A" }] });
+    for (const text of graph.texts) for (let i = 1; i < graph.exponentialCurve.length; i++) {
+      const p = graph.exponentialCurve[i - 1], q = graph.exponentialCurve[i], w = text.text.length * 15 / 2 + 3;
+      for (let j = 0; j <= 10; j++) {
+        const t = j / 10, x = p.x + (q.x - p.x) * t;
+        const exactY = 54 + (5 - base ** ((x - 60) / 60 - 3)) * 60;
+        for (const y of [exactY, p.y + (q.y - p.y) * t]) assert.ok(!(x >= text.x - w - 2 && x <= text.x + w + 2 && y >= text.y - 25 && y <= text.y + 7), `曲線穿過 ${text.text}`);
+      }
+    }
+  }
+});

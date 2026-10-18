@@ -6,6 +6,7 @@ updated: 2026-10-10
 
 import NumberLine from "@figures/NumberLine.astro";
 import Counters from "@figures/Counters.astro";
+import FunctionGraph from "@figures/FunctionGraph.astro";
 
 ## 情境開場
 
@@ -94,6 +95,10 @@ import Counters from "@figures/Counters.astro";
 ## 提取題
 
 不看上面，說說為什麼加法的順序可以交換。
+
+<FunctionGraph id="exponential-increase" title="底數為二的曲線" desc="兩軸相鄰刻度各差 1。曲線表示 y 等於 2 的 x 次方，定義域為全體實數，畫框不是端點。標出 A 點 (0, 1)，以及 (1, 2)、(2, 4)。向左曲線高度可以任意接近 0，但任何有限輸入的高度都大於 0，不與橫軸相交。" xRange={[-3,3]} yRange={[-1,5]} fn={{exponential:[2]}} points={[{at:[0,1],name:"A"},{at:[1,2]},{at:[2,4]}]} />
+
+<FunctionGraph id="exponential-decrease" title="底數為半的曲線" desc="兩軸相鄰刻度各差 1。曲線表示 y 等於二分之一的 x 次方，定義域為全體實數，畫框不是端點。標出 A 點 (0, 1)，以及 (負一, 2)、(負二, 4)。向右高度可以任意接近 0，但不等於 0；它是底數為 2 的曲線對縱軸的反射。" xRange={[-3,3]} yRange={[-1,5]} fn={{exponential:[0.5]}} points={[{at:[0,1],name:"A"},{at:[-1,2]},{at:[-2,4]}]} />
 
 ## 下一步
 
