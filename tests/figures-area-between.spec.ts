@@ -59,8 +59,51 @@ test("第二曲線以虛線表示，陰影只在兩條曲線之間", async ({pag
   const graphs = page.locator("svg.ag-fig");
   await expect(graphs).toHaveCount(2);
   const first = graphs.nth(0);
-  await expect(first.locator(".ag-second")).toHaveCount(1);
-  expect(await first.locator(".ag-second").evaluate(el => getComputedStyle(el).strokeDasharray)).toBe("8px, 6px");
+  // y=x² is split at its vertex, then clipped at y=2 on the right.
+  // Both exact Q pieces belong to the same dashed second function.
+  const second = first.locator("path.ag-second");
+  await expect(first.locator(".ag-second")).toHaveCount(2);
+  await expect(second).toHaveCount(2);
+  const pieces = await second.evaluateAll(nodes => nodes.map(node => {
+    const path = node as SVGPathElement;
+    const length = path.getTotalLength();
+    return {
+      d: path.getAttribute("d")!,
+      dash: getComputedStyle(path).strokeDasharray,
+      samples: Array.from({length:65}, (_, i) => {
+        const p = path.getPointAtLength(length * i / 64);
+        return {x:p.x,y:p.y};
+      }),
+    };
+  }));
+  const expected = [
+    [60,174,120,294,180,294],
+    [180,294,180+60*Math.SQRT2,294,180+120*Math.SQRT2,54],
+  ];
+  for (const [i, piece] of pieces.entries()) {
+    expect(piece.dash).toBe("8px, 6px");
+    const match = piece.d.match(/^M (\S+) (\S+) Q (\S+) (\S+) (\S+) (\S+)$/);
+    expect(match).not.toBeNull();
+    const coordinates = match!.slice(1).map(Number);
+    for (const [j, coordinate] of coordinates.entries()) {
+      expect(Number.isFinite(coordinate)).toBe(true);
+      expect(coordinate).toBeCloseTo(expected[i]![j]!, 8);
+    }
+    // Independent browser geometry covers each complete piece, not just endpoints.
+    for (const p of piece.samples) {
+      const x = (p.x - 180) / 120;
+      // Browser SVG geometry uses single-precision coordinates; the Q data above is checked to 1e-8.
+      expect(Math.abs(p.y - (294 - 120*x*x))).toBeLessThan(0.02);
+      expect(p.x).toBeGreaterThanOrEqual(expected[i]![0]! - 0.001);
+      expect(p.x).toBeLessThanOrEqual(expected[i]![4]! + 0.001);
+    }
+  }
+  const leftEnd = pieces[0]!.samples.at(-1)!;
+  const rightStart = pieces[1]!.samples[0]!;
+  expect(leftEnd.x).toBeCloseTo(rightStart.x, 4);
+  expect(leftEnd.y).toBeCloseTo(rightStart.y, 4);
+  expect(leftEnd.x).toBeCloseTo(180, 4);
+  expect(leftEnd.y).toBeCloseTo(294, 4);
   await expect(first.locator(".ag-area")).toHaveCount(1);
   await expect(first.locator(".ag-negative")).toHaveCount(0);
   const inside = await first.locator(".ag-area").evaluate((el: SVGGeometryElement) => ({
