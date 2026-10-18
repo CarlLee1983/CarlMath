@@ -1,5 +1,5 @@
 export type GraphRange = [number, number];
-export type GraphFunction = { linear: [number, number] } | { constant: number } | { quadratic: [number, number, number] };
+export type GraphFunction = { linear: [number, number] } | { constant: number } | { quadratic: [number, number, number] } | { cubic: [number, number, number, number] };
 export interface GraphDomain { from: number | null; to: number | null; openFrom: boolean; openTo: boolean }
 export interface FunctionGraphInput {
   id: string;
@@ -22,7 +22,8 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     }
   }
   const fn = input.fn;
-  if (!fn || typeof fn !== "object" || Array.isArray(fn) || Object.keys(fn).length !== 1) fail("fn 必須只宣告一個函數族 constant、linear 或 quadratic");
+  if (!fn || typeof fn !== "object" || Array.isArray(fn) || Object.keys(fn).length !== 1) fail("fn 必須只宣告一個函數族 constant、linear、quadratic 或 cubic");
+  let cubic = 0;
   let q = 0;
   let a = 0;
   let b = 0;
@@ -32,9 +33,12 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   } else if ("quadratic" in fn) {
     if (!Array.isArray(fn.quadratic) || fn.quadratic.length !== 3 || !fn.quadratic.every(Number.isFinite) || fn.quadratic[0] === 0) fail("fn.quadratic 必須是 [非零有限二次係數, 有限一次係數, 有限常數項]");
     [q, a, b] = fn.quadratic;
+  } else if ("cubic" in fn) {
+    if (!Array.isArray(fn.cubic) || fn.cubic.length !== 4 || !fn.cubic.every(Number.isFinite) || fn.cubic[0] === 0) fail("fn.cubic 必須是 [非零有限三次係數, 有限二次係數, 有限一次係數, 有限常數項]");
+    [cubic, q, a, b] = fn.cubic;
   } else if ("constant" in fn && Number.isFinite(fn.constant)) {
     b = fn.constant;
-  } else fail("fn 只接受 constant、linear 或 quadratic 的有限係數");
+  } else fail("fn 只接受 constant、linear、quadratic 或 cubic 的有限係數");
   const domain = input.domain === undefined ? { from: null, to: null, openFrom: true, openTo: true } : input.domain;
   if (!domain || typeof domain !== "object") fail("domain 必須有 from、to、openFrom、openTo");
   for (const [end, open] of [["from", "openFrom"], ["to", "openTo"]] as const) {
@@ -58,6 +62,13 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   if (!Array.isArray(points) || points.length > 12) fail("points 最多 12 個；過密請拆圖");
   const names = new Set<string>();
   const evaluate = (x: number) => {
+    if (cubic !== 0) {
+      const terms = [cubic * x * x * x, q * x * x, a * x, b];
+      const y = ((cubic * x + q) * x + a) * x + b;
+      const error = terms.reduce((sum, v) => sum + Math.abs(v), 0) * Number.EPSILON * 12;
+      if (![...terms, y, error].every(Number.isFinite) || error > (input.yRange[1] - input.yRange[0]) * 1e-8) fail("fn.cubic 的函數值溢位或數值精度不足，請調整係數或單位");
+      return y;
+    }
     if (q === 0) return a * x + b;
     const quadratic = q * x * x, linear = a * x;
     const y = (q * x + a) * x + b;
@@ -66,7 +77,7 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     if (![quadratic, linear, y, error].every(Number.isFinite) || error > (input.yRange[1] - input.yRange[0]) * 1e-8) fail("fn.quadratic 的函數值溢位或數值精度不足，請調整係數或單位");
     return y;
   };
-  const vertexX = q === 0 ? undefined : (-(a / q) / 2 || 0);
+  const vertexX = cubic !== 0 || q === 0 ? undefined : (-(a / q) / 2 || 0);
   if (vertexX !== undefined && !Number.isFinite(vertexX)) fail("fn.quadratic 的頂點超出可可靠計算的範圍");
   const vertex = vertexX === undefined ? undefined : { x: vertexX, y: evaluate(vertexX) };
   for (const [i, p] of points.entries()) {
@@ -96,8 +107,61 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   // Intersect analytically. Quadratics can have two disconnected visible branches.
   let start = Math.max(from, xmin), end = Math.min(to, xmax);
   const quadraticCurves: QuadraticCurve[] = [];
+  const cubicCurves: CubicCurve[] = [];
   let curve: { from: GraphPoint; to: GraphPoint } | undefined;
-  if (q !== 0) {
+  if (cubic !== 0) {
+    if (start > end) fail("domain 與視窗內沒有可見圖形，請調整範圍");
+    const numericalFailure = () => fail("fn.cubic 的交點或導函數數值精度不足，請調整係數或單位");
+    const stationary = quadraticRoots(3 * cubic, 2 * q, a, numericalFailure).filter((x) => x > start && x < end);
+    const cuts = [...new Set([start, ...stationary, end])].sort((x, y) => x - y);
+    const intervals: GraphRange[] = [];
+    const derivative = (x: number) => {
+      const value = (3 * cubic * x + 2 * q) * x + a;
+      if (!Number.isFinite(value)) numericalFailure();
+      return value;
+    };
+    // Each interval is monotone. Bisection solves a bracketed boundary equation;
+    // it does not approximate the drawn curve with sampled segments.
+    const boundaryRoot = (lo: number, hi: number, target: number) => {
+      const initialLow = evaluate(lo), initialHigh = evaluate(hi);
+      if (initialLow === target) return lo;
+      if (initialHigh === target) return hi;
+      const increasing = initialHigh > initialLow;
+      for (let i = 0; i < 160; i++) {
+        const mid = lo + (hi - lo) / 2, value = evaluate(mid);
+        if (value === target) return mid;
+        if (Math.abs(value - target) <= (ymax - ymin) * 1e-11 && hi - lo <= (xmax - xmin) * 1e-11) return mid;
+        if (mid === lo || mid === hi) numericalFailure();
+        if ((value < target) === increasing) lo = mid; else hi = mid;
+      }
+      return numericalFailure();
+    };
+    for (let i = 1; i < cuts.length; i++) {
+      const lo = cuts[i - 1]!, hi = cuts[i]!;
+      const y0 = evaluate(lo), y1 = evaluate(hi);
+      if (Math.max(y0, y1) < ymin || Math.min(y0, y1) > ymax) continue;
+      let u = lo, v = hi;
+      if (y0 < ymin) u = boundaryRoot(lo, hi, ymin);
+      else if (y0 > ymax) u = boundaryRoot(lo, hi, ymax);
+      if (y1 < ymin) v = boundaryRoot(lo, hi, ymin);
+      else if (y1 > ymax) v = boundaryRoot(lo, hi, ymax);
+      if (u > v) numericalFailure();
+      if (u === v && ((u === from && domain.openFrom) || (u === to && domain.openTo))) continue;
+      intervals.push([u, v]);
+    }
+    if (start === end && evaluate(start) >= ymin && evaluate(start) <= ymax
+      && !(start === from && domain.openFrom) && !(start === to && domain.openTo)) intervals.push([start, start]);
+    if (!intervals.length) fail("domain 與視窗內沒有可見圖形，請調整範圍");
+    const unique = intervals.filter(([u, v], i) => u !== v || !intervals.some(([lo, hi], j) => j !== i && lo <= u && hi >= v && (lo !== hi || j < i)));
+    if (from !== to) for (const [u, v] of unique) {
+      const third = (v - u) / 3;
+      const segment = { from: project(u, evaluate(u)), control1: project(u + third, evaluate(u) + derivative(u) * third),
+        control2: project(v - third, evaluate(v) - derivative(v) * third), to: project(v, evaluate(v)) };
+      if (!Object.values(segment).every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))
+        || (u !== v && segment.from.x === segment.to.x)) numericalFailure();
+      cubicCurves.push(segment);
+    }
+  } else if (q !== 0) {
     if (start > end) fail("domain 與視窗內沒有可見圖形，請調整範圍");
     const cuts = [start, end];
     if (vertex!.x > start && vertex!.x < end) cuts.push(vertex!.x);
@@ -187,7 +251,8 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     return box.left >= 4 && box.right <= width - 4 && box.top >= 4 && box.bottom <= height - 4
       && ![...other.map(textBox), ...markerBoxes, ...axisBoxes].some((b) => overlaps(box, b))
       && (!curve || !crossesBox(curve, box))
-      && !quadraticCurves.some((segment) => quadraticCrossesBox(segment, box));
+      && !quadraticCurves.some((segment) => quadraticCrossesBox(segment, box))
+      && !cubicCurves.some((segment) => cubicCrossesBox(segment, box, () => fail("fn.cubic 的標記避讓數值精度不足")));
   };
   // Include endpoints and all axis names in avoidance, not just curve/tick intersections.
   for (let i = 0; i < texts.length; i++) {
@@ -208,7 +273,7 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     if (!label) fail(`points 點名 ${p.name} 無法避讓，請調整範圍或拆圖`);
     texts.push(label!);
   }
-  return { width, height, left, right, top, bottom, origin, curve, quadraticCurves, vertex, endpoints, points: visiblePoints, texts,
+  return { width, height, left, right, top, bottom, origin, curve, quadraticCurves, cubicCurves, vertex, endpoints, points: visiblePoints, texts,
     xTicks: xTicks.map((v) => project(v, 0)), yTicks: yTicks.map((v) => project(0, v)) };
 
 }
@@ -253,5 +318,46 @@ function quadraticCrossesBox(curve: QuadraticCurve, box: Box) {
   const denominator = curve.from.y - 2 * curve.control.y + curve.to.y;
   const t = (curve.from.y - curve.control.y) / denominator;
   if (denominator !== 0 && t > lo && t < hi) values.push(value(t));
+  return Math.min(...values) <= box.bottom + 2 && Math.max(...values) >= box.top - 2;
+}
+
+interface CubicCurve { from: GraphPoint; control1: GraphPoint; control2: GraphPoint; to: GraphPoint }
+/** Stable quadratic roots, restricted to the cubic family's derivative equations. */
+function quadraticRoots(a: number, b: number, c: number, fail: () => never): number[] {
+  if (![a, b, c].every(Number.isFinite)) return fail();
+  if (a === 0) {
+    if (b === 0) return [];
+    const root = -c / b;
+    if (!Number.isFinite(root)) return fail();
+    return [root];
+  }
+  const scale = Math.max(Math.abs(a), Math.abs(b), Math.abs(c));
+  const aa = a / scale, bb = b / scale, cc = c / scale;
+  if (aa === 0 || (b !== 0 && bb === 0) || (c !== 0 && cc === 0)) return fail();
+  const squared = bb * bb, product = 4 * aa * cc;
+  if ((bb !== 0 && squared === 0) || (cc !== 0 && product === 0)) return fail();
+  const discriminant = squared - product;
+  if (discriminant !== 0 && Math.abs(discriminant) < Number.EPSILON * 8 * (squared + Math.abs(product))) return fail();
+  if (discriminant < 0) return [];
+  if (discriminant === 0) {
+    const root = -bb / (2 * aa);
+    if (!Number.isFinite(root)) return fail();
+    return [root];
+  }
+  const q = -(bb + (bb >= 0 ? 1 : -1) * Math.sqrt(discriminant)) / 2;
+  const roots = [q / aa, cc / q];
+  if (!roots.every(Number.isFinite) || roots[0] === roots[1]) return fail();
+  return roots.sort((x, y) => x - y);
+}
+function cubicCrossesBox(curve: CubicCurve, box: Box, fail: () => never) {
+  const dx = curve.to.x - curve.from.x;
+  const lo = dx === 0 ? 0 : Math.max(0, (box.left - 2 - curve.from.x) / dx);
+  const hi = dx === 0 ? 1 : Math.min(1, (box.right + 2 - curve.from.x) / dx);
+  if (lo > hi || (dx === 0 && (curve.from.x < box.left - 2 || curve.from.x > box.right + 2))) return false;
+  const [p0, p1, p2, p3] = [curve.from.y, curve.control1.y, curve.control2.y, curve.to.y];
+  const value = (t: number) => (1 - t) ** 3 * p0! + 3 * (1 - t) ** 2 * t * p1! + 3 * (1 - t) * t * t * p2! + t ** 3 * p3!;
+  const values = [value(lo), value(hi)];
+  const roots = quadraticRoots(-p0! + 3 * p1! - 3 * p2! + p3!, 2 * (p0! - 2 * p1! + p2!), p1! - p0!, fail);
+  for (const t of roots) if (t > lo && t < hi) values.push(value(t));
   return Math.min(...values) <= box.bottom + 2 && Math.max(...values) >= box.top - 2;
 }

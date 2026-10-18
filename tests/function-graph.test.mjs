@@ -8,7 +8,7 @@ test("函數圖拒絕無效視窗與未知函數宣告，不把零係數當一�
   for (const xRange of [[2, 2], [1, 3], [-Infinity, 3], [0, NaN]]) {
     assert.throws(() => resolveFunctionGraph({ ...base, xRange }), /FunctionGraph.*xRange/);
   }
-  for (const fn of [{ linear: [0, 1] }, { linear: [Infinity, 1] }, { linear: [1] }, { cubic: [1, 0, 0] }, { constant: 2, linear: [1, 0] }, () => 2]) {
+  for (const fn of [{ linear: [0, 1] }, { linear: [Infinity, 1] }, { linear: [1] }, { polynomial: [1, 0, 0] }, { constant: 2, linear: [1, 0] }, () => 2]) {
     assert.throws(() => resolveFunctionGraph({ ...base, fn }), /FunctionGraph.*fn/);
   }
   assert.doesNotThrow(() => resolveFunctionGraph(base));
@@ -150,6 +150,85 @@ test("教材頂點與對稱點圖的所有文字避開真實拋物線，不能�
   // Independent dense probes are a regression oracle; production collision tests are analytical.
   for (const text of graph.texts) for (const segment of graph.quadraticCurves) for (let i = 0; i <= 1000; i++) {
     const p = bezier(segment, i / 1000), w = text.text.length * 15 / 2 + 3;
+    assert.ok(!(p.x >= text.x - w - 2 && p.x <= text.x + w + 2 && p.y >= text.y - 25 && p.y <= text.y + 7), `曲線穿過 ${text.text}`);
+  }
+});
+
+const cubicBase = { id: "cubic-test", xRange: [-3, 3], yRange: [-4, 4], fn: { cubic: [1, 0, 0, 0] } };
+const cubicAt = (c, t) => ({ x: (1 - t) ** 3 * c.from.x + 3 * (1 - t) ** 2 * t * c.control1.x + 3 * (1 - t) * t * t * c.control2.x + t ** 3 * c.to.x,
+  y: (1 - t) ** 3 * c.from.y + 3 * (1 - t) ** 2 * t * c.control1.y + 3 * (1 - t) * t * t * c.control2.y + t ** 3 * c.to.y });
+
+test("三次族只接受四個有限係數與非零首項，拒絕任意多項式及不可靠運算", () => {
+  for (const cubic of [[0, 1, 2, 3], [1, 2, 3], [1, 2, 3, 4, 5], [1, 0, NaN, 0], [Infinity, 0, 0, 0], [1e308, 0, 0, 0], [1, 1e308, 0, 0], [Number.MIN_VALUE, 1e308, 0, 0]]) {
+    assert.throws(() => resolveFunctionGraph({ ...cubicBase, fn: { cubic } }), /fn.cubic/);
+  }
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, fn: { polynomial: [1, -2, 0, 0] } }), /fn/);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, fn: { cubic: [1, 0, 0, 0], quadratic: [1, 0, 0] } }), /fn/);
+});
+
+test("三次精確 C 曲線涵蓋平移反射、單調、駐點與兩個極值", () => {
+  for (const coefficients of [[1, 0, 0, 0], [1, 0, 1, 0], [-1, 0, 0, 0], [1, -2, 0, 0], [1, -3, 3, -1], [1, 0, -3, 0]]) {
+    const graph = resolveFunctionGraph({ ...cubicBase, fn: { cubic: coefficients } });
+    assert.equal(graph.curve, undefined);
+    assert.deepEqual(graph.quadraticCurves, []);
+    assert.deepEqual(graph.endpoints, []);
+    assert.ok(graph.cubicCurves.length > 0);
+    const [a, b, c, d] = coefficients;
+    for (const curve of graph.cubicCurves) for (let i = 0; i <= 40; i++) {
+      const point = cubicAt(curve, i / 40), x = (point.x - 60) / 60 - 3, y = 4 - (point.y - 54) / 45;
+      near(y, ((a * x + b) * x + c) * x + d);
+      assert.ok(point.x >= 60 - 1e-7 && point.x <= 420 + 1e-7 && point.y >= 54 - 1e-7 && point.y <= 414 + 1e-7);
+    }
+  }
+});
+
+test("三次圖裁成三支，不跨過超出 y 視窗的兩個極值", () => {
+  const graph = resolveFunctionGraph({ ...cubicBase, yRange: [-1, 1], fn: { cubic: [1, 0, -3, 0] } });
+  assert.equal(graph.cubicCurves.length, 3);
+  assert.ok(graph.cubicCurves[0].to.x < graph.cubicCurves[1].from.x);
+  assert.ok(graph.cubicCurves[1].to.x < graph.cubicCurves[2].from.x);
+  assert.deepEqual(graph.endpoints, []);
+  for (const c of graph.cubicCurves) {
+    near(Math.min(c.from.y, c.to.y), 54);
+    near(Math.max(c.from.y, c.to.y), 414);
+  }
+});
+
+test("三次視窗相切點只保留一次，開放域排除後不得補回", () => {
+  const fn = { cubic: [1, 0, -3, 2] };
+  const graph = resolveFunctionGraph({ ...cubicBase, yRange: [-2, 0], fn });
+  const tangencies = graph.cubicCurves.filter((c) => c.from.x === c.to.x);
+  assert.equal(tangencies.length, 1);
+  near(tangencies[0].from.x, 300);
+  near(tangencies[0].from.y, 54);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, yRange: [-2, 0], fn, domain: { from: 1, to: null, openFrom: true, openTo: true } }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, fn: { cubic: [1, 0, 0, 40] } }), /沒有可見圖形/);
+});
+
+test("三次圖保留開閉端點、單點域及點核對，不把裁切當成有限定義域", () => {
+  const graph = resolveFunctionGraph({ ...cubicBase, domain: { from: -1, to: 1, openFrom: true, openTo: false }, points: [{ at: [1, 1], name: "B" }] });
+  assert.deepEqual(graph.endpoints, [{ x: 180, y: 279, open: true }, { x: 300, y: 189, open: false }]);
+  assert.deepEqual(graph.points, []);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, domain: { from: -1, to: 1, openFrom: true, openTo: false }, points: [{ at: [-1, -1] }] }), /points/);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, points: [{ at: [1, 2] }] }), /points.*曲線/);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, yRange: [-1e-10, 1e-10], fn: { cubic: [1e-11, 0, 0, 0] }, points: [{ at: [1, 6e-11] }] }), /points.*曲線/);
+  const single = resolveFunctionGraph({ ...cubicBase, domain: { from: 1, to: 1, openFrom: false, openTo: false } });
+  assert.deepEqual(single.cubicCurves, []);
+  assert.deepEqual(single.endpoints, [{ x: 300, y: 189, open: false }]);
+});
+
+test("教材三次相切與穿越保持正確，A/B/O 與所有刻度避讓曲線", () => {
+  const graph = resolveFunctionGraph({ id: "polynomial-zero-contact", xRange: [-1, 3], yRange: [-4, 10], yStep: 2,
+    fn: { cubic: [1, -2, 0, 0] }, points: [{ at: [0, 0], name: "A" }, { at: [2, 0], name: "B" }] });
+  assert.equal(graph.cubicCurves.length, 3);
+  assert.deepEqual(graph.endpoints, []);
+  assert.ok(graph.texts.some((t) => t.text === "O"));
+  const f = (x) => x * x * (x - 2);
+  assert.ok(f(-0.1) < 0 && f(0.1) < 0 && f(1.9) < 0 && f(2.1) > 0);
+  near(graph.cubicCurves[1].to.x, 60 + (4 / 3 + 1) * 90);
+  near(graph.cubicCurves[1].to.y, 54 + (10 + 32 / 27) * 360 / 14);
+  for (const text of graph.texts) for (const segment of graph.cubicCurves) for (let i = 0; i <= 1000; i++) {
+    const p = cubicAt(segment, i / 1000), w = text.text.length * 15 / 2 + 3;
     assert.ok(!(p.x >= text.x - w - 2 && p.x <= text.x + w + 2 && p.y >= text.y - 25 && p.y <= text.y + 7), `曲線穿過 ${text.text}`);
   }
 });

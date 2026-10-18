@@ -1,6 +1,7 @@
 export type Coord = [number, number];
 export interface CoordPoint { at: Coord; name?: string }
 export interface CoordSegment { from: Coord; to: Coord; auxiliary?: boolean }
+export interface CoordCircle { center: Coord; radius: number }
 export interface CoordPlaneInput {
   id: string;
   xRange: Coord;
@@ -8,6 +9,7 @@ export interface CoordPlaneInput {
   points?: CoordPoint[];
   quadrants?: boolean;
   segments?: CoordSegment[];
+  circles?: CoordCircle[];
 }
 interface Text { x: number; y: number; text: string; kind: "tick" | "axis" | "name" | "quadrant" }
 interface Box { left: number; right: number; top: number; bottom: number }
@@ -47,6 +49,18 @@ export function resolveCoordPlane(input: CoordPlaneInput) {
     if (s.auxiliary !== undefined && typeof s.auxiliary !== "boolean") fail(`segments[${i}].auxiliary 必須是布林值`);
     return { from: project(s.from), to: project(s.to), auxiliary: s.auxiliary ?? false };
   });
+  const circles = input.circles === undefined ? [] : input.circles;
+  if (!Array.isArray(circles) || circles.length > 1) fail("circles 每圖最多 1 個完整圓，請拆圖");
+  const resolvedCircles = circles.map((circle, i) => {
+    if (!circle) fail(`circles[${i}] 必須有 center 與 radius`);
+    assertCoord(circle.center, `circles[${i}].center`);
+    const radius = circle.radius;
+    if (!Number.isFinite(radius) || radius <= 0) fail(`circles[${i}].radius 必須是正有限數`);
+    const [x, y] = circle.center;
+    if (x - radius < xmin || x + radius > xmax || y - radius < ymin || y + radius > ymax) fail(`circles[${i}] 的完整圓周必須位於視窗內，請調整範圍`);
+    if (x - radius === x + radius || y - radius === y + radius || !Number.isFinite(radius * unit) || radius * unit < 1) fail(`circles[${i}].radius 太小或數值精度不足，請調整單位`);
+    return { ...project(circle.center), radius: radius * unit };
+  });
   const resolvedPoints = points.map((p, i) => {
     if (!p) fail(`points[${i}] 必須有 at`);
     assertCoord(p.at, `points[${i}].at`);
@@ -57,7 +71,7 @@ export function resolveCoordPlane(input: CoordPlaneInput) {
   if (names.length > 4) fail("點名最多 4 個，請拆圖");
   if (new Set(names).size !== names.length) fail("點名不可重複");
   if (input.quadrants !== undefined && typeof input.quadrants !== "boolean") fail("quadrants 必須是布林值");
-  if (input.quadrants && (!(xmin < 0 && xmax > 0 && ymin < 0 && ymax > 0) || points.length || segments.length)) fail("quadrants 四象限圖需要兩軸正負範圍，且不得疊加 points 或 segments");
+  if (input.quadrants && (!(xmin < 0 && xmax > 0 && ymin < 0 && ymax > 0) || points.length || segments.length || circles.length)) fail("quadrants 四象限圖需要兩軸正負範圍，且不得疊加 points、segments 或 circles");
   const xTicks = Array.from({ length: Math.floor(xmax) - Math.ceil(xmin) + 1 }, (_, i) => i + Math.ceil(xmin)).filter((v) => v !== 0);
   const yTicks = Array.from({ length: Math.floor(ymax) - Math.ceil(ymin) + 1 }, (_, i) => i + Math.ceil(ymin)).filter((v) => v !== 0);
   const format = (n: number) => String(n).replace("-", "−");
@@ -97,17 +111,28 @@ export function resolveCoordPlane(input: CoordPlaneInput) {
     }
     return true;
   });
-  const fits = (b: Box, occupied: Box[]) => b.left >= 4 && b.right <= width - 4 && b.top >= 4 && b.bottom <= height - 4 && !occupied.some((r) => overlaps(b, r)) && !crossesSegment(b);
+  // Exact circle/rectangle boundary intersection. A label inside the circle is
+  // allowed; the whole disk is not treated as an opaque bounding box.
+  const crossesCircle = (b: Box) => resolvedCircles.some((circle) => {
+    const left = b.left - 2, right = b.right + 2, top = b.top - 2, bottom = b.bottom + 2;
+    const nearest = Math.hypot(Math.max(left - circle.x, 0, circle.x - right), Math.max(top - circle.y, 0, circle.y - bottom));
+    const farthest = Math.hypot(Math.max(Math.abs(left - circle.x), Math.abs(right - circle.x)), Math.max(Math.abs(top - circle.y), Math.abs(bottom - circle.y)));
+    return nearest <= circle.radius && farthest >= circle.radius;
+  });
+  const fits = (b: Box, occupied: Box[]) => b.left >= 4 && b.right <= width - 4 && b.top >= 4 && b.bottom <= height - 4 && !occupied.some((r) => overlaps(b, r)) && !crossesSegment(b) && !crossesCircle(b);
   // Keep existing tick positions unless a newly drawn segment crosses one; move only within its own tick's neighbourhood.
   for (let i = 0; i < texts.length; i++) {
     const t = texts[i]!;
-    if (t.kind !== "tick" || !crossesSegment(box(t))) continue;
-    const offsets = t.y === origin.y + 28
+    if (circles.length) {
+      const occupied = [...texts.filter((_, index) => index !== i).map(box), ...pointBoxes, ...axisBoxes];
+      if (fits(box(t), occupied)) continue;
+    } else if (t.kind !== "tick" || !crossesSegment(box(t))) continue;
+    const offsets = t.kind === "axis" ? [[0, -40], [36, 0], [-18, 0], [0, 18], [36, -40]] : t.y === origin.y + 28
       ? [[0, -40], [-20, 0], [20, 0], [-20, -40], [20, -40]]
       : [[50, 0], [0, -20], [0, 22], [50, -20], [50, 22]];
     const occupied = [...texts.filter((_, index) => index !== i).map(box), ...pointBoxes, ...axisBoxes];
     const moved = offsets.map(([dx, dy]) => ({ ...t, x: t.x + dx!, y: t.y + dy! })).find((candidate) => fits(box(candidate), occupied));
-    if (!moved) fail(`刻度 ${t.text} 無法避讓線段或其他標記，請拆圖或調整範圍`);
+    if (!moved) fail(`標記 ${t.text} 無法避讓線段、圓周或其他標記，請拆圖或調整範圍`);
     texts[i] = moved!;
   }
   const reserved = [...texts.map(box), ...pointBoxes];
@@ -131,5 +156,5 @@ export function resolveCoordPlane(input: CoordPlaneInput) {
       reserved.push(b);
     }
   }
-  return { width, height, unit, left, right, top, bottom, origin, xTicks: xTicks.map((value) => ({ value, ...project([value, 0]) })), yTicks: yTicks.map((value) => ({ value, ...project([0, value]) })), points: resolvedPoints, segments: resolvedSegments, texts };
+  return { width, height, unit, left, right, top, bottom, origin, xTicks: xTicks.map((value) => ({ value, ...project([value, 0]) })), yTicks: yTicks.map((value) => ({ value, ...project([0, value]) })), points: resolvedPoints, segments: resolvedSegments, circles: resolvedCircles, texts };
 }
