@@ -1,5 +1,5 @@
 export type GraphRange = [number, number];
-export type GraphFunction = { linear: [number, number] } | { constant: number };
+export type GraphFunction = { linear: [number, number] } | { constant: number } | { quadratic: [number, number, number] };
 export interface GraphDomain { from: number | null; to: number | null; openFrom: boolean; openTo: boolean }
 export interface FunctionGraphInput {
   id: string;
@@ -22,15 +22,19 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     }
   }
   const fn = input.fn;
-  if (!fn || typeof fn !== "object" || Array.isArray(fn) || Object.keys(fn).length !== 1) fail("fn 必須只宣告一個函數族 constant 或 linear");
+  if (!fn || typeof fn !== "object" || Array.isArray(fn) || Object.keys(fn).length !== 1) fail("fn 必須只宣告一個函數族 constant、linear 或 quadratic");
+  let q = 0;
   let a = 0;
   let b = 0;
   if ("linear" in fn) {
     if (!Array.isArray(fn.linear) || fn.linear.length !== 2 || !fn.linear.every(Number.isFinite) || fn.linear[0] === 0) fail("fn.linear 必須是 [非零有限係數, 有限常數項]；零係數請用 constant");
     [a, b] = fn.linear;
+  } else if ("quadratic" in fn) {
+    if (!Array.isArray(fn.quadratic) || fn.quadratic.length !== 3 || !fn.quadratic.every(Number.isFinite) || fn.quadratic[0] === 0) fail("fn.quadratic 必須是 [非零有限二次係數, 有限一次係數, 有限常數項]");
+    [q, a, b] = fn.quadratic;
   } else if ("constant" in fn && Number.isFinite(fn.constant)) {
     b = fn.constant;
-  } else fail("fn 只接受 constant 的有限數值或 linear 的兩個有限係數");
+  } else fail("fn 只接受 constant、linear 或 quadratic 的有限係數");
   const domain = input.domain === undefined ? { from: null, to: null, openFrom: true, openTo: true } : input.domain;
   if (!domain || typeof domain !== "object") fail("domain 必須有 from、to、openFrom、openTo");
   for (const [end, open] of [["from", "openFrom"], ["to", "openTo"]] as const) {
@@ -53,7 +57,18 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   const points = input.points ?? [];
   if (!Array.isArray(points) || points.length > 12) fail("points 最多 12 個；過密請拆圖");
   const names = new Set<string>();
-  const evaluate = (x: number) => a * x + b;
+  const evaluate = (x: number) => {
+    if (q === 0) return a * x + b;
+    const quadratic = q * x * x, linear = a * x;
+    const y = (q * x + a) * x + b;
+    // Reject overflow and visible cancellation error rather than silently drawing a false curve.
+    const error = (Math.abs(quadratic) + Math.abs(linear) + Math.abs(b)) * Number.EPSILON * 8;
+    if (![quadratic, linear, y, error].every(Number.isFinite) || error > (input.yRange[1] - input.yRange[0]) * 1e-8) fail("fn.quadratic 的函數值溢位或數值精度不足，請調整係數或單位");
+    return y;
+  };
+  const vertexX = q === 0 ? undefined : (-(a / q) / 2 || 0);
+  if (vertexX !== undefined && !Number.isFinite(vertexX)) fail("fn.quadratic 的頂點超出可可靠計算的範圍");
+  const vertex = vertexX === undefined ? undefined : { x: vertexX, y: evaluate(vertexX) };
   for (const [i, p] of points.entries()) {
     const key = `points[${i}]`;
     if (!p || !Array.isArray(p.at) || p.at.length !== 2 || !p.at.every(Number.isFinite)) fail(`${key}.at 必須是有限坐標`);
@@ -78,21 +93,64 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
   if (!Number.isFinite(xUnit) || !Number.isFinite(yUnit)) fail("範圍太小，無法可靠繪圖");
   const project = (x: number, y: number) => ({ x: left + (x - xmin) * xUnit, y: top + (ymax - y) * yUnit });
   const origin = project(0, 0);
-  // Intersect the domain with both window axes analytically; no sampled polyline.
+  // Intersect analytically. Quadratics can have two disconnected visible branches.
   let start = Math.max(from, xmin), end = Math.min(to, xmax);
-  if (a !== 0) {
-    const low = (ymin - b) / a, high = (ymax - b) / a;
-    if (!Number.isFinite(low) || !Number.isFinite(high)) fail("fn 與視窗的交點超出可可靠計算的範圍");
-    if (low === high) fail("fn 與視窗交點的數值精度不足，請調整係數或單位");
-    start = Math.max(start, Math.min(low, high));
-    end = Math.min(end, Math.max(low, high));
-  } else if (b < ymin || b > ymax) {
-    fail("fn 在視窗內沒有可見圖形，請調整範圍");
+  const quadraticCurves: QuadraticCurve[] = [];
+  let curve: { from: GraphPoint; to: GraphPoint } | undefined;
+  if (q !== 0) {
+    if (start > end) fail("domain 與視窗內沒有可見圖形，請調整範圍");
+    const cuts = [start, end];
+    if (vertex!.x > start && vertex!.x < end) cuts.push(vertex!.x);
+    for (const y of [ymin, ymax]) {
+      const square = (y - vertex!.y) / q;
+      if (!Number.isFinite(square)) fail("fn.quadratic 與視窗的交點超出可可靠計算的範圍");
+      if (square < 0) continue;
+      const distance = Math.sqrt(square);
+      const roots = [vertex!.x - distance, vertex!.x + distance];
+      if (!roots.every(Number.isFinite) || (distance !== 0 && roots[0] === roots[1])) fail("fn.quadratic 與視窗交點的數值精度不足，請調整係數或單位");
+      for (const x of roots) if (x >= start && x <= end) {
+        if (Math.abs(evaluate(x) - y) > (ymax - ymin) * 1e-8) fail("fn.quadratic 與視窗交點的數值精度不足，請調整係數或單位");
+        cuts.push(x);
+      }
+    }
+    const sorted = [...new Set(cuts)].sort((x, y) => x - y);
+    const inside = (x: number) => { const y = evaluate(x); return y >= ymin && y <= ymax; };
+    const intervals: GraphRange[] = [];
+    for (let i = 1; i < sorted.length; i++) {
+      const x0 = sorted[i - 1]!, x1 = sorted[i]!;
+      if (inside(x0 + (x1 - x0) / 2)) intervals.push([x0, x1]);
+    }
+    // Keep a genuine tangent intersection, but never a point excluded by the domain.
+    for (const x of sorted) {
+      if (inside(x) && !(x === from && domain.openFrom) && !(x === to && domain.openTo)
+        && !intervals.some(([lo, hi]) => x >= lo && x <= hi)) intervals.push([x, x]);
+    }
+    if (!intervals.length) fail("domain 與視窗內沒有可見圖形，請調整範圍");
+    if (from !== to) for (const [x0, x1] of intervals) {
+      const y0 = evaluate(x0), y1 = evaluate(x1);
+      const mid = x0 + (x1 - x0) / 2;
+      // A polynomial quadratic is exactly a quadratic Bézier; this is not sampled interpolation.
+      const controlY = y0 + (2 * q * x0 + a) * (x1 - x0) / 2;
+      const segment = { from: project(x0, y0), control: project(mid, controlY), to: project(x1, y1) };
+      if (!Object.values(segment).every((p) => Number.isFinite(p.x) && Number.isFinite(p.y))) fail("fn.quadratic 的曲線控制點超出可可靠計算的範圍");
+      if (x0 !== x1 && segment.from.x === segment.to.x) fail("fn.quadratic 的曲線寬度數值精度不足，請調整係數或單位");
+      quadraticCurves.push(segment);
+    }
+  } else {
+    if (a !== 0) {
+      const low = (ymin - b) / a, high = (ymax - b) / a;
+      if (!Number.isFinite(low) || !Number.isFinite(high)) fail("fn 與視窗的交點超出可可靠計算的範圍");
+      if (low === high) fail("fn 與視窗交點的數值精度不足，請調整係數或單位");
+      start = Math.max(start, Math.min(low, high));
+      end = Math.min(end, Math.max(low, high));
+    } else if (b < ymin || b > ymax) {
+      fail("fn 在視窗內沒有可見圖形，請調整範圍");
+    }
+    if (start > end || (start === end && ((start === from && domain.openFrom) || (end === to && domain.openTo)))) fail("domain 與視窗內沒有可見圖形，請調整範圍");
+    const startY = evaluate(start), endY = evaluate(end);
+    if (![startY, endY].every(Number.isFinite)) fail("fn 的函數值超出可可靠計算的範圍");
+    curve = from !== to ? { from: project(start, Math.max(ymin, Math.min(ymax, startY))), to: project(end, Math.max(ymin, Math.min(ymax, endY))) } : undefined;
   }
-  if (start > end || (start === end && ((start === from && domain.openFrom) || (end === to && domain.openTo)))) fail("domain 與視窗內沒有可見圖形，請調整範圍");
-  const startY = evaluate(start), endY = evaluate(end);
-  if (![startY, endY].every(Number.isFinite)) fail("fn 的函數值超出可可靠計算的範圍");
-  const curve = from !== to ? { from: project(start, Math.max(ymin, Math.min(ymax, startY))), to: project(end, Math.max(ymin, Math.min(ymax, endY))) } : undefined;
   const endpoints: { x: number; y: number; open: boolean }[] = [];
   for (const [x, open] of [[domain.from, domain.openFrom], [domain.to, domain.openTo]] as const) {
     if (x === null || x < xmin || x > xmax) continue;
@@ -128,7 +186,8 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     const box = textBox(t);
     return box.left >= 4 && box.right <= width - 4 && box.top >= 4 && box.bottom <= height - 4
       && ![...other.map(textBox), ...markerBoxes, ...axisBoxes].some((b) => overlaps(box, b))
-      && (!curve || !crossesBox(curve, box));
+      && (!curve || !crossesBox(curve, box))
+      && !quadraticCurves.some((segment) => quadraticCrossesBox(segment, box));
   };
   // Include endpoints and all axis names in avoidance, not just curve/tick intersections.
   for (let i = 0; i < texts.length; i++) {
@@ -149,7 +208,7 @@ export function resolveFunctionGraph(input: FunctionGraphInput) {
     if (!label) fail(`points 點名 ${p.name} 無法避讓，請調整範圍或拆圖`);
     texts.push(label!);
   }
-  return { width, height, left, right, top, bottom, origin, curve, endpoints, points: visiblePoints, texts,
+  return { width, height, left, right, top, bottom, origin, curve, quadraticCurves, vertex, endpoints, points: visiblePoints, texts,
     xTicks: xTicks.map((v) => project(v, 0)), yTicks: yTicks.map((v) => project(0, v)) };
 
 }
@@ -177,4 +236,22 @@ function crossesBox(line: { from: { x: number; y: number }; to: { x: number; y: 
     }
   }
   return true;
+}
+
+interface GraphPoint { x: number; y: number }
+interface QuadraticCurve { from: GraphPoint; control: GraphPoint; to: GraphPoint }
+// x(t) is linear for these exact polynomial Béziers. Restrict t to the box's
+// x span, then use the quadratic's endpoints and interior extremum to find its
+// entire y range. A narrow intersection cannot hide between sampled points.
+function quadraticCrossesBox(curve: QuadraticCurve, box: Box) {
+  const dx = curve.to.x - curve.from.x;
+  const lo = dx === 0 ? 0 : Math.max(0, (box.left - 2 - curve.from.x) / dx);
+  const hi = dx === 0 ? 1 : Math.min(1, (box.right + 2 - curve.from.x) / dx);
+  if (lo > hi || (dx === 0 && (curve.from.x < box.left - 2 || curve.from.x > box.right + 2))) return false;
+  const value = (t: number) => (1 - t) ** 2 * curve.from.y + 2 * (1 - t) * t * curve.control.y + t ** 2 * curve.to.y;
+  const values = [value(lo), value(hi)];
+  const denominator = curve.from.y - 2 * curve.control.y + curve.to.y;
+  const t = (curve.from.y - curve.control.y) / denominator;
+  if (denominator !== 0 && t > lo && t < hi) values.push(value(t));
+  return Math.min(...values) <= box.bottom + 2 && Math.max(...values) >= box.top - 2;
 }

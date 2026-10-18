@@ -1,0 +1,28 @@
+---
+import { assertAltText, figureIdPrefix } from "../../src/lib/figure-svg.ts";
+interface Props { title: string; desc: string; split: "six-ten" | "four-fifteen"; }
+const props = Astro.props;
+const { title, desc, split } = props;
+assertAltText("FactorTreeFigure", title, desc);
+if (split !== "six-ten" && split !== "four-fifteen") throw new Error("FactorTreeFigure: invalid split");
+const prefix = figureIdPrefix("factor-tree", props);
+const middle = split === "six-ten" ? [6, 10] : [4, 15];
+const leaves = split === "six-ten" ? [2, 3, 2, 5] : [2, 2, 3, 5];
+const xs = [60, 180, 300, 420];
+---
+<svg class="tree" viewBox="0 0 480 250" role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{title}</title>
+  <desc id={`${prefix}-desc`}>{desc}</desc>
+  <g class="branches">
+    <path d="M240 53 L120 104 M240 53 L360 104 M120 139 L60 190 M120 139 L180 190 M360 139 L300 190 M360 139 L420 190" />
+  </g>
+  <text class="number" x="240" y="40">60</text>
+  {middle.map((value, i) => <text class="number" x={120 + i * 240} y="124">{value}</text>)}
+  {leaves.map((value, i) => <g><circle class="prime" cx={xs[i]} cy="214" r="24" /><text class="number" x={xs[i]} y="214">{value}</text></g>)}
+</svg>
+<style>
+svg.tree[role="img"] { display:block; width:100%; max-width:32rem; height:auto; margin:0 auto; }
+.branches { fill:none; stroke:var(--fg); stroke-width:3px; stroke-linecap:round; }
+.number { fill:var(--fg); font-size:22px; text-anchor:middle; dominant-baseline:middle; }
+.prime { fill:none; stroke:var(--accent); stroke-width:3px; }
+</style>

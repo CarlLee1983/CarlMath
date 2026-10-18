@@ -18,6 +18,7 @@ const { origin: o } = layout;
   {layout.xTicks.map((t) => <line class="fg-tick" x1={t.x} x2={t.x} y1={o.y - 4} y2={o.y + 4} />)}
   {layout.yTicks.map((t) => <line class="fg-tick" x1={o.x - 4} x2={o.x + 4} y1={t.y} y2={t.y} />)}
   {layout.curve && <line class="fg-curve" x1={layout.curve.from.x} y1={layout.curve.from.y} x2={layout.curve.to.x} y2={layout.curve.to.y} />}
+  {layout.quadraticCurves.map((c) => <path class="fg-curve" d={`M ${c.from.x} ${c.from.y} Q ${c.control.x} ${c.control.y} ${c.to.x} ${c.to.y}`} />)}
   {layout.points.map((p) => <circle class="fg-point" cx={p.x} cy={p.y} r="5" />)}
   {layout.endpoints.map((p) => <circle class:list={["fg-endpoint", { "fg-open": p.open }]} cx={p.x} cy={p.y} r="6" />)}
   {layout.texts.map((t) => <text class={`fg-text fg-${t.kind}`} x={t.x} y={t.y}>{t.text}</text>)}
@@ -26,7 +27,7 @@ const { origin: o } = layout;
   svg.fg-fig[role="img"] { display: block; width: 100%; max-width: 32rem; height: auto; margin: 0 auto; }
   .fg-axis { fill: none; stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
   .fg-tick { stroke: var(--muted); stroke-width: 2px; stroke-linecap: round; }
-  .fg-curve { stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; }
+  .fg-curve { fill: none; stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; }
   .fg-point { fill: var(--accent); }
   .fg-endpoint { fill: var(--accent); stroke: var(--accent); stroke-width: 3px; }
   .fg-open { fill: var(--bg); }
