@@ -32,6 +32,8 @@ const { origin: o } = layout;
   {layout.yTicks.map((t) => <line class="ag-tick" x1={o.x - 4} x2={o.x + 4} y1={t.y} y2={t.y} />)}
   {layout.curve && <line class="ag-curve" x1={layout.curve.from.x} y1={layout.curve.from.y} x2={layout.curve.to.x} y2={layout.curve.to.y} />}
   {layout.quadraticCurves.map((c) => <path class="ag-curve" d={`M ${c.from.x} ${c.from.y} Q ${c.control.x} ${c.control.y} ${c.to.x} ${c.to.y}`} />)}
+  {layout.secondGraph?.curve && <line class="ag-curve ag-second" x1={layout.secondGraph.curve.from.x} y1={layout.secondGraph.curve.from.y} x2={layout.secondGraph.curve.to.x} y2={layout.secondGraph.curve.to.y} />}
+  {layout.secondGraph?.quadraticCurves.map((c) => <path class="ag-curve ag-second" d={`M ${c.from.x} ${c.from.y} Q ${c.control.x} ${c.control.y} ${c.to.x} ${c.to.y}`} />)}
   {layout.texts.map((t) => <text class={`ag-text ag-${t.kind}`} x={t.x} y={t.y}>{t.text}</text>)}
 </svg>
 <style>
@@ -39,6 +41,7 @@ const { origin: o } = layout;
   .ag-axis { fill: none; stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
   .ag-tick { stroke: var(--muted); stroke-width: 2px; stroke-linecap: round; }
   .ag-curve { fill: none; stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; }
+  .ag-second { stroke-dasharray: 8 6; }
   .ag-area { fill: var(--accent); fill-opacity: 0.22; stroke: none; }
   .ag-rectangle { fill: var(--accent); fill-opacity: 0.22; stroke: var(--accent); stroke-width: 2px; }
   .ag-negative { stroke: none; }

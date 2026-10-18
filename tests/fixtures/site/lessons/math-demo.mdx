@@ -5,6 +5,7 @@ updated: 2026-09-20
 ---
 
 import DemoFigure from "./DemoFigure.astro";
+import AreaGraph from "@figures/AreaGraph.astro";
 import FunctionGraph from "@figures/FunctionGraph.astro";
 import CoordPlane from "@figures/CoordPlane.astro";
 
@@ -160,6 +161,10 @@ $$
 <FunctionGraph id="trig-cosine-wave" title="角度對應水平位置" desc="橫軸表示弧度，刻度間隔為圓周率；縱軸每刻度差 1。餘弦曲線的 A 在 (0, 1)，B 在橫坐標圓周率、高度負一，橫坐標 2 倍圓周率時回到高度 1。兩側繼續延伸，沒有有限定義域端點。" xRange={[-Math.PI,2*Math.PI]} yRange={[-2,2]} xPiStep={1} fn={{cos:[1,1]}} points={[{at:[0,1],name:"A"},{at:[Math.PI,-1],name:"B"}]} />
 
 <FunctionGraph id="trig-scaled-wave" title="更高也更密的波" desc="橫軸為弧度，以圓周率為刻度間隔；縱軸每刻度差 1。曲線是 2 乘正弦的 2 倍輸入，A 在橫坐標四分之圓周率、高度 2，B 在橫坐標四分之三圓周率、高度負二；每隔圓周率重複，向兩側延伸。" xRange={[-Math.PI,2*Math.PI]} yRange={[-3,3]} xPiStep={1} fn={{sin:[2,2]}} points={[{at:[Math.PI/4,2],name:"A"},{at:[3*Math.PI/4,-2],name:"B"}]} />
+
+<AreaGraph id="area-between-line-square" title="兩曲線間的區域" desc="兩軸每刻度差 1，實線是 y 等於 x，虛線是 y 等於 x 的平方。從 0 到 1 的陰影只在兩曲線之間，左右交點為原點與一、一；此區間實線在上，第一函數減第二函數的積分為正。" xRange={[-1,2]} yRange={[-1,2]} fn={{linear:[1,0]}} secondFn={{quadratic:[1,0,0]}} integrationRange={[0,1]} />
+
+<AreaGraph id="area-between-signed-baseline" title="上下抵銷的面積" desc="兩軸每刻度差 1，直線 y 等於 x 與固定基線 y 等於零之間，積分區間為負一到一。右半區在軸上為正，左半區在軸下加斜紋為負，兩者有向積分抵銷；幾何面積仍是兩塊大小相加。" xRange={[-2,2]} yRange={[-2,2]} fn={{linear:[1,0]}} integrationRange={[-1,1]} />
 
 ## 下一步
 
