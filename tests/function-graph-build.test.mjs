@@ -65,3 +65,22 @@ test("指數增減圖的 SVG 誠實輸出有限的 M/L 近似且不製造端點"
   });
   assert.equal(status, 0, output);
 });
+
+test("對數正反對照與遞減圖的 SVG 保留自然域且不畫 y 軸端點", async () => {
+  const { readFileSync } = await import("node:fs");
+  const { join } = await import("node:path");
+  const { status, output } = buildWith("tests/fixtures/function-logarithmic", (outDir) => {
+    const html = readFileSync(join(outDir, "units/broken/index.html"), "utf8");
+    const curves = html.match(/<path\b[^>]*class="fg-curve"[^>]*>/g) ?? [];
+    assert.equal(curves.length, 3);
+    for (const path of curves) {
+      assert.match(path, /d="M [^"]+ L [^"]+"/);
+      assert.doesNotMatch(path, /NaN|Infinity| Q | C /);
+    }
+    assert.match(curves[1], /d="M 195 414 /);
+    assert.match(curves[2], /d="M 187.5 54 /);
+    assert.equal((html.match(/class="fg-endpoint"/g) ?? []).length, 0);
+    assert.equal((html.match(/class="fg-point"/g) ?? []).length, 9);
+  });
+  assert.equal(status, 0, output);
+});

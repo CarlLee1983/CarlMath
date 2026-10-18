@@ -1,0 +1,53 @@
+---
+unit: broken
+description: 確認對數函數的自然域與安全近似 SVG。
+updated: 2026-10-18
+---
+import FunctionGraph from "@figures/FunctionGraph.astro";
+
+## 情境開場
+broken 的核心問題？
+## 暖身
+回想原點。
+## 直覺
+<FunctionGraph
+    id="log-inverse-exponential"
+    title="指數的正向對應"
+    desc="橫軸與縱軸相鄰刻度各差 1，兩軸單位長相同。底數 2 的指數曲線通過點 (0, 1)，A 在 (1, 2)，另有點 (2, 4)。定義域為全體實數，曲線超出畫面後仍延伸，畫框不是端點。"
+    xRange={[-2,4]}
+    yRange={[-2,4]}
+    fn={{exponential:[2]}}
+    points={[{at:[0,1]},{at:[1,2],name:"A"},{at:[2,4]}]}
+  />
+
+<FunctionGraph
+    id="log-inverse-logarithmic"
+    title="對數的反向對應"
+    desc="橫軸與縱軸相鄰刻度各差 1，兩軸單位長相同。底數 2 的對數曲線通過點 (1, 0)，A 在 (2, 1)，另有點 (4, 2)。只允許正的橫坐標；曲線在靠近縱軸時向下超出畫面，沒有位於縱軸的端點，右側畫框也不是端點。"
+    xRange={[-2,4]}
+    yRange={[-2,4]}
+    fn={{logarithmic:[2]}}
+    points={[{at:[1,0]},{at:[2,1],name:"A"},{at:[4,2]}]}
+  />
+
+<FunctionGraph
+    id="log-decreasing-base"
+    title="小底數的對數"
+    desc="橫軸與縱軸相鄰刻度各差 1。底數二分之一的對數曲線通過點 (1, 0)，A 在 (2, 負一)，另有點 (4, 負二)。定義域為正實數，靠近縱軸時曲線向上超出畫面，沒有位於縱軸的端點，畫框不是定義域邊界。"
+    xRange={[-2,4]}
+    yRange={[-2,3]}
+    fn={{logarithmic:[0.5]}}
+    points={[{at:[1,0]},{at:[2,-1],name:"A"},{at:[4,-2]}]}
+  />
+## 推理
+原點在兩軸交會處。
+## 範例
+畫出原點。
+## 常見迷思
+原點不屬於象限。
+## 練習
+判斷位置。
+## 提取題
+原點是什麼？
+## 下一步
+接著比較位置。

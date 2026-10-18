@@ -3,7 +3,7 @@ import AxeBuilder from "@axe-core/playwright";
 
 test("三次相切及穿越圖使用 C 曲線，坐標圓完整且等比例", async ({ page }) => {
   await page.goto("/units/math-demo/");
-  const graph = page.locator("svg.fg-fig"), plane = page.locator("svg.cp-fig");
+  const graph = page.locator("svg.fg-fig").filter({ has: page.locator('path[d*=" C "]') }), plane = page.locator("svg.cp-fig");
   await expect(graph).toHaveCount(1);
   await expect(graph.locator("path.fg-curve")).toHaveCount(3);
   await expect(graph.locator(".fg-endpoint")).toHaveCount(0);
