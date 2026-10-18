@@ -1,8 +1,10 @@
 ---
 unit: primes
 description: 認識質數與合數，用篩法找出 30 以內的質數，用因數樹做質因數分解，並弄懂為什麼每個數都拆得完、為什麼拆法只有一種，以及為什麼 1 不是質數、質數有無限多個。
-updated: 2026-10-15
+updated: 2026-10-18
 ---
+
+import FactorTreeFigure from "./FactorTreeFigure.astro";
 
 ## 情境開場
 
@@ -58,7 +60,15 @@ updated: 2026-10-15
 
 第一棵樹：60 拆成 6 和 10，6 拆成 2 和 3，10 拆成 2 和 5。第二棵樹：60 拆成 4 和 15，4 拆成 2 和 2，15 拆成 3 和 5。
 
-兩棵樹的形狀不同，但末端都是 2、2、3、5。寫成式子：
+<Figure caption="每條分叉都把上面的數拆成兩個因數；圈起來的末端是質數">
+  <FactorTreeFigure title="先拆成六乘十" desc="60 分成 6 和 10；6 再分成 2 和 3，10 再分成 2 和 5。末端的 2、3、2、5 各用圓圈圈起，表示都是質數。" split="six-ten" />
+</Figure>
+
+<Figure caption="換一組因數開始，核對末端的種類與個數">
+  <FactorTreeFigure title="先拆成四乘十五" desc="60 分成 4 和 15；4 再分成 2 和 2，15 再分成 3 和 5。末端的 2、2、3、5 各用圓圈圈起，表示都是質數。" split="four-fifteen" />
+</Figure>
+
+兩棵樹先拆出的因數不同，但末端都是 2、2、3、5。寫成式子：
 
 $$
 60 = 2 \times 2 \times 3 \times 5

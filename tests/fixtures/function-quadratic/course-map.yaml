@@ -1,0 +1,13 @@
+# build 失敗測試用的最小課程地圖，讓失敗只來自函數圖。
+stages:
+- id: stage-a
+  title: 階段甲
+  units:
+  - id: broken
+    title: broken 標題
+    coreQuestion: broken 的核心問題？
+    prerequisites: []
+    family: false
+    curriculum108:
+      grades: [1]
+      content: [N-1-1]
