@@ -1,0 +1,51 @@
+---
+import { assertAltText, figureIdPrefix } from "../../lib/figure-svg.ts";
+import { resolveAreaGraph, type AreaGraphInput } from "../../lib/area-graph.ts";
+interface Props extends AreaGraphInput { title: string; desc: string }
+const props = Astro.props;
+assertAltText("AreaGraph", props.title, props.desc);
+const layout = resolveAreaGraph(props);
+const prefix = figureIdPrefix("ag", props);
+const { origin: o } = layout;
+---
+<svg class="ag-fig" viewBox={`0 0 ${layout.width} ${layout.height}`} role="img" aria-labelledby={`${prefix}-title ${prefix}-desc`}>
+  <title id={`${prefix}-title`}>{props.title}</title>
+  <desc id={`${prefix}-desc`}>{props.desc}</desc>
+  <defs>
+    <pattern id={`${prefix}-negative`} width="8" height="8" patternUnits="userSpaceOnUse">
+      <path class="ag-hatch" d="M -2 2 L 2 -2 M 0 8 L 8 0 M 6 10 L 10 6" />
+    </pattern>
+  </defs>
+  {!props.rectangles && layout.areas.map((area) => <>
+    <path class="ag-area" d={area.d} />
+    {area.negative && <path class="ag-negative" d={area.d} fill={`url(#${prefix}-negative)`} />}
+  </>)}
+  {layout.rectangles.filter((r) => r.height !== 0).map((r) => <>
+    <rect class="ag-rectangle" x={r.x} y={r.y} width={r.width} height={r.pixelHeight} />
+    {r.negative && <rect class="ag-negative" x={r.x} y={r.y} width={r.width} height={r.pixelHeight} fill={`url(#${prefix}-negative)`} />}
+  </>)}
+  <line class="ag-axis" x1={layout.left - 10} x2={layout.right + 10} y1={o.y} y2={o.y} />
+  <line class="ag-axis" x1={o.x} x2={o.x} y1={layout.bottom + 10} y2={layout.top - 10} />
+  <polyline class="ag-axis" points={`${layout.right + 2},${o.y - 6} ${layout.right + 10},${o.y} ${layout.right + 2},${o.y + 6}`} />
+  <polyline class="ag-axis" points={`${o.x - 6},${layout.top - 2} ${o.x},${layout.top - 10} ${o.x + 6},${layout.top - 2}`} />
+  {layout.xTicks.map((t) => <line class="ag-tick" x1={t.x} x2={t.x} y1={o.y - 4} y2={o.y + 4} />)}
+  {layout.yTicks.map((t) => <line class="ag-tick" x1={o.x - 4} x2={o.x + 4} y1={t.y} y2={t.y} />)}
+  {layout.curve && <line class="ag-curve" x1={layout.curve.from.x} y1={layout.curve.from.y} x2={layout.curve.to.x} y2={layout.curve.to.y} />}
+  {layout.quadraticCurves.map((c) => <path class="ag-curve" d={`M ${c.from.x} ${c.from.y} Q ${c.control.x} ${c.control.y} ${c.to.x} ${c.to.y}`} />)}
+  {layout.secondGraph?.curve && <line class="ag-curve ag-second" x1={layout.secondGraph.curve.from.x} y1={layout.secondGraph.curve.from.y} x2={layout.secondGraph.curve.to.x} y2={layout.secondGraph.curve.to.y} />}
+  {layout.secondGraph?.quadraticCurves.map((c) => <path class="ag-curve ag-second" d={`M ${c.from.x} ${c.from.y} Q ${c.control.x} ${c.control.y} ${c.to.x} ${c.to.y}`} />)}
+  {layout.texts.map((t) => <text class={`ag-text ag-${t.kind}`} x={t.x} y={t.y}>{t.text}</text>)}
+</svg>
+<style>
+  svg.ag-fig[role="img"] { display: block; width: 100%; max-width: 32rem; height: auto; margin: 0 auto; }
+  .ag-axis { fill: none; stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; stroke-linejoin: round; }
+  .ag-tick { stroke: var(--muted); stroke-width: 2px; stroke-linecap: round; }
+  .ag-curve { fill: none; stroke: var(--fg); stroke-width: 3px; stroke-linecap: round; }
+  .ag-second { stroke-dasharray: 8 6; }
+  .ag-area { fill: var(--accent); fill-opacity: 0.22; stroke: none; }
+  .ag-rectangle { fill: var(--accent); fill-opacity: 0.22; stroke: var(--accent); stroke-width: 2px; }
+  .ag-negative { stroke: none; }
+  .ag-hatch { fill: none; stroke: var(--accent); stroke-width: 2px; }
+  .ag-text { fill: var(--fg); font-size: 22px; text-anchor: middle; }
+  .ag-name { font-weight: 600; }
+</style>

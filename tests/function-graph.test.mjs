@@ -8,7 +8,7 @@ test("函數圖拒絕無效視窗與未知函數宣告，不把零係數當一�
   for (const xRange of [[2, 2], [1, 3], [-Infinity, 3], [0, NaN]]) {
     assert.throws(() => resolveFunctionGraph({ ...base, xRange }), /FunctionGraph.*xRange/);
   }
-  for (const fn of [{ linear: [0, 1] }, { linear: [Infinity, 1] }, { linear: [1] }, { cubic: [1, 0, 0] }, { constant: 2, linear: [1, 0] }, () => 2]) {
+  for (const fn of [{ linear: [0, 1] }, { linear: [Infinity, 1] }, { linear: [1] }, { polynomial: [1, 0, 0] }, { constant: 2, linear: [1, 0] }, () => 2]) {
     assert.throws(() => resolveFunctionGraph({ ...base, fn }), /FunctionGraph.*fn/);
   }
   assert.doesNotThrow(() => resolveFunctionGraph(base));
@@ -151,5 +151,286 @@ test("教材頂點與對稱點圖的所有文字避開真實拋物線，不能�
   for (const text of graph.texts) for (const segment of graph.quadraticCurves) for (let i = 0; i <= 1000; i++) {
     const p = bezier(segment, i / 1000), w = text.text.length * 15 / 2 + 3;
     assert.ok(!(p.x >= text.x - w - 2 && p.x <= text.x + w + 2 && p.y >= text.y - 25 && p.y <= text.y + 7), `曲線穿過 ${text.text}`);
+  }
+});
+
+const cubicBase = { id: "cubic-test", xRange: [-3, 3], yRange: [-4, 4], fn: { cubic: [1, 0, 0, 0] } };
+const cubicAt = (c, t) => ({ x: (1 - t) ** 3 * c.from.x + 3 * (1 - t) ** 2 * t * c.control1.x + 3 * (1 - t) * t * t * c.control2.x + t ** 3 * c.to.x,
+  y: (1 - t) ** 3 * c.from.y + 3 * (1 - t) ** 2 * t * c.control1.y + 3 * (1 - t) * t * t * c.control2.y + t ** 3 * c.to.y });
+
+test("三次族只接受四個有限係數與非零首項，拒絕任意多項式及不可靠運算", () => {
+  for (const cubic of [[0, 1, 2, 3], [1, 2, 3], [1, 2, 3, 4, 5], [1, 0, NaN, 0], [Infinity, 0, 0, 0], [1e308, 0, 0, 0], [1, 1e308, 0, 0], [Number.MIN_VALUE, 1e308, 0, 0]]) {
+    assert.throws(() => resolveFunctionGraph({ ...cubicBase, fn: { cubic } }), /fn.cubic/);
+  }
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, fn: { polynomial: [1, -2, 0, 0] } }), /fn/);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, fn: { cubic: [1, 0, 0, 0], quadratic: [1, 0, 0] } }), /fn/);
+});
+
+test("三次精確 C 曲線涵蓋平移反射、單調、駐點與兩個極值", () => {
+  for (const coefficients of [[1, 0, 0, 0], [1, 0, 1, 0], [-1, 0, 0, 0], [1, -2, 0, 0], [1, -3, 3, -1], [1, 0, -3, 0]]) {
+    const graph = resolveFunctionGraph({ ...cubicBase, fn: { cubic: coefficients } });
+    assert.equal(graph.curve, undefined);
+    assert.deepEqual(graph.quadraticCurves, []);
+    assert.deepEqual(graph.endpoints, []);
+    assert.ok(graph.cubicCurves.length > 0);
+    const [a, b, c, d] = coefficients;
+    for (const curve of graph.cubicCurves) for (let i = 0; i <= 40; i++) {
+      const point = cubicAt(curve, i / 40), x = (point.x - 60) / 60 - 3, y = 4 - (point.y - 54) / 45;
+      near(y, ((a * x + b) * x + c) * x + d);
+      assert.ok(point.x >= 60 - 1e-7 && point.x <= 420 + 1e-7 && point.y >= 54 - 1e-7 && point.y <= 414 + 1e-7);
+    }
+  }
+});
+
+test("三次圖裁成三支，不跨過超出 y 視窗的兩個極值", () => {
+  const graph = resolveFunctionGraph({ ...cubicBase, yRange: [-1, 1], fn: { cubic: [1, 0, -3, 0] } });
+  assert.equal(graph.cubicCurves.length, 3);
+  assert.ok(graph.cubicCurves[0].to.x < graph.cubicCurves[1].from.x);
+  assert.ok(graph.cubicCurves[1].to.x < graph.cubicCurves[2].from.x);
+  assert.deepEqual(graph.endpoints, []);
+  for (const c of graph.cubicCurves) {
+    near(Math.min(c.from.y, c.to.y), 54);
+    near(Math.max(c.from.y, c.to.y), 414);
+  }
+});
+
+test("三次視窗相切點只保留一次，開放域排除後不得補回", () => {
+  const fn = { cubic: [1, 0, -3, 2] };
+  const graph = resolveFunctionGraph({ ...cubicBase, yRange: [-2, 0], fn });
+  const tangencies = graph.cubicCurves.filter((c) => c.from.x === c.to.x);
+  assert.equal(tangencies.length, 1);
+  near(tangencies[0].from.x, 300);
+  near(tangencies[0].from.y, 54);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, yRange: [-2, 0], fn, domain: { from: 1, to: null, openFrom: true, openTo: true } }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, fn: { cubic: [1, 0, 0, 40] } }), /沒有可見圖形/);
+});
+
+test("三次圖保留開閉端點、單點域及點核對，不把裁切當成有限定義域", () => {
+  const graph = resolveFunctionGraph({ ...cubicBase, domain: { from: -1, to: 1, openFrom: true, openTo: false }, points: [{ at: [1, 1], name: "B" }] });
+  assert.deepEqual(graph.endpoints, [{ x: 180, y: 279, open: true }, { x: 300, y: 189, open: false }]);
+  assert.deepEqual(graph.points, []);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, domain: { from: -1, to: 1, openFrom: true, openTo: false }, points: [{ at: [-1, -1] }] }), /points/);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, points: [{ at: [1, 2] }] }), /points.*曲線/);
+  assert.throws(() => resolveFunctionGraph({ ...cubicBase, yRange: [-1e-10, 1e-10], fn: { cubic: [1e-11, 0, 0, 0] }, points: [{ at: [1, 6e-11] }] }), /points.*曲線/);
+  const single = resolveFunctionGraph({ ...cubicBase, domain: { from: 1, to: 1, openFrom: false, openTo: false } });
+  assert.deepEqual(single.cubicCurves, []);
+  assert.deepEqual(single.endpoints, [{ x: 300, y: 189, open: false }]);
+});
+
+test("教材三次相切與穿越保持正確，A/B/O 與所有刻度避讓曲線", () => {
+  const graph = resolveFunctionGraph({ id: "polynomial-zero-contact", xRange: [-1, 3], yRange: [-4, 10], yStep: 2,
+    fn: { cubic: [1, -2, 0, 0] }, points: [{ at: [0, 0], name: "A" }, { at: [2, 0], name: "B" }] });
+  assert.equal(graph.cubicCurves.length, 3);
+  assert.deepEqual(graph.endpoints, []);
+  assert.ok(graph.texts.some((t) => t.text === "O"));
+  const f = (x) => x * x * (x - 2);
+  assert.ok(f(-0.1) < 0 && f(0.1) < 0 && f(1.9) < 0 && f(2.1) > 0);
+  near(graph.cubicCurves[1].to.x, 60 + (4 / 3 + 1) * 90);
+  near(graph.cubicCurves[1].to.y, 54 + (10 + 32 / 27) * 360 / 14);
+  for (const text of graph.texts) for (const segment of graph.cubicCurves) for (let i = 0; i <= 1000; i++) {
+    const p = cubicAt(segment, i / 1000), w = text.text.length * 15 / 2 + 3;
+    assert.ok(!(p.x >= text.x - w - 2 && p.x <= text.x + w + 2 && p.y >= text.y - 25 && p.y <= text.y + 7), `曲線穿過 ${text.text}`);
+  }
+});
+
+const expBase = { id: "exponential-test", xRange: [-3, 3], yRange: [-1, 5], fn: { exponential: [2] } };
+
+test("指數族嚴格驗證正且非1的單個底數，常數1另用constant", () => {
+  for (const exponential of [[], [2, 3], [0], [-2], [1], [NaN], [Infinity], "2"]) {
+    assert.throws(() => resolveFunctionGraph({ ...expBase, fn: { exponential } }), /fn.exponential/);
+  }
+  assert.throws(() => resolveFunctionGraph({ ...expBase, fn: { exponential: [2], constant: 1 } }), /fn/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, fn: { exp: [2] } }), /fn/);
+  assert.doesNotThrow(() => resolveFunctionGraph({ ...expBase, fn: { constant: 1 } }));
+  for (const base of [1 + Number.EPSILON, 1 - Number.EPSILON]) {
+    const graph = resolveFunctionGraph({ ...expBase, fn: { exponential: [base] } });
+    assert.ok(graph.exponentialCurve.length >= 2);
+    assert.ok(graph.exponentialErrorBounds.every((b) => b <= 0.1));
+  }
+});
+
+test("指數近似的每段都有0.1 SVG單位以下解析誤差界，原函數標點成為節點", () => {
+  for (const base of [2, 0.5]) {
+    const sign = base > 1 ? 1 : -1;
+    const graph = resolveFunctionGraph({ ...expBase, fn: { exponential: [base] }, points: [{ at: [0, 1], name: "A" }, { at: [sign, 2] }, { at: [sign * 2, 4] }] });
+    assert.equal(graph.curve, undefined);
+    assert.deepEqual(graph.quadraticCurves, []);
+    assert.deepEqual(graph.cubicCurves, []);
+    assert.deepEqual(graph.endpoints, []);
+    assert.equal(graph.exponentialErrorBounds.length, graph.exponentialCurve.length - 1);
+    assert.ok(graph.exponentialErrorBounds.length < 4096);
+    for (const point of graph.points) assert.ok(graph.exponentialCurve.some((p) => p.x === point.x && Math.abs(p.y - point.y) < 1e-10));
+    for (let i = 1; i < graph.exponentialCurve.length; i++) {
+      const p0 = graph.exponentialCurve[i - 1], p1 = graph.exponentialCurve[i];
+      const u = (p0.x - 60) / 60 - 3, v = (p1.x - 60) / 60 - 3;
+      const analytical = (v - u) ** 2 * Math.log(base) ** 2 * Math.max(base ** u, base ** v) * 60 / 8;
+      assert.ok(analytical <= graph.exponentialErrorBounds[i - 1] + 1e-12);
+      assert.ok(graph.exponentialErrorBounds[i - 1] <= 0.1);
+      assert.ok(p0.x < p1.x && p0.y <= graph.origin.y - 4 && p1.y <= graph.origin.y - 4);
+      for (let j = 0; j <= 40; j++) {
+        const t = j / 40, x = u + (v - u) * t;
+        const exactY = 54 + (5 - base ** x) * 60;
+        const lineY = p0.y + (p1.y - p0.y) * t;
+        assert.ok(Math.abs(lineY - exactY) <= graph.exponentialErrorBounds[i - 1] + 1e-9);
+        assert.ok(lineY <= exactY + 1e-9); // Convex function: interpolating chord lies above it in mathematical y.
+      }
+    }
+  }
+});
+
+test("增減指數圖互為縱軸鏡像，解析裁至y=5且不製造端點", () => {
+  const increase = resolveFunctionGraph(expBase);
+  const decrease = resolveFunctionGraph({ ...expBase, fn: { exponential: [0.5] } });
+  near(increase.exponentialCurve.at(-1).x, 240 + 60 * Math.log2(5));
+  near(increase.exponentialCurve.at(-1).y, 54);
+  near(decrease.exponentialCurve[0].x, 240 - 60 * Math.log2(5));
+  near(decrease.exponentialCurve[0].y, 54);
+  near(increase.exponentialCurve[0].y, 54 + (5 - 1 / 8) * 60);
+  assert.equal(increase.exponentialCurve.length, decrease.exponentialCurve.length);
+  for (const [i, p] of increase.exponentialCurve.entries()) {
+    const mirror = decrease.exponentialCurve.at(-i - 1);
+    near(p.x + mirror.x, 480);
+    near(p.y, mirror.y);
+  }
+  assert.deepEqual(increase.endpoints, []);
+  assert.deepEqual(decrease.endpoints, []);
+});
+
+test("指數有限域開閉、單點域與邊界真端點保留，反解浮點不吞掉3²=9", () => {
+  const graph = resolveFunctionGraph({ ...expBase, domain: { from: -1, to: 2, openFrom: true, openTo: false }, points: [{ at: [2, 4], name: "B" }] });
+  assert.deepEqual(graph.endpoints, [{ x: 180, y: 324, open: true }, { x: 360, y: 114, open: false }]);
+  assert.deepEqual(graph.points, []);
+  const descending = resolveFunctionGraph({ ...expBase, fn: { exponential: [0.5] }, domain: { from: -2, to: 1, openFrom: false, openTo: true } });
+  assert.deepEqual(descending.endpoints, [{ x: 120, y: 114, open: false }, { x: 300, y: 324, open: true }]);
+  const single = resolveFunctionGraph({ ...expBase, domain: { from: 0, to: 0, openFrom: false, openTo: false } });
+  assert.equal(single.exponentialCurve, undefined);
+  assert.deepEqual(single.endpoints, [{ x: 240, y: 294, open: false }]);
+  const edge = resolveFunctionGraph({ ...expBase, yRange: [0, 9], yStep: 2, fn: { exponential: [3] }, domain: { from: 0, to: 2, openFrom: true, openTo: false } });
+  assert.deepEqual(edge.endpoints.at(-1), { x: 360, y: 54, open: false });
+});
+
+test("指數開放端唯一接觸與無交集拒絕，點須核對真函數且微尺度容差不可放寬", () => {
+  assert.throws(() => resolveFunctionGraph({ ...expBase, yRange: [0, 4], domain: { from: 2, to: 3, openFrom: true, openTo: false } }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, yRange: [-5, 0] }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, domain: { from: 10, to: null, openFrom: false, openTo: true } }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, domain: { from: 0, to: 2, openFrom: true, openTo: false }, points: [{ at: [0, 1] }] }), /points/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, points: [{ at: [1, 2.01] }] }), /points.*曲線/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, xRange: [-36, 0], xStep: 6, yRange: [-1e-11, 1e-10], domain: { from: -36, to: -34, openFrom: false, openTo: false }, points: [{ at: [-35, 2 ** -35 + 5e-12] }] }), /points.*曲線/);
+});
+
+test("指數尾巴不足4 SVG單位、下溢或極端數值會拒絕而非夾到x軸", () => {
+  assert.throws(() => resolveFunctionGraph({ ...expBase, xRange: [-6, 0] }), /距 x 軸不足 4/);
+  for (const base of [Number.MIN_VALUE, Number.MAX_VALUE]) assert.throws(() => resolveFunctionGraph({ ...expBase, fn: { exponential: [base] } }), /fn.exponential/);
+  assert.throws(() => resolveFunctionGraph({ ...expBase, fn: { exponential: [Number.MAX_VALUE] }, points: [{ at: [2, 2] }] }), /fn.exponential.*溢位/);
+});
+
+test("指數標籤同時避開真曲線與有界近似折線", () => {
+  for (const base of [2, 0.5]) {
+    const graph = resolveFunctionGraph({ ...expBase, fn: { exponential: [base] }, points: [{ at: [0, 1], name: "A" }] });
+    for (const text of graph.texts) for (let i = 1; i < graph.exponentialCurve.length; i++) {
+      const p = graph.exponentialCurve[i - 1], q = graph.exponentialCurve[i], w = text.text.length * 15 / 2 + 3;
+      for (let j = 0; j <= 10; j++) {
+        const t = j / 10, x = p.x + (q.x - p.x) * t;
+        const exactY = 54 + (5 - base ** ((x - 60) / 60 - 3)) * 60;
+        for (const y of [exactY, p.y + (q.y - p.y) * t]) assert.ok(!(x >= text.x - w - 2 && x <= text.x + w + 2 && y >= text.y - 25 && y <= text.y + 7), `曲線穿過 ${text.text}`);
+      }
+    }
+  }
+});
+
+const logBase = { id: "logarithmic-test", xRange: [-2, 4], yRange: [-2, 4], fn: { logarithmic: [2] } };
+
+test("對數只接受正且非1的底數，拒絕不合法自然域與非正真數", () => {
+  for (const logarithmic of [[], [2, 3], [0], [-1], [1], [NaN], [Infinity], "2"]) assert.throws(() => resolveFunctionGraph({ ...logBase, fn: { logarithmic } }), /fn.logarithmic/);
+  for (const domain of [{ from: -1, to: 2, openFrom: true, openTo: false }, { from: 0, to: 2, openFrom: false, openTo: false }, { from: null, to: 0, openFrom: true, openTo: true }]) assert.throws(() => resolveFunctionGraph({ ...logBase, domain }), /domain/);
+  for (const x of [-1, 0]) assert.throws(() => resolveFunctionGraph({ ...logBase, points: [{ at: [x, 0] }] }), /points.*天然定義域/);
+  assert.throws(() => resolveFunctionGraph({ ...logBase, fn: { logarithmic: [2], constant: 1 } }), /fn/);
+  assert.throws(() => resolveFunctionGraph({ ...logBase, fn: { log: [2] } }), /fn/);
+});
+
+test("對數省略域仍只有正x，開放0沒有假端點，解析裁切保留漸近線間隔", () => {
+  for (const domain of [undefined, { from: 0, to: null, openFrom: true, openTo: true }]) {
+    const graph = resolveFunctionGraph({ ...logBase, domain });
+    assert.deepEqual(graph.endpoints, []);
+    near(graph.logarithmicCurve[0].x, 195); // x=1/4, not x=0.
+    near(graph.logarithmicCurve[0].y, 414);
+    near(graph.logarithmicCurve.at(-1).x, 420);
+    near(graph.logarithmicCurve.at(-1).y, 174);
+    assert.ok(graph.logarithmicCurve.every((p) => p.x >= graph.origin.x + 4));
+  }
+  const decrease = resolveFunctionGraph({ ...logBase, yRange: [-2, 3], fn: { logarithmic: [0.5] } });
+  near(decrease.logarithmicCurve[0].x, 187.5); // x=1/8, 7.5 viewBox units from y-axis.
+  near(decrease.logarithmicCurve[0].y, 54);
+  near(decrease.logarithmicCurve.at(-1).y, 414);
+  assert.throws(() => resolveFunctionGraph({ ...logBase, fn: { logarithmic: [0.5] } }), /距 y 軸不足 4/);
+});
+
+test("對數每段使用專屬二階導數誤差界，增減兩種凹凸皆在0.1內", () => {
+  for (const base of [2, 0.5]) {
+    const ymax = base === 2 ? 4 : 3, yUnit = 360 / (ymax + 2), sign = base === 2 ? 1 : -1;
+    const graph = resolveFunctionGraph({ ...logBase, yRange: [-2, ymax], fn: { logarithmic: [base] }, points: [{ at: [1, 0] }, { at: [2, sign], name: "A" }, { at: [4, sign * 2] }] });
+    assert.equal(graph.curve, undefined);
+    assert.equal(graph.exponentialCurve, undefined);
+    assert.equal(graph.logarithmicErrorBounds.length, graph.logarithmicCurve.length - 1);
+    assert.ok(graph.logarithmicErrorBounds.length < 4096);
+    for (const point of graph.points) assert.ok(graph.logarithmicCurve.some((p) => p.x === point.x && Math.abs(p.y - point.y) < 1e-10));
+    for (let i = 1; i < graph.logarithmicCurve.length; i++) {
+      const p0 = graph.logarithmicCurve[i - 1], p1 = graph.logarithmicCurve[i];
+      const u = (p0.x - 60) / 60 - 2, v = (p1.x - 60) / 60 - 2;
+      const analytical = ((v - u) / u) ** 2 * yUnit / (8 * Math.abs(Math.log(base)));
+      assert.ok(analytical <= graph.logarithmicErrorBounds[i - 1] + 1e-12);
+      assert.ok(graph.logarithmicErrorBounds[i - 1] <= 0.1);
+      assert.ok(p0.x < p1.x);
+      for (let j = 0; j <= 40; j++) {
+        const t = j / 40, x = u + (v - u) * t;
+        const exactY = 54 + (ymax - Math.log(x) / Math.log(base)) * yUnit;
+        const lineY = p0.y + (p1.y - p0.y) * t;
+        assert.ok(Math.abs(lineY - exactY) <= graph.logarithmicErrorBounds[i - 1] + 1e-9);
+        assert.ok(base > 1 ? lineY >= exactY - 1e-9 : lineY <= exactY + 1e-9);
+      }
+    }
+  }
+});
+
+test("對數保留正數開閉端點與單點域，準確的整數反解不吞邊界端點", () => {
+  const graph = resolveFunctionGraph({ ...logBase, domain: { from: 0.25, to: 4, openFrom: true, openTo: false }, points: [{ at: [4, 2], name: "A" }] });
+  assert.deepEqual(graph.endpoints, [{ x: 195, y: 414, open: true }, { x: 420, y: 174, open: false }]);
+  assert.deepEqual(graph.points, []);
+  const single = resolveFunctionGraph({ ...logBase, domain: { from: 1, to: 1, openFrom: false, openTo: false } });
+  assert.equal(single.logarithmicCurve, undefined);
+  assert.deepEqual(single.endpoints, [{ x: 240, y: 294, open: false }]);
+  const edge = resolveFunctionGraph({ ...logBase, xRange: [-1, 9], xStep: 2, yRange: [-1, 2], fn: { logarithmic: [3] }, domain: { from: 1, to: 9, openFrom: true, openTo: false } });
+  assert.deepEqual(edge.endpoints.at(-1), { x: 420, y: 54, open: false });
+});
+
+test("對數空交集、被開放端排除的單點與離線標記拒絕", () => {
+  assert.throws(() => resolveFunctionGraph({ ...logBase, xRange: [-3, 0] }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...logBase, domain: { from: 5, to: null, openFrom: false, openTo: true } }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...logBase, yRange: [-2, 1], domain: { from: 2, to: 4, openFrom: true, openTo: false } }), /沒有可見圖形/);
+  assert.throws(() => resolveFunctionGraph({ ...logBase, points: [{ at: [2, 1.01] }] }), /points.*曲線/);
+  assert.throws(() => resolveFunctionGraph({ ...logBase, domain: { from: 1, to: 4, openFrom: true, openTo: false }, points: [{ at: [1, 0] }] }), /points/);
+  assert.throws(() => resolveFunctionGraph({ ...logBase, yRange: [-1e-10, 1e-10], points: [{ at: [1, 5e-11] }] }), /fn.logarithmic.*精度|points.*曲線/);
+});
+
+test("對數反解溢位下溢、近1底數與無法辨識的漸近尾部皆明確拒絕", () => {
+  for (const base of [Number.MIN_VALUE, Number.MAX_VALUE, 1 + Number.EPSILON, 1 - Number.EPSILON]) assert.throws(() => resolveFunctionGraph({ ...logBase, fn: { logarithmic: [base] } }), /fn.logarithmic/);
+  assert.throws(() => resolveFunctionGraph({ ...logBase, yRange: [-10, 0], yStep: 2 }), /距 y 軸不足 4/);
+});
+
+test("教材對數點符合反函數關係且所有標籤避開真曲線和近似折線", () => {
+  for (const base of [2, 0.5]) {
+    const sign = base === 2 ? 1 : -1, ymax = base === 2 ? 4 : 3, yUnit = 360 / (ymax + 2);
+    const points = [{ at: [1, 0] }, { at: [2, sign], name: "A" }, { at: [4, 2 * sign] }];
+    for (const p of points) near(base ** p.at[1], p.at[0]);
+    const graph = resolveFunctionGraph({ ...logBase, yRange: [-2, ymax], fn: { logarithmic: [base] }, points });
+    assert.ok(graph.texts.some((t) => t.text === "O"));
+    for (const text of graph.texts) for (let i = 1; i < graph.logarithmicCurve.length; i++) {
+      const p = graph.logarithmicCurve[i - 1], q = graph.logarithmicCurve[i], w = text.text.length * 15 / 2 + 3;
+      for (let j = 0; j <= 10; j++) {
+        const t = j / 10, x = p.x + (q.x - p.x) * t;
+        const exactY = 54 + (ymax - Math.log((x - 60) / 60 - 2) / Math.log(base)) * yUnit;
+        for (const y of [exactY, p.y + (q.y - p.y) * t]) assert.ok(!(x >= text.x - w - 2 && x <= text.x + w + 2 && y >= text.y - 25 && y <= text.y + 7), `曲線穿過 ${text.text}`);
+      }
+    }
   }
 });
