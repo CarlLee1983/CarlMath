@@ -1,0 +1,42 @@
+<section data-geometry-classroom aria-label="長方體體積探索">
+  <h2>1. 觀察：一層有幾塊？</h2>
+  <p>先看一層。左右是長，前後是寬，往上是高。轉到背面看，被擋住的積木也要算進去。</p>
+  <div class="explorer">
+    <div>
+      <div data-scene class="scene" role="img" aria-label="可旋轉的積木模型"></div>
+      <p data-render-status data-state="loading" role="status">正在準備 3D 模型；下方平面圖也能操作。</p>
+      <p class="hint">滑鼠拖曳旋轉、滾輪縮放；手機用一指旋轉、兩指縮放。鍵盤可用下面的視角按鈕。</p>
+      <div class="actions"><button type="button" data-reset-view>起始視角</button><button type="button" data-view="front">正面</button><button type="button" data-view="top">上面</button><button type="button" data-view="side">側面</button><button type="button" data-zoom="1.25">放大</button><button type="button" data-zoom="0.8">縮小</button></div>
+    </div>
+    <div class="controls">
+      <h2>2. 操作：換一種堆法</h2>
+      <label class="cube"><input type="checkbox" name="cube" /> 正方體：三個邊一樣長</label>
+      {(['length', 'width', 'height'] as const).map((name, i) => <label class="dimension">{['長', '寬', '高'][i]}：<output data-dimension={name}>{[3, 2, 2][i]}</output> 公分<input name={name} type="range" min="1" max="8" step="1" value={[3, 2, 2][i]} /></label>)}
+      <p>每一層有 <strong data-layer-area>6</strong> 塊；目標共 <strong data-target-height>2</strong> 層。</p>
+      <p aria-live="polite">現在堆了 <strong data-layer-count>1</strong> 層，共 <strong data-stacked-count>6</strong> 塊。</p>
+      <div class="actions"><button type="button" data-add-layer>再堆一層</button><button type="button" data-show-all>堆到頂</button><button type="button" data-reset-stack>只看一層</button></div>
+      <p class="hint">每次改邊長，都從一層重新開始。畫面細縫只是方便數積木，計算時積木緊密填滿，沒有空隙。</p>
+    </div>
+  </div>
+  <div data-fallback class="layer-card">
+    <h3>一層的俯視圖</h3>
+    <p>每一格代表一塊積木的頂面。所有層都一樣，不論 3D 能否顯示，都可以用它來數。</p>
+    <div data-layer-grid class="layer-grid" role="img" aria-label="長3格、寬2格，一層6塊">{Array.from({length:6},()=> <span />)}</div>
+  </div>
+  <h2>3. 推導：為什麼要乘三次？</h2>
+  <p>每排有「長」那麼多塊，有「寬」那麼多排，所以一層是「長 × 寬」。再把相同的一層往上堆「高」那麼多次，就是整個長方體。</p>
+  <div class="formula" aria-live="polite"><p>一層 <span data-area-formula>3 × 2 = 6</span> 塊</p><p>完整體積：<span data-volume-formula>3 × 2 × 2</span> = <strong data-volume>12</strong> 立方公分</p><p data-shape-note>長方體體積 = 長 × 寬 × 高</p></div>
+  <p>注意：上面的完整體積是「堆到頂」的結果，不是目前只堆一層的塊數。底面積用平方公分；填滿空間的體積用立方公分。</p>
+  <h2>4. 練習：先猜，再操作</h2>
+  <p>一個長 4 公分、寬 3 公分、高 2 公分的長方體，體積是幾立方公分？先想一層有幾塊，再想有幾層。</p>
+  <form data-practice novalidate><label>我的答案（立方公分）<input type="number" name="answer" min="1" step="1" required inputmode="numeric" /></label><button type="submit">檢查想法</button><p data-feedback role="status"></p></form>
+  <details><summary>看參考思路</summary><p>每層 4 × 3 = 12 塊，2 層就是 12 × 2 = 24 塊，所以體積是 24 立方公分。不是 4 + 3 + 2，也不只數看得見的表面。</p></details>
+  <h2>5. 驗證：改一個量，看看結果</h2>
+  <ol><li>把長、寬、高設成 4、3、2，逐層堆，檢查剛才的答案。</li><li>只把高改成 4。每層塊數有改變嗎？總體積為什麼變成兩倍？</li><li>切成正方體，邊長設成 2，再改成 4。體積會只變兩倍嗎？先猜，再數。</li></ol>
+  <details><summary>驗證後再看</summary><p>4 × 3 × 4 = 48，高加倍、每層不變，因此體積加倍。正方體邊長由 2 變 4，三個方向都加倍，體積由 8 變 64，是原來的 8 倍。</p></details>
+  <noscript><p>目前未啟用 JavaScript，動態滑桿與 3D 無法運作。你仍可用上面的 3 × 2 方格，想像堆兩層得到 12 塊，並閱讀推導及參考答案。</p></noscript>
+</section>
+<script>import '../../scripts/geometry-classroom';</script>
+<style>
+  section {margin-block:2rem} .explorer{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:1.5rem} .scene{height:360px;background:var(--card);border:1px solid var(--line);border-radius:1rem;overflow:hidden} .scene :global(canvas){display:block;max-width:100%;touch-action:none} .controls{padding:1rem;background:var(--card);border-radius:1rem}.controls h2{font-size:1.3rem;margin-top:0}.dimension{display:block;margin-block:1rem}input[type=range]{display:block;width:100%;min-height:44px;accent-color:var(--accent)}input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}button, input[type=number]{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--muted);border-radius:.4rem;min-height:44px;padding:.35rem .65rem;max-width:100%}button{cursor:pointer}button:disabled{opacity:.55;cursor:default}.actions{display:flex;flex-wrap:wrap;gap:.5rem}.hint{font-size:.9rem;color:var(--muted)}.layer-card,.formula{padding:1rem;margin-block:1.5rem;background:var(--card);border-radius:1rem}.layer-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:3px;max-width:320px}.layer-grid :global(span){aspect-ratio:1;background:var(--accent-soft);border:2px solid var(--accent)}.formula p{margin:.3rem 0}form label{display:block}form input{display:block;margin-block:.5rem}summary{cursor:pointer;min-height:44px}details{padding:.5rem 0} @media(max-width:700px){.explorer{grid-template-columns:1fr}.scene{height:300px}} @media print{.scene,.controls{display:none}}
+</style>
