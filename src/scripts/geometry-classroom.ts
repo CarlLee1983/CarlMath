@@ -19,6 +19,7 @@ if (root) {
     set('[data-area-formula]',`${d.length} × ${d.width} = ${area}`);set('[data-volume-formula]',`${d.length} × ${d.width} × ${d.height}`);set('[data-shape-note]',cube.checked?'正方體體積 = 邊長 × 邊長 × 邊長':'長方體體積 = 長 × 寬 × 高');
     get<HTMLButtonElement>('[data-add-layer]').disabled=layers>=d.height;
     const grid=get('[data-layer-grid]');grid.style.gridTemplateColumns=`repeat(${d.length},1fr)`;grid.setAttribute('aria-label',`長${d.length}格、寬${d.width}格，一層${area}塊`);grid.replaceChildren(...Array.from({length:area},()=>document.createElement('span')));
+    get('[data-scene]').setAttribute('aria-label', `長 ${d.length} 公分、寬 ${d.width} 公分、高 ${d.height} 公分的長方體，目前顯示 ${layers} 層、${area*layers} 塊單位積木。`);
     renderer?.update({...d,visibleLayers:layers});
   }
   function changed(){d=normalizeDimensions({length:Number(inputs.length.value),width:Number(inputs.width.value),height:Number(inputs.height.value)},cube.checked);layers=1;update();}
