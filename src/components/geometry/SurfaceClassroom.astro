@@ -1,0 +1,49 @@
+---
+import {netFaces} from '../../lib/surface-model';
+const initial=netFaces({length:3,width:2,height:2});
+---
+<section data-surface-classroom aria-label="長方體展開圖與表面積探索">
+  <h2>1. 觀察：包住盒子，需要多少紙？</h2>
+  <p>想像替一個有蓋的長方體盒子包紙，不留接縫，也不重疊。這次要量的是外面的 6 個面，不是裡面能裝多少積木。先轉一轉，找出被遮住的底面與後面。</p>
+  <div class="explorer">
+    <div>
+      <div data-scene class="scene" role="img" aria-label="可旋轉及展開的長方體"></div>
+      <p data-render-status data-state="loading" role="status">正在準備 3D 模型；下方展開圖也能操作。</p>
+      <p class="hint">滑鼠拖曳旋轉、滾輪縮放；手機用一指旋轉、兩指縮放。也能使用視角按鈕。</p>
+      <div class="actions"><button type="button" data-reset-view>起始視角</button><button type="button" data-view="top">從上往下看</button><button type="button" data-view="front">正面</button><button type="button" data-view="side">側面</button><button type="button" data-zoom="1.25">放大</button><button type="button" data-zoom="0.8">縮小</button></div>
+    </div>
+    <div class="controls">
+      <h2>2. 操作：沿著邊，慢慢攤開</h2>
+      <label><input type="checkbox" name="cube" /> 正方體：三個邊一樣長</label>
+      {(['length','width','height'] as const).map((name,i)=><label class="dimension">{['長','寬','高'][i]}：<output data-dimension={name}>{[3,2,2][i]}</output> 公分<input name={name} type="range" min="1" max="8" step="1" value={[3,2,2][i]} /></label>)}
+      <label class="dimension">展開程度：<output data-openness>0</output>%<input name="openness" type="range" min="0" max="100" step="1" value="0" /></label>
+      <div class="actions"><button type="button" data-fold>合回盒子</button><button type="button" data-unfold>完全展開</button></div>
+      <p>試著停在一半，追蹤同一個面。攤開時，面沒有拉長、縮小或消失，所以面積總和不變。</p>
+    </div>
+  </div>
+  <div class="net-card">
+    <h3>同一個盒子的平面展開圖</h3>
+    <p>每一格是 1 平方公分。數字對照下方各面清單；這是其中一種展開方式，不是所有展開圖。</p>
+    <svg data-net viewBox="0 0 480 560" role="img" aria-labelledby="surface-net-title surface-net-desc">
+      <title id="surface-net-title">六面展開圖</title><desc id="surface-net-desc">長 3、寬 2、高 2 公分；底面與上面各 6，前後各 6，左右各 4 平方公分。</desc>
+      <g data-net-faces>{initial.map((f,i)=><g>{Array.from({length:f.width-1},(_,col)=><line class="unit-line" x1={30+(f.x+col+1)*60} x2={30+(f.x+col+1)*60} y1={30+f.y*60} y2={30+(f.y+f.height)*60} />)}{Array.from({length:f.height-1},(_,row)=><line class="unit-line" x1={30+f.x*60} x2={30+(f.x+f.width)*60} y1={30+(f.y+row+1)*60} y2={30+(f.y+row+1)*60} />)}<rect data-face={f.id} x={30+f.x*60} y={30+f.y*60} width={f.width*60} height={f.height*60} /><text x={30+(f.x+f.width/2)*60} y={30+(f.y+f.height/2)*60}>{i+1}</text></g>)}</g>
+    </svg>
+    <ol data-face-list>{initial.map(f=><li>{f.label.slice(2)}：{f.width} × {f.height} = {f.area} 平方公分</li>)}</ol>
+  </div>
+  <h2>3. 推導：把相同的面配成對</h2>
+  <p>底面與上面都由「長、寬」決定；前面與後面由「長、高」決定；左右兩面由「寬、高」決定。每一對都是 2 個一樣大的長方形。</p>
+  <div class="formula" aria-live="polite"><p>表面積 = 2 ×（長 × 寬 + 長 × 高 + 寬 × 高）</p><p><span data-area-formula>2 ×（3 × 2 + 3 × 2 + 2 × 2）</span> = <strong data-surface-area>32</strong> 平方公分</p><p data-shape-note>將 3 對面的面積相加，不能只算眼前看見的 3 個面。</p></div>
+  <p>正方體的 6 個面都是同樣大的正方形，因此表面積是「6 × 邊長 × 邊長」。表面積用平方公分；體積才用立方公分。包裝紙的裁切餘料、黏貼邊與重疊部分不在這個模型中。</p>
+  <h2>4. 練習：先想，再攤開檢查</h2>
+  <p>有蓋的長方體盒子，長 4 公分、寬 3 公分、高 2 公分。6 個面的總面積是幾平方公分？</p>
+  <form data-practice novalidate><label>我的答案（平方公分）<input name="answer" type="number" min="1" step="1" required inputmode="numeric" /></label><button type="submit">檢查想法</button><p data-feedback role="status"></p></form>
+  <details><summary>看參考思路</summary><p>上下各 12、前後各 8、左右各 6 平方公分。相加得到 12 + 12 + 8 + 8 + 6 + 6 = 52 平方公分，也可以算 2 ×（12 + 8 + 6）。24 是這個盒子的體積數值，不是表面積。</p></details>
+  <h2>5. 驗證：變大後，紙也只多一倍嗎？</h2>
+  <ol><li>把長、寬、高設成 4、3、2。完全展開，逐面驗證剛才的答案。</li><li>保持長、寬不變，只把高由 2 改成 4。哪 2 個面不變？表面積會變成兩倍嗎？</li><li>切成正方體，邊長由 2 改成 4。先猜每個面的面積變成幾倍，再看結果。</li></ol>
+  <details><summary>驗證後再看</summary><p>高加倍時，上下面各 12 不變，前後面各變成 16，左右面各變成 12；總共 80 平方公分，不是 104。正方體邊長由 2 到 4，每個面的兩個方向都加倍，表面積由 24 變成 96，是原來的 4 倍；體積則是 8 倍。</p></details>
+  <noscript><p>目前未啟用 JavaScript，無法動態調整。你仍可閱讀初始展開圖與各面清單，將 6 + 6 + 6 + 6 + 4 + 4 相加得到 32 平方公分，再閱讀練習與參考思路。</p></noscript>
+</section>
+<script>import '../../scripts/surface-classroom';</script>
+<style>
+  section{margin-block:2rem}.explorer{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);gap:1.5rem}.scene{height:380px;background:var(--card);border:1px solid var(--line);border-radius:1rem;overflow:hidden}.scene :global(canvas){display:block;max-width:100%;touch-action:none}.controls,.net-card,.formula{padding:1rem;background:var(--card);border-radius:1rem}.controls h2{font-size:1.3rem;margin-top:0}.dimension{display:block;margin-block:1rem}input[type=range]{display:block;width:100%;min-height:44px;accent-color:var(--accent)}input[type=checkbox]{width:20px;height:20px;accent-color:var(--accent)}button,input[type=number]{font:inherit;color:var(--fg);background:var(--card);border:1px solid var(--muted);border-radius:.4rem;min-height:44px;padding:.35rem .65rem;max-width:100%}button{cursor:pointer}button:disabled{opacity:.55}.actions{display:flex;flex-wrap:wrap;gap:.5rem}.hint{font-size:.9rem;color:var(--muted)}.net-card,.formula{margin-block:1.5rem}.net-card svg{display:block;width:100%;max-width:32rem;margin:auto}.net-card :global(rect[data-face]){fill:none;stroke:var(--fg);stroke-width:3}.net-card :global(.unit-line){stroke:var(--line);stroke-width:2}.net-card :global(text){fill:var(--fg);font-size:22px;text-anchor:middle;dominant-baseline:middle;paint-order:stroke;stroke:var(--card);stroke-width:6px;stroke-linejoin:round}.formula p{margin:.3rem 0}form label{display:block}form input{display:block;margin-block:.5rem}summary{cursor:pointer;min-height:44px}details{padding:.5rem 0}@media(max-width:700px){.explorer{grid-template-columns:1fr}.scene{height:300px}}@media print{.scene,.controls{display:none}}
+</style>
