@@ -15,9 +15,7 @@ async function open(page: Page) {
   await expect(room(page).locator("[data-render-status]")).toHaveAttribute("data-state", /ready|fallback/);
 }
 
-test("WebGL 真正啟動，初始模型及圖解同步", async ({ page }) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => errors.push(error.message));
+async function trackDrawCalls(page: Page) {
   await page.addInitScript(() => {
     const state = window as typeof window & { __geometryDrawCalls: number };
     state.__geometryDrawCalls = 0;
@@ -27,6 +25,13 @@ test("WebGL 真正啟動，初始模型及圖解同步", async ({ page }) => {
       return Reflect.apply(original, this, args);
     };
   });
+}
+const drawCalls = (page: Page) => page.evaluate(() => (window as typeof window & { __geometryDrawCalls: number }).__geometryDrawCalls);
+
+test("WebGL 真正啟動，初始模型及圖解同步", async ({ page, context, hasTouch }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await trackDrawCalls(page);
   await open(page);
   await expect(room(page).locator("[data-render-status]")).toHaveAttribute("data-state", "ready");
   await expect.poll(() => page.evaluate(() => (window as typeof window & { __geometryDrawCalls: number }).__geometryDrawCalls)).toBeGreaterThan(0);
@@ -38,6 +43,30 @@ test("WebGL 真正啟動，初始模型及圖解同步", async ({ page }) => {
   await expect(room(page).locator("[data-volume]")).toHaveText("12");
   await expect(room(page).locator("[data-layer-area]")).toHaveText("6");
   await expect(room(page).locator("[data-fallback]")).toBeVisible();
+  const canvas = room(page).locator("canvas");
+  await canvas.scrollIntoViewIfNeeded();
+  const beforeDrag = await canvas.screenshot();
+  const beforeDraws = await drawCalls(page);
+  const box = (await canvas.boundingBox())!;
+  const x = box.x + box.width * 0.45;
+  const y = box.y + box.height * 0.5;
+  if (hasTouch) {
+    // Send real browser touch input, so OrbitControls receives native pointer capture.
+    const session = await context.newCDPSession(page);
+    await session.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: [{ x, y }] });
+    for (let step = 1; step <= 5; step++) {
+      await session.send("Input.dispatchTouchEvent", { type: "touchMove", touchPoints: [{ x: x + step * 12, y: y + step * 4 }] });
+    }
+    await session.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    await session.detach();
+  } else {
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + 70, y + 25, { steps: 5 });
+    await page.mouse.up();
+  }
+  await expect.poll(() => drawCalls(page)).toBeGreaterThan(beforeDraws);
+  expect((await canvas.screenshot()).equals(beforeDrag)).toBe(false);
   await room(page).locator("[data-reset-view]").click();
   await expect(room(page).locator("[data-render-status]")).toHaveAttribute("data-state", "ready");
   expect(errors).toEqual([]);
@@ -144,4 +173,52 @@ test("教室沒有 serious 或 critical 無障礙問題", async ({ page }) => {
   const { violations } = await new AxeBuilder({ page }).analyze();
   const serious = violations.filter((v) => v.impact === "serious" || v.impact === "critical");
   expect(serious, JSON.stringify(serious, null, 2)).toEqual([]);
+});
+
+
+test("鍵盤視角與縮放按鈕會重新繪製模型", async ({ page }) => {
+  await trackDrawCalls(page);
+  await open(page);
+  await expect(room(page).locator("[data-render-status]")).toHaveAttribute("data-state", "ready");
+  await expect.poll(() => drawCalls(page)).toBeGreaterThan(0);
+  const canvas = room(page).locator("canvas");
+  for (const selector of ['[data-view="front"]', '[data-view="top"]', '[data-view="side"]', '[data-zoom="1.25"]', '[data-zoom="0.8"]']) {
+    const before = await canvas.screenshot();
+    const count = await drawCalls(page);
+    const button = room(page).locator(selector);
+    await button.focus();
+    await expect(button).toBeFocused();
+    await page.keyboard.press("Enter");
+    await expect.poll(() => drawCalls(page)).toBeGreaterThan(count);
+    expect((await canvas.screenshot()).equals(before)).toBe(false);
+    await expect(room(page).locator("[data-volume]")).toHaveText("12");
+  }
+});
+
+test("繪製途中失去 WebGL 後切換圖解，操作與計算仍可繼續", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", (error) => errors.push(error.message));
+  await open(page);
+  await expect(room(page).locator("[data-render-status]")).toHaveAttribute("data-state", "ready");
+  await room(page).locator("canvas").evaluate((canvas) => {
+    const gl = (canvas as HTMLCanvasElement).getContext("webgl2");
+    const extension = gl?.getExtension("WEBGL_lose_context");
+    if (!extension) throw new Error("Software WebGL must support WEBGL_lose_context for this regression test");
+    extension.loseContext();
+  });
+  await expect(room(page).locator("[data-render-status]")).toHaveAttribute("data-state", "fallback");
+  await expect(room(page).locator("[data-fallback]")).toBeVisible();
+  await setDimension(page, "length", 4);
+  await setDimension(page, "width", 3);
+  await setDimension(page, "height", 3);
+  await expect(room(page).locator("[data-layer-area]")).toHaveText("12");
+  await expect(room(page).locator("[data-volume]")).toHaveText("36");
+  await room(page).locator("[data-show-all]").click();
+  await expect(room(page).locator("[data-layer-count]")).toHaveText("3");
+  await room(page).locator("[data-reset-stack]").click();
+  await expect(room(page).locator("[data-layer-count]")).toHaveText("1");
+  await dimension(page, "cube").check();
+  await expect(room(page).locator("[data-volume]")).toHaveText("64");
+  await expect(room(page).locator("[data-render-status]")).toHaveAttribute("data-state", "fallback");
+  expect(errors).toEqual([]);
 });
